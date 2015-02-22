@@ -1,0 +1,1971 @@
+unit usbcontroller;
+
+{
+  TJvHidDeviceController USB HID framework linux replacement for the free pascal compiler.
+  Target: Linux.
+  Copyright (C) 2015 DonAlfredo
+  longdirtyanimalf@gmail.com
+
+  The Original Code is: JvHidControllerClass.PAS, released on 2001-02-28.
+
+  The Initial Developer of the Original Code is Robert Marquardt. May he rest in peace.
+  Portions created by Robert Marquardt are Copyright (C) 1999-2003 Robert Marquardt.
+  All Rights Reserved.
+
+  *** BEGIN LICENSE BLOCK *****
+  Version: MPL 1.1/GPL 2.0/LGPL 2.1
+
+  The contents of this file are subject to the Mozilla Public License Version
+  1.1 (the "License"); you may not use this file except in compliance with
+  the License. You may obtain a copy of the License at
+  http://www.mozilla.org/MPL
+
+  Software distributed under the License is distributed on an "AS IS" basis,
+  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+  for the specific language governing rights and limitations under the License.
+
+  The Initial Developer of this code is Alfred Glänzer.
+
+  Portions created by the Initial Developer are Copyright (C) 2014
+  the Initial Developer. All Rights Reserved.
+
+  Contributor(s):
+  Alternatively, the contents of this file may be used under the terms of
+  either the GNU General Public License Version 2 or later (the "GPL"), or
+  the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+  in which case the provisions of the GPL or the LGPL are applicable instead
+  of those above. If you wish to allow use of your version of this file only
+  under the terms of either the GPL or the LGPL, and not to allow others to
+  use your version of this file under the terms of the MPL, indicate your
+  decision by deleting the provisions above and replace them with the notice
+  and other provisions required by the GPL or the LGPL. If you do not delete
+  the provisions above, a recipient may use your version of this file under
+  the terms of any one of the MPL, the GPL or the LGPL.
+
+  ***** END LICENSE BLOCK *****
+}
+
+{$mode objfpc}{$H+}
+{$PACKRECORDS C}
+{$LINKLIB udev}
+
+{.$DEFINE debug}
+
+{.$DEFINE hidraw}
+{$DEFINE hiddev}
+
+{$IFDEF hiddev}
+{.$DEFINE oldkernel}
+{$ENDIF}
+
+{$Q-}
+{$H+}
+{$M+}
+
+interface
+
+uses
+  Classes,  baseunix, unix
+  {$IFDEF usegenerics}
+  ,fgl
+  {$ENDIF}
+  ;
+
+const
+  sOK = 0;
+  sErr = integer(-1);
+
+  INVALID_HANDLE_VALUE    = THandle(-1);
+
+  EPERM                   = 1;
+  ENOENT                  = 2;
+  EACCES                  = 13;
+
+  HID_REPORT_ID_UNKNOWN   = $ffffffff;
+  HID_REPORT_ID_FIRST     = $00000100;
+  HID_REPORT_ID_NEXT      = $00000200;
+  HID_REPORT_ID_MASK      = $000000ff;
+  HID_REPORT_ID_MAX       = $000000ff;
+
+  HID_REPORT_TYPE_INPUT   = 1;
+  HID_REPORT_TYPE_OUTPUT  = 2;
+  HID_REPORT_TYPE_FEATURE = 3;
+  HID_REPORT_TYPE_MIN     = 1;
+  HID_REPORT_TYPE_MAX     = 3;
+
+  HID_STRING_SIZE         = 256;
+  HID_MAX_MULTI_USAGES    = 1024;
+
+  _IO                   = 0;
+  _IOW                  = 1;
+  _IOR                  = 2;
+  _IOWR                 = 3;
+
+type
+  Pudev_handle = ^udev_handle;
+  udev_handle = record
+    {undefined structure}
+  end;
+
+  Pudev_device_handle = ^udev_device_handle;
+  udev_device_handle = record
+    {undefined structure}
+  end;
+
+  Pudev_monitor_handle = ^udev_monitor_handle;
+  udev_monitor_handle = record
+    {undefined structure}
+  end;
+
+  Pudev_enumerate_handle = ^udev_enumerate_handle;
+  udev_enumerate_handle = record
+    {undefined structure}
+  end;
+
+  Pudev_list_entry_handle = ^udev_list_entry_handle;
+  udev_list_entry_handle = record
+    {undefined structure}
+  end;
+
+  Phiddev_string_descriptor = ^hiddev_string_descriptor;
+   hiddev_string_descriptor = record
+      index:cint32;
+      value:array[0..HID_STRING_SIZE-1] of char;
+   end;
+
+  Phiddev_devinfo = ^hiddev_devinfo;
+   hiddev_devinfo = record
+      bustype:cuint32;
+      busnum:cuint32;
+      devnum:cuint32;
+      ifnum:cuint32;
+      vendor:cint16;
+      product:cint16;
+      version:cint16;
+      num_applications:cuint32;
+   end;
+
+  Phiddev_usage_ref = ^hiddev_usage_ref;
+   hiddev_usage_ref = record
+     report_type:cuint32;
+     report_id:cuint32;
+     field_index:cuint32;
+     usage_index:cuint32;
+     usage_code:cuint32;
+     value:cint32;
+   end;
+
+  Phiddev_report_info = ^hiddev_report_info;
+   hiddev_report_info = record
+     report_type:cuint32;
+     report_id:cuint32;
+     num_fields:cuint32;
+   end;
+
+  Phiddev_field_info = ^hiddev_field_info;
+   hiddev_field_info = record
+     report_type:cuint32;
+     report_id:cuint32;
+     field_index:cuint32;
+     maxusage:cuint32;
+     flags:cuint32;
+     physical:cuint32;
+     logical:cuint32;
+     application:cuint32;
+     logical_minimum:cint32;
+     logical_maximum:cint32;
+     physical_minimum:cint32;
+     physical_maximum:cint32;
+     unit_exponent:cuint32;
+     newunit:cuint32;
+   end;
+
+  Phiddev_usage_ref_multi = ^hiddev_usage_ref_multi;
+   hiddev_usage_ref_multi = record
+     uref:hiddev_usage_ref;
+     num_values:cuint32;
+     values: array[0..HID_MAX_MULTI_USAGES-1] of cint32;
+   end;
+
+  Phiddev_event = ^hiddev_event;
+   hiddev_event = record
+     hid:cuint32;
+     value:cint32;
+   end;
+
+const
+  HIDIOCSUSAGE          = (_IOW shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0C;
+  HIDIOCSREPORT         = (_IOW shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $08;
+  HIDIOCGUCODE          = (_IOWR shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0D;
+  HIDIOCGUSAGE          = (_IOWR shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0B;
+  HIDIOCGREPORTINFO     = (_IOWR shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $09;
+  HIDIOCGFIELDINFO      = (_IOWR shl 30) + (sizeof(hiddev_field_info) shl 16) + (Ord('H') shl 8) + $0A;
+  HIDIOCGDEVINFO        = (_IOR shl 30) + (sizeof(hiddev_devinfo) shl 16) + (Ord('H') shl 8) + $03;
+  HIDIOCGSTRING         = (_IOR shl 30) + (sizeof(hiddev_string_descriptor) shl 16) + (Ord('H') shl 8) + $04;
+  HIDIOCGREPORT         = (_IOW shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $07;
+  HIDIOCGUSAGES         = (_IOWR shl 30) + (sizeof(hiddev_usage_ref_multi) shl 16) + (Ord('H') shl 8) + $13;
+  HIDIOCSUSAGES         = (_IOW shl 30) + (sizeof(hiddev_usage_ref_multi) shl 16) + (Ord('H') shl 8) + $14;
+
+  //HIDIOCSFEATURE(len)    = (_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $06;
+  //HIDIOCGFEATURE(len)    = (_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $07;
+
+type
+  TJvHidDeviceController = class; // forward declaration
+  TJvHidDevice = class; // forward declaration
+
+  TJvHidPlugEvent = procedure(HidDev: TJvHidDevice) of object;
+  TJvHidUnplugEvent = TJvHidPlugEvent;
+
+  TJvHidDataEvent = procedure(HidDev: TJvHidDevice; ReportID: Byte;
+    const Data: Pointer; Size: Word) of object;
+
+  // check out test function
+  TJvHidCheckCallback = function(HidDev: TJvHidDevice): Boolean; stdcall;
+
+  TJvHidPnPInfo = class(TObject)
+  private
+    FDeviceID: DWORD;
+    FHidPath: string;
+    FUSBPath: string;
+    FCapabilities: DWORD;
+    FClassDescr: string;
+    FClassGUID: string;
+    FConfigFlags: DWORD;
+    FDeviceDescr: string;
+    FDriver: string;
+    FProductID: DWORD;
+    FVendorID: DWORD;
+    FDeviceClass: DWORD;
+    FFriendlyName: string;
+    FMfg: string;
+    FAddress: string;
+    FBusNumber: DWORD;
+    FBusType: string;
+    FCharacteristics: string;
+    FDevType: DWORD;
+    FEnumeratorName: string;
+    FExclusive: DWORD;
+    FLegacyBusType: DWORD;
+    FLocationInfo: string;
+    FPhysDevObjName: string;
+    FSecuritySDS: string;
+    FService: string;
+    FUINumber: DWORD;
+    FUINumberFormat: string;
+  public
+    property DeviceID: DWORD read FDeviceID write FDeviceID;
+    property HidPath: string read FHidPath;
+    property USBPath: string read FUSBPath;
+
+    // registry values
+    property Capabilities: DWORD read FCapabilities;
+    property ClassDescr: string read FClassDescr;
+    property ClassGUID: string read FClassGUID;
+    property ConfigFlags: DWORD read FConfigFlags;
+    property DeviceDescr: string read FDeviceDescr;
+    property Driver: string read FDriver;
+    property VendorID: DWORD read FVendorID;
+    property ProductID: DWORD read FProductID;
+    property FriendlyName: string read FFriendlyName;
+    property Mfg: string read FMfg;
+    property Address: string read FAddress;
+    property BusNumber: DWORD read FBusNumber;
+    property BusType: string read FBusType;
+    property Characteristics: string read FCharacteristics;
+    property DevType: DWORD read FDevType;
+    property EnumeratorName: string read FEnumeratorName;
+    property Exclusive: DWORD read FExclusive;
+    property LegacyBusType: DWORD read FLegacyBusType;
+    property LocationInfo: string read FLocationInfo;
+    property PhysDevObjName: string read FPhysDevObjName;
+    property SecuritySDS: string read FSecuritySDS;
+    property Service: string read FService;
+    property UINumber: DWORD read FUINumber;
+    property UINumberFormat: string read FUINumberFormat;
+    constructor Create(ADeviceId:DWORD; ADevice:Pudev_device_handle; AHidDevicePath: String; AUSBDevice:Pudev_device_handle; AUSBDevicePath: String);
+    destructor Destroy; override;
+  end;
+
+
+  TJvHidDeviceReadThread = class(TThread)
+  private
+    procedure DoData;
+    procedure DoDataError;
+    constructor CtlCreate(const Dev: TJvHidDevice);
+  protected
+    procedure Execute; override;
+  public
+    Device: TJvHidDevice;
+    NumBytesRead: word;
+    Report: array of Byte;
+    constructor Create(CreateSuspended: Boolean);
+  end;
+
+  THIDPCAPS = record
+    InputReportByteLength:     Word;
+    OutputReportByteLength:    Word;
+    FeatureReportByteLength:   Word;
+  end;
+
+  THIDDAttributes = record
+    VendorID:      Word;
+    ProductID:     Word;
+    VersionNumber: Word;
+  end;
+
+  TJvHidDevice = class(TObject)
+  private
+    FHidFileHandle : THandle;
+    FUSBFileHandle : THandle;
+    FMyController: TJvHidDeviceController;
+    FIsPluggedIn: Boolean;
+    FIsCheckedOut: Boolean;
+    FIsEnumerated: Boolean;
+    fCaps:THIDPCaps;
+    FAttributes: THIDDAttributes;
+    FPnPInfo: TJvHidPnPInfo;
+    FVendorName: String;
+    FProductName: String;
+    FSerialNumber: String;
+    FPhysicalDescriptor: string;
+    FLanguageStrings: TStringList;
+    FThreadSleepTime: Integer;
+    FData: TJvHidDataEvent;
+    FUnplug: TJvHidUnplugEvent;
+    FDataThread: TJvHidDeviceReadThread;
+    FTag: Integer;
+    FDebugInfo: TStringList;
+    function IsAccessible: Boolean;
+    function GetDeviceString(Idx: Byte): String;
+    function GetCaps: THIDPCaps;
+    function GetAttributes: THIDDAttributes;
+    function GetVendorName: String;
+    function GetProductName: String;
+    function GetSerialNumber: String;
+    function GetPhysicalDescriptor: string;
+    function GetLanguageStrings: TStrings;
+    function GetDebugInfo: string;
+    procedure SetDebugInfo(value:String);
+    procedure SetDataEvent(const DataEvent: TJvHidDataEvent);
+    procedure SetThreadSleepTime(const SleepTime: Integer);
+    procedure StartThread;
+    procedure StopThread;
+    constructor CtlCreate(const APnPInfo: TJvHidPnPInfo; const LocalController: TJvHidDeviceController);
+  protected
+    // internal event implementor
+    procedure DoUnplug;
+  public
+    // dummy constructor
+    constructor Create;
+    destructor Destroy; override;
+    // methods
+    procedure CloseFile;
+    function OpenFile: Boolean;
+    function ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
+    function WriteFile(var Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
+    function CheckOut: Boolean;
+    procedure ShowReports(report_type:word);
+    property HidFileHandle:THandle read FHidFileHandle;
+    property USBFileHandle:THandle read FUSBFileHandle;
+    property Attributes: THIDDAttributes read GetAttributes;
+    property Caps: THIDPCaps read GetCaps;
+    property IsCheckedOut: Boolean read FIsCheckedOut;
+    property IsPluggedIn: Boolean read FIsPluggedIn;
+    property LanguageStrings: TStrings read GetLanguageStrings;
+    property DebugInfo: String read GetDebugInfo write SetDebugInfo;
+    property PhysicalDescriptor: string read GetPhysicalDescriptor;
+    property PnPInfo: TJvHidPnPInfo read FPnPInfo;
+    property VendorName: String read GetVendorName;
+    property ProductName: String read GetProductName;
+    property SerialNumber: String read GetSerialNumber;
+    property Tag: Integer read FTag write FTag;
+    property ThreadSleepTime: Integer read FThreadSleepTime write SetThreadSleepTime;
+    property DeviceStrings[Idx: Byte]: string read GetDeviceString;
+    property OnData: TJvHidDataEvent read FData write SetDataEvent;
+    //property OnDataError: TJvHidDataErrorEvent read FDataError write FDataError;
+    property OnUnplug: TJvHidUnplugEvent read FUnplug write FUnplug;
+  end;
+
+
+  TJvHidDeviceControllerMonitorThread = class(TThread)
+  private
+    FUSBController: TJvHidDeviceController;
+    fNode:string;
+  protected
+    procedure   Execute; override;
+  public
+    constructor CreateUSBChangeThread(USBController: TJvHidDeviceController);
+  end;
+
+  {$IFDEF usegenerics}
+  THidDevList = specialize TFPGList<TJvHidDevice>;
+  {$ELSE}
+  THidDevList = TList;
+  {$ENDIF}
+
+  TJvHidDeviceController = class(TComponent)
+  private
+    FPriority: TThreadPriority;
+    FArrivalEvent: TJvHidPlugEvent;
+    FDeviceChangeEvent: TNotifyEvent;
+    FDevUnplugEvent: TJvHidUnplugEvent;
+    FRemovalEvent: TJvHidUnplugEvent;
+    FDevThreadSleepTime: Integer;
+    FContinue: Boolean;
+    FRunning: Boolean;
+    FEnabled: Boolean;
+    FEventPipe: TFilDes;
+    FDevDataEvent: TJvHidDataEvent;
+    FList: THidDevList;
+    FNumCheckedInDevices: Integer;
+    FNumCheckedOutDevices: Integer;
+    FNumUnpluggedDevices: Integer;
+    FInDeviceChange: Boolean;
+    FDebugInfo: TStringList;
+    function    CheckThisOut(var HidDev: TJvHidDevice; Idx: Integer; Check: Boolean): Boolean;
+    procedure   SetDevThreadSleepTime(const DevTime: Integer);
+    procedure   SetEnabled(Value: Boolean );
+    procedure   SetDevData(const DataEvent: TJvHidDataEvent);
+    procedure   SetDeviceChangeEvent(const Notifier: TNotifyEvent);
+    procedure   SetDevUnplug(const Unplugger: TJvHidUnplugEvent);
+    function    GetDebugInfo: String;
+    procedure   SetDebugInfo(value:String);
+  protected
+    procedure   DoArrival(HidDev: TJvHidDevice);
+    procedure   DoRemoval(HidDev: TJvHidDevice);
+    procedure   DoDeviceChange;
+    procedure   StartControllerThread;
+    procedure   StopControllerThread;
+    property    Continue: Boolean read FContinue write FContinue;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure   CheckIn(var HidDev: TJvHidDevice);
+    function    CheckOut(var HidDev: TJvHidDevice): Boolean;
+    function    CheckOutByID(var HidDev: TJvHidDevice; const Vid, Pid: Integer): Boolean;
+    function    CheckOutByIndex(var HidDev: TJvHidDevice; const Idx: Integer): Boolean;
+    function    CheckOutByProductName(var HidDev: TJvHidDevice; const ProductName: WideString): Boolean;
+    function    CheckOutByVendorName(var HidDev: TJvHidDevice; const VendorName: WideString): Boolean;
+    function    CheckOutByCallback(var HidDev: TJvHidDevice; Check: TJvHidCheckCallback): Boolean;
+    // methods to count HID device objects
+    function    CountByID(const Vid, Pid: Integer): Integer;
+    function    CountByProductName(const ProductName: WideString): Integer;
+    function    CountByVendorName(const VendorName: WideString): Integer;
+    function    CountByCallback(Check: TJvHidCheckCallback): Integer;
+
+    property    DebugInfo: String read GetDebugInfo write SetDebugInfo;
+    property    HidDevices:THidDevList read FList;
+    property    NumCheckedInDevices: Integer read FNumCheckedInDevices;
+    property    NumCheckedOutDevices: Integer read FNumCheckedOutDevices;
+    property    NumUnpluggedDevices: Integer read FNumUnpluggedDevices;
+  published
+    property    Enabled: Boolean read FEnabled write SetEnabled;
+    property    DevThreadSleepTime: Integer read FDevThreadSleepTime write SetDevThreadSleepTime default 100;
+    property    ThreadPriority: TThreadPriority read FPriority write FPriority default tpNormal;
+    property    OnDeviceData: TJvHidDataEvent read FDevDataEvent write SetDevData;
+    property    OnArrival: TJvHidPlugEvent read FArrivalEvent write FArrivalEvent;
+    property    OnDeviceChange: TNotifyEvent read FDeviceChangeEvent write SetDeviceChangeEvent;
+    property    OnDeviceUnplug: TJvHidUnplugEvent read FDevUnplugEvent write SetDevUnplug;
+    property    OnRemoval: TJvHidUnplugEvent read FRemovalEvent write FRemovalEvent;
+    procedure   DeviceChange;
+  end;
+
+  function udev_new:Pudev_handle;cdecl;external;
+  function udev_unref(udev:Pudev_handle):Pudev_handle;cdecl;external;
+  function udev_device_get_devtype(dev:Pudev_device_handle):Pchar;cdecl;external;
+
+  function udev_enumerate_new(udev:Pudev_handle):Pudev_enumerate_handle;cdecl;external;
+  function udev_enumerate_unref(udev_enumerate:Pudev_enumerate_handle):Pudev_enumerate_handle;cdecl;external;
+  function udev_enumerate_add_match_subsystem(udev_enumerate:Pudev_enumerate_handle;subsystem:Pchar):integer;cdecl;external;
+  function udev_enumerate_add_match_sysattr(udev_enumerate:Pudev_enumerate_handle;subsystem,devtype:Pchar):integer;cdecl;external;
+
+  function udev_enumerate_scan_devices(udev_enumerate:Pudev_enumerate_handle):integer;cdecl;external;
+  function udev_enumerate_get_list_entry(udev_enumerate:Pudev_enumerate_handle):Pudev_list_entry_handle;cdecl;external;
+
+  function udev_list_entry_get_name(list_entry:Pudev_list_entry_handle):Pchar;cdecl;external;
+  function udev_list_entry_get_next(list_entry:Pudev_list_entry_handle):Pudev_list_entry_handle;cdecl;external;
+
+  function udev_monitor_new_from_netlink(udev:Pudev_handle;name:Pchar):Pudev_monitor_handle;cdecl;external;
+  function udev_monitor_receive_device(mon:Pudev_monitor_handle):Pudev_device_handle;cdecl;external;
+  function udev_monitor_filter_add_match_subsystem_devtype(mon:Pudev_monitor_handle;subsystem,devtype:Pchar):integer;cdecl;external;
+  function udev_monitor_enable_receiving(mon:Pudev_monitor_handle):integer;cdecl;external;
+  function udev_monitor_get_fd(mon:Pudev_monitor_handle):integer;cdecl;external;
+
+  function udev_device_unref(dev:Pudev_device_handle):Pudev_device_handle;cdecl;external;
+  function udev_device_get_sysattr_value(dev:Pudev_device_handle;sysattr:Pchar):Pchar;cdecl;external;
+  function udev_device_get_action(dev:Pudev_device_handle):Pchar;cdecl;external;
+  function udev_device_get_devnode(dev:Pudev_device_handle):Pchar;cdecl;external;
+  function udev_device_get_devpath(dev:Pudev_device_handle):Pchar;cdecl;external;
+  function udev_device_get_syspath(dev:Pudev_device_handle):Pchar;cdecl;external;
+  function udev_device_new_from_syspath(udev:Pudev_handle;syspath:Pchar):Pudev_device_handle;cdecl;external;
+  function udev_device_get_parent_with_subsystem_devtype(dev:Pudev_device_handle;subsystem,devtype:Pchar):Pudev_device_handle;cdecl;external;
+  function udev_device_get_property_value(dev:Pudev_device_handle;key:Pchar):Pchar;cdecl;external;
+
+implementation
+
+uses
+  SysUtils;
+
+//=== { TJvHidPnPInfo } ======================================================
+
+constructor TJvHidPnPInfo.Create(ADeviceId:DWORD; ADevice:Pudev_device_handle; AHidDevicePath: String; AUSBDevice:Pudev_device_handle; AUSBDevicePath: String);
+function HexToInt(Hex : String) : Integer;
+const
+  HexSymbols : String = '0123456789ABCDEF';
+var
+  I,J : Integer;
+begin
+  Hex := UpperCase(Hex);
+  Result := 0;
+  J := Length(Hex);
+  For I := 1 to J do
+    Result := Result+((Pos(Hex[J-I+1],HexSymbols)-1) shl ((I-1)*4));
+end;
+var
+  device_info:hiddev_devinfo;
+begin
+  inherited Create;
+
+  FHidPath      := AHidDevicePath;
+  FUSBPath      := AUSBDevicePath;
+  FDeviceID     := ADeviceId;
+
+  FFriendlyName := udev_device_get_sysattr_value(AUSBDevice,'product');
+  FMfg          := udev_device_get_sysattr_value(AUSBDevice,'manufacturer');
+
+  FVendorID     := HexToInt(udev_device_get_sysattr_value(AUSBDevice,'idVendor'));
+  FProductID    := HexToInt(udev_device_get_sysattr_value(AUSBDevice,'idProduct'));
+
+  {
+  fpioctl(cint(HidFileHandle), HIDIOCGDEVINFO, @device_info);
+  FDeviceID:=device_info.devnum;
+  FLegacyBusType:=device_info.bustype;
+  FBusType:=InttoStr(device_info.bustype);
+  FBusNumber:=device_info.busnum;
+  FUINumber:=device_info.ifnum;
+  }
+end;
+
+destructor TJvHidPnPInfo.Destroy;
+begin
+  inherited Destroy;
+end;
+
+
+{ TJvHidDeviceControllerMonitorThread }
+
+constructor TJvHidDeviceControllerMonitorThread.CreateUSBChangeThread(USBController: TJvHidDeviceController);
+begin
+  inherited Create(True);
+  FUSBController := USBController;
+  FreeOnTerminate := True;
+end;
+
+procedure TJvHidDeviceControllerMonitorThread.Execute;
+var
+  readSet: TFDSet;
+  localudev:Pudev_handle;
+  localudev_device:Pudev_device_handle;
+  localudev_monitor:Pudev_monitor_handle;
+  buf: PChar = nil;
+  fd:cint;
+  fd_monitor:cint;
+  Action:string;
+begin
+  localudev:=udev_new;
+  if (localudev = nil) then
+  begin
+    //FUSBController.DebugInfo.append('Fatal error while creating new udev structure.');
+    exit;
+  end;
+  //else FUSBController.DebugInfo.append('Creating new udev structure success.');
+
+  localudev_monitor := udev_monitor_new_from_netlink(localudev, 'udev');
+  if (localudev_monitor = nil) then
+  begin
+    {$IFDEF debug}FUSBController.DebugInfo:='Enum: fatal error while creating new udev monitor structure.';{$ENDIF}
+    exit;
+  end{$IFDEF debug} else FUSBController.DebugInfo:='Enum :creating new udev monitor structure success.'{$ENDIF};
+
+  if (FUSBController.FEventPipe[0] = -1)  then
+  begin
+    {$IFDEF debug}FUSBController.DebugInfo:='Enum: fatal error event pipe.';{$ENDIF}
+    Exit;
+  end{$IFDEF debug} else FUSBController.DebugInfo:='Enum: event pipe ok.'{$ENDIF};
+
+  {$IFDEF hidraw}
+  udev_monitor_filter_add_match_subsystem_devtype(localudev_monitor, 'hidraw', nil);
+  {$ENDIF}
+  {$IFDEF hiddev}
+  udev_monitor_filter_add_match_subsystem_devtype(localudev_monitor, 'usbmisc', nil);
+  {$IFDEF oldkernel}
+  // add 'usb' for older kernels where hiddev is created under subsystem usb
+  udev_monitor_filter_add_match_subsystem_devtype(localudev_monitor, 'usb', nil);
+  //udev_monitor_filter_add_match_subsystem_devtype(localudev_monitor, 'usb', 'usb_device');
+  {$ENDIF}
+  {$ENDIF}
+
+  udev_monitor_enable_receiving(localudev_monitor);
+
+  fd_monitor :=cint(udev_monitor_get_fd(localudev_monitor));
+
+  fd := FUSBController.FEventPipe[0] + 1;
+  if fd_monitor >= fd
+     then fd := fd_monitor + 1;
+
+  while FUSBController.Continue do
+  begin
+    fpFD_ZERO(readSet);
+    fpFD_SET(fd_monitor, readSet);
+    fpFD_SET(FUSBController.FEventPipe[0], readSet);
+    IF (fpSelect(fd + 1, @readSet, NIL, NIL, NIL) > 0) then
+    begin
+      if fpFD_ISSET(FUSBController.FEventPipe[0], readSet) = 1 then
+      begin
+        while FpRead(FUSBController.FEventPipe[0], buf, 1) <> -1 do;
+      end;
+
+      if fpFD_ISSET(fd_monitor, readSet) = 0 then continue;
+
+      localudev_device := udev_monitor_receive_device(localudev_monitor);
+      if(localudev_device<>nil) then
+      begin
+        Action:=udev_device_get_action(localudev_device);
+        {$IFDEF debug}
+        FUSBController.DebugInfo:='Enum action: '+Action;
+        {$ENDIF}
+        fNode:=udev_device_get_devnode(localudev_device);
+        if not FUSBController.FInDeviceChange then
+        begin
+          FUSBController.FInDeviceChange := True;
+          FUSBController.DeviceChange;
+          FUSBController.FInDeviceChange := False;
+        end;
+        {$IFDEF debug}
+        FUSBController.DebugInfo:='Enum devpath: '+ udev_device_get_devpath(localudev_device);
+        FUSBController.DebugInfo:='Enum syspath: '+ udev_device_get_syspath(localudev_device);
+        {$ENDIF}
+        udev_device_unref(localudev_device);
+      end
+      else
+      begin
+        {$IFDEF debug}
+        FUSBController.DebugInfo:='Enum: something went very wrong while getting new usb device !!';
+        {$ENDIF}
+      end;
+    end;
+  end;
+end;
+
+{ TJvHidDeviceController }
+
+constructor TJvHidDeviceController.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  FPriority := tpNormal;
+
+  FDeviceChangeEvent := nil;
+  FDevUnplugEvent := nil;
+  FArrivalEvent := nil;
+  FRemovalEvent := nil;
+  FDevDataEvent := nil;
+
+  FNumCheckedInDevices := 0;
+  FNumCheckedOutDevices := 0;
+  FNumUnpluggedDevices := 0;
+  FDevThreadSleepTime := 100;
+
+  FInDeviceChange := False;
+  FRunning  := False;
+  FContinue := False;
+  fEnabled:=False;
+
+  FDebugInfo := TStringList.Create;
+
+  FList := THidDevList.Create;
+
+  FEventPipe[0] := -1;
+
+  if FpPipe(FEventPipe) = 0 then
+  begin
+    FpFcntl(FEventPipe[0], F_SetFl, FpFcntl(FEventPipe[0], F_GetFl) or O_NONBLOCK);
+  end;
+end;
+
+destructor TJvHidDeviceController.Destroy;
+var
+  I: Integer;
+  HidDev: TJvHidDevice;
+begin
+  StopControllerThread;
+
+  if FEventPipe[0] <> -1 then
+  begin
+    FpClose(FEventPipe[0]);
+    FEventPipe[0] := -1;
+  end;
+
+  FDeviceChangeEvent := nil;
+  FDevUnplugEvent := nil;
+
+  for I := 0 to FList.Count - 1 do
+  begin
+    HidDev := TJvHidDevice(FList.Items[I]);
+    if Assigned(HidDev) then
+    begin
+      with HidDev do
+      begin
+        // set to uncontrolled
+        FMyController := nil;
+        if IsCheckedOut then
+          DoUnplug; // pull the plug for checked out TJvHidDevices
+        //else
+        Free; // kill TJvHidDevices which are not checked out
+      end;
+    end;
+  end;
+  FList.Free;
+
+  FDebugInfo.Free;
+
+  inherited Destroy;
+end;
+
+procedure TJvHidDeviceController.SetEnabled(Value: Boolean);
+begin
+  if Value <> FEnabled then
+  begin
+    FEnabled := Value;
+    if FEnabled then
+    begin
+      DeviceChange;
+      StartControllerThread;
+    end
+    else
+    begin
+      StopControllerThread;
+    end;
+  end;
+end;
+
+procedure TJvHidDeviceController.StartControllerThread;
+begin
+  if FRunning then
+    Exit;
+  FContinue := True;
+  if not (csDesigning in ComponentState) then
+  begin
+    with TJvHidDeviceControllerMonitorThread.CreateUSBChangeThread(Self) do
+    begin
+      Priority := FPriority;
+      Start;
+    end;
+  end;
+  FRunning := True;
+end;
+
+procedure TJvHidDeviceController.StopControllerThread;
+var
+  buf: Char;
+begin
+  FContinue := False;
+  FRunning  := False;
+  // signal thread !!
+  buf := #0;
+  FpWrite(FEventPipe[0], buf, 1);
+end;
+
+procedure TJvHidDeviceController.SetDevData(const DataEvent: TJvHidDataEvent);
+var
+  I: Integer;
+  Dev: TJvHidDevice;
+begin
+  if @DataEvent <> @FDevDataEvent then
+  begin
+    // change all OnData events with the same old value
+    for I := 0 to FList.Count - 1 do
+    begin
+      Dev := TJvHidDevice(FList.Items[I]);
+      if @Dev.OnData = @FDevDataEvent then
+        Dev.OnData := DataEvent;
+    end;
+    FDevDataEvent := DataEvent;
+  end;
+end;
+
+procedure TJvHidDeviceController.SetDeviceChangeEvent(const Notifier: TNotifyEvent);
+begin
+  if @FDeviceChangeEvent <> @Notifier then
+  begin
+    FDeviceChangeEvent := Notifier;
+    {
+    if not (csLoading in ComponentState) then
+      DeviceChange;
+    }
+  end;
+end;
+
+procedure TJvHidDeviceController.DoDeviceChange;
+begin
+  if Assigned(FDeviceChangeEvent) then
+    FDeviceChangeEvent(Self);
+end;
+
+
+procedure TJvHidDeviceController.DoArrival(HidDev: TJvHidDevice);
+begin
+  if Assigned(FArrivalEvent) then
+  begin
+    HidDev.FIsEnumerated := True;
+    FArrivalEvent(HidDev);
+    HidDev.FIsEnumerated := False;
+  end;
+end;
+
+procedure TJvHidDeviceController.DoRemoval(HidDev: TJvHidDevice);
+begin
+  if Assigned(FRemovalEvent) then
+  begin
+    HidDev.FIsEnumerated := True;
+    FRemovalEvent(HidDev);
+    HidDev.FIsEnumerated := False;
+  end;
+end;
+
+procedure TJvHidDeviceController.SetDevUnplug(const Unplugger: TJvHidUnplugEvent);
+var
+  I: Integer;
+  Dev: TJvHidDevice;
+begin
+  if @Unplugger <> @FDevUnplugEvent then
+  begin
+    // change all OnUnplug events with the same old value
+    for I := 0 to FList.Count - 1 do
+    begin
+      Dev := TJvHidDevice(FList.Items[I]);
+      if @Dev.OnUnplug = @FDevUnplugEvent then
+        Dev.OnUnplug := Unplugger;
+    end;
+    FDevUnplugEvent := Unplugger;
+  end;
+end;
+
+function TJvHidDeviceController.CheckThisOut(var HidDev: TJvHidDevice; Idx: Integer; Check: Boolean): Boolean;
+begin
+  Result := Check and not TJvHidDevice(FList.Items[Idx]).IsCheckedOut;
+  if Result then
+  begin
+    HidDev := TJvHidDevice(FList[Idx]);
+    HidDev.FIsCheckedOut := True;
+    Inc(FNumCheckedOutDevices);
+    Dec(FNumCheckedInDevices);
+    HidDev.StartThread;
+  end;
+end;
+
+// method CheckOutByProductName hands out the first HidDevice with a matching ProductName
+
+function TJvHidDeviceController.CheckOutByProductName(var HidDev: TJvHidDevice;
+  const ProductName: WideString): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  HidDev := nil;
+  if ProductName <> '' then
+    for I := 0 to FList.Count - 1 do
+    begin
+      Result := CheckThisOut(HidDev, I, ProductName = TJvHidDevice(FList[I]).ProductName);
+      if Result then
+        Break;
+    end;
+end;
+
+// method CheckOutByVendorName hands out the first HidDevice with a matching VendorName
+
+function TJvHidDeviceController.CheckOutByVendorName(var HidDev: TJvHidDevice;
+  const VendorName: WideString): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  HidDev := nil;
+  if VendorName <> '' then
+    for I := 0 to FList.Count - 1 do
+    begin
+      Result := CheckThisOut(HidDev, I, VendorName = TJvHidDevice(FList[I]).VendorName);
+      if Result then
+        Break;
+    end;
+end;
+
+// method CheckOutByCallback hands out the first HidDevice which is accepted by the Check function
+// only checked in devices are presented to the Check function
+// the device object is usable like during Enumerate
+
+
+function TJvHidDeviceController.CheckOutByCallback(var HidDev: TJvHidDevice;
+  Check: TJvHidCheckCallback): Boolean;
+var
+  I: Integer;
+  Dev: TJvHidDevice;
+begin
+  Result := False;
+  HidDev := nil;
+  for I := 0 to FList.Count - 1 do
+  begin
+    Dev := TJvHidDevice(FList[I]);
+    if not Dev.IsCheckedOut then
+    begin
+      Dev.FIsEnumerated := True;
+      Result := CheckThisOut(HidDev, I, Check(Dev));
+      Dev.FIsEnumerated := False;
+      if not Result then
+      begin
+        Dev.CloseFile;
+      end;
+      if Result then
+        Break;
+    end;
+  end;
+end;
+
+
+// method CheckOutByID hands out the first HidDevice with a matching VendorID and ProductID
+// Pid = -1 matches all ProductIDs
+
+function TJvHidDeviceController.CheckOutByID(var HidDev: TJvHidDevice;
+  const Vid, Pid: Integer): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  HidDev := nil;
+  for I := 0 to FList.Count - 1 do
+  begin
+    Result := CheckThisOut(HidDev, I, (Vid = TJvHidDevice(FList[I]).Attributes.VendorID) and
+      ((Pid = TJvHidDevice(FList[I]).Attributes.ProductID) or (Pid = -1)));
+    if Result then
+      Break;
+  end;
+end;
+
+// method CheckOutByIndex hands out the HidDevice in the list with the named index
+// this is mainly for check out during OnEnumerate
+
+function TJvHidDeviceController.CheckOutByIndex(var HidDev: TJvHidDevice;
+  const Idx: Integer): Boolean;
+begin
+  Result := False;
+  HidDev := nil;
+  if (Idx >= 0) and (Idx < FList.Count) then
+    Result := CheckThisOut(HidDev, Idx, True);
+end;
+
+function TJvHidDeviceController.CountByID(const Vid, Pid: Integer): Integer;
+var
+  I: Integer;
+begin
+  Result := 0;
+  for I := 0 to FList.Count - 1 do
+    if TJvHidDevice(FList[I]).IsPluggedIn and
+      (Vid = TJvHidDevice(FList[I]).Attributes.VendorID) and
+      ((Pid = TJvHidDevice(FList[I]).Attributes.ProductID) or (Pid = -1)) then
+      Inc(Result);
+end;
+
+function TJvHidDeviceController.CountByProductName(const ProductName: WideString): Integer;
+var
+  I: Integer;
+begin
+  Result := 0;
+  for I := 0 to FList.Count - 1 do
+    if TJvHidDevice(FList[I]).IsPluggedIn and
+      (ProductName = TJvHidDevice(FList[I]).ProductName) then
+      Inc(Result);
+end;
+
+function TJvHidDeviceController.CountByVendorName(const VendorName: WideString): Integer;
+var
+  I: Integer;
+begin
+  Result := 0;
+  for I := 0 to FList.Count - 1 do
+    if TJvHidDevice(FList[I]).IsPluggedIn and
+      (VendorName = TJvHidDevice(FList[I]).VendorName) then
+      Inc(Result);
+end;
+
+function TJvHidDeviceController.CountByCallback(Check: TJvHidCheckCallback): Integer;
+var
+  I: Integer;
+  Dev: TJvHidDevice;
+begin
+  Result := 0;
+  for I := 0 to FList.Count - 1 do
+  begin
+    if TJvHidDevice(FList[I]).IsPluggedIn then
+    begin
+      Dev := TJvHidDevice(FList[I]);
+      Dev.FIsEnumerated := True;
+      if Check(Dev) then
+        Inc(Result);
+      Dev.FIsEnumerated := False;
+      if not Dev.IsCheckedOut then
+      begin
+        Dev.CloseFile;
+      end;
+    end;
+  end;
+end;
+
+
+// method CheckOut simply hands out the first available HidDevice in the list
+
+function TJvHidDeviceController.CheckOut(var HidDev: TJvHidDevice): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  HidDev := nil;
+  for I := 0 to FList.Count - 1 do
+  begin
+    Result := CheckThisOut(HidDev, I, True);
+    if Result then
+      Break;
+  end;
+end;
+
+
+
+
+
+procedure TJvHidDeviceController.SetDevThreadSleepTime(const DevTime: Integer);
+var
+  I: Integer;
+  Dev: TJvHidDevice;
+begin
+  if DevTime <> FDevThreadSleepTime then
+  begin
+    // change all DevThreadSleepTime with the same old value
+    for I := 0 to FList.Count - 1 do
+    begin
+      Dev := TJvHidDevice(FList.Items[I]);
+      if Dev.ThreadSleepTime = FDevThreadSleepTime then
+        Dev.ThreadSleepTime := DevTime;
+    end;
+    FDevThreadSleepTime := DevTime;
+  end;
+end;
+
+
+
+procedure TJvHidDeviceController.DeviceChange;
+var
+  I: Integer;
+  J: Integer;
+  HidDev: TJvHidDevice;
+  Changed: Boolean;
+  NewList: THidDevList;
+
+  // internal worker function to find all HID devices and create their objects
+
+  procedure FillInList;
+  var
+    Devn: Integer;
+    HidDev: TJvHidDevice;
+    path:Pchar;
+    LocalRawNode,LocalHidNode,LocalInterfaceNode,LocalUSBNode:string;
+    LocalDeviceId:DWORD;
+    localudev:Pudev_handle;
+    localudev_enumerate:Pudev_enumerate_handle;
+    localudev_list_entry:Pudev_list_entry_handle;
+    localudev_rawdevice:Pudev_device_handle;
+    localudev_intfdevice:Pudev_device_handle;
+    localudev_usbdevice:Pudev_device_handle;
+    localudev_hiddevice:Pudev_device_handle;
+    {$IFDEF debug}
+    uevent:tstringlist;
+    ueventcounter:integer;
+    {$ENDIF}
+    //Info : TSearchRec;
+    //SysPath,InterfacePath:string;
+    PnPInfo: TJvHidPnPInfo;
+  begin
+    // Get a handle for the Plug and Play node and request currently active HID devices
+
+    LocalRawNode:='Empty';
+    LocalHidNode:='Empty';
+    LocalInterfaceNode:='Empty';
+    LocalUSBNode:='Empty';
+
+    localudev:=udev_new;
+    if (localudev = nil) then Exit;
+    Devn := 0;
+
+    localudev_enumerate := udev_enumerate_new(localudev);
+
+    {$IFDEF hidraw}
+    udev_enumerate_add_match_subsystem(localudev_enumerate, 'hidraw');
+    {$ENDIF}
+
+    {$IFDEF hiddev}
+    udev_enumerate_add_match_subsystem(localudev_enumerate, 'usbmisc');
+    {$IFDEF oldkernel}
+    // 'usb' added for old kernels
+    udev_enumerate_add_match_subsystem(localudev_enumerate, 'usb');
+    {$ENDIF}
+    {$ENDIF}
+
+    udev_enumerate_scan_devices(localudev_enumerate);
+
+    localudev_list_entry := udev_enumerate_get_list_entry(localudev_enumerate);
+
+    while localudev_list_entry<>nil do
+    begin
+      path := udev_list_entry_get_name(localudev_list_entry);
+      localudev_rawdevice := udev_device_new_from_syspath(localudev, path);
+
+      if(localudev_rawdevice<>nil) then
+      begin
+        LocalRawNode:=udev_device_get_devnode(localudev_rawdevice);
+        {$IFDEF debug}
+        DebugInfo:='Found raw node: '+LocalRawNode;
+        DebugInfo:='HID_PHYS_1: '+udev_device_get_property_value(localudev_rawdevice, 'HID_PHYS');
+        DebugInfo:='HID_ID_1: '+udev_device_get_property_value(localudev_rawdevice, 'HID_ID');
+        {$ENDIF}
+
+        localudev_hiddevice := udev_device_get_parent_with_subsystem_devtype(
+        		       localudev_rawdevice,
+        		       'hid',
+        		       nil);
+
+        if(localudev_hiddevice<>nil) then
+        begin
+          LocalHidNode:=udev_device_get_devnode(localudev_hiddevice);
+          {$IFDEF debug}
+          DebugInfo:='Found hid node: '+LocalHidNode;
+          DebugInfo:='HID_PHYS_2: '+udev_device_get_property_value(localudev_hiddevice, 'HID_PHYS');
+          DebugInfo:='HID_ID_2: '+udev_device_get_property_value(localudev_hiddevice, 'HID_ID');
+          {$ENDIF}
+
+
+          {$IFDEF debug}
+          uevent:=tstringlist.Create;
+          uevent.Text:=udev_device_get_sysattr_value(localudev_hiddevice, 'uevent');
+          for ueventcounter:=0 to uevent.Count-1 do
+          begin
+            DebugInfo:='Hid node uevent'+InttoStr(ueventcounter)+': '+uevent[ueventcounter];
+          end;
+          uevent.Free;
+          {$ENDIF}
+        end
+        else
+        begin
+          {$IFDEF debug}
+          DebugInfo:='Found no hid node !!';
+          {$ENDIF}
+          localudev_hiddevice:=localudev_rawdevice;
+        end;
+
+        localudev_intfdevice := udev_device_get_parent_with_subsystem_devtype(
+                      		localudev_hiddevice,
+        		        'usb',
+        		        'usb_interface');
+
+        if(localudev_intfdevice<>nil) then
+        begin
+          LocalInterfaceNode:=udev_device_get_devnode(localudev_intfdevice);
+          {$IFDEF debug}
+          DebugInfo:='Found interface node: '+LocalInterfaceNode;
+          {$ENDIF}
+        end
+        else
+        begin
+          {$IFDEF debug}
+          DebugInfo:='Found no interface node !!';
+          {$ENDIF}
+          localudev_intfdevice:=localudev_hiddevice;
+        end;
+
+        localudev_usbdevice := udev_device_get_parent_with_subsystem_devtype(
+                             localudev_intfdevice,
+      	                     'usb',
+          		     'usb_device');
+        if(localudev_usbdevice<>nil) then
+        begin
+
+          LocalUSBNode:=udev_device_get_devnode(localudev_usbdevice);
+          {$IFDEF debug}
+          DebugInfo:='Found USB node: '+LocalUSBNode;
+          DebugInfo:='Inside VendorID: '+udev_device_get_sysattr_value(localudev_usbdevice,'idVendor');
+          DebugInfo:='Inside ProductID: '+udev_device_get_sysattr_value(localudev_usbdevice,'idProduct');
+          DebugInfo:='Inside manufacturer: '+udev_device_get_sysattr_value(localudev_usbdevice,'manufacturer');
+          DebugInfo:='Inside product: '+udev_device_get_sysattr_value(localudev_usbdevice,'product');
+          DebugInfo:='Inside serial: '+udev_device_get_sysattr_value(localudev_usbdevice,'serial');
+          DebugInfo:='Inside bcdDevice: '+udev_device_get_sysattr_value(localudev_usbdevice,'bcdDevice');
+          DebugInfo:='Inside devnum: '+udev_device_get_sysattr_value(localudev_usbdevice,'devnum');
+          DebugInfo:='Inside dev: '+udev_device_get_sysattr_value(localudev_usbdevice,'dev');
+          DebugInfo:='Inside urbnum: '+udev_device_get_sysattr_value(localudev_usbdevice,'urbnum');
+          DebugInfo:='Class: '+udev_device_get_sysattr_value(localudev_usbdevice,'bInterfaceClass');
+          DebugInfo:='Syspath: '+udev_device_get_syspath(localudev_usbdevice);
+          {$ENDIF}
+
+          LocalDeviceId:=(StrToIntDef(udev_device_get_sysattr_value(localudev_usbdevice,'busnum'),random(255)) SHL 8)
+                         +
+                         (StrToIntDef(udev_device_get_sysattr_value(localudev_usbdevice,'devnum'),random(255)));
+          {
+          InterfacePath:='';
+          SysPath:=udev_device_get_syspath(localudev_usbdevice);
+          if FindFirst (SysPath+'/*',faDirectory,Info)=0 then
+          begin
+            Repeat
+              if (Info.Name[1] in ['0'..'9']) AND ((Info.Attr and faDirectory) = faDirectory) then
+              begin
+                if FileExists(SysPath+'/'+Info.Name+'/bInterfaceClass') then
+                begin
+                  InterfacePath:=SysPath+'/'+Info.Name;
+                  DebugInfo:='Found: '+InterfacePath+'/bInterfaceClass';
+                  break;
+                end;
+              end;
+            Until FindNext(info)<>0;
+          end;
+          FindClose(Info);
+
+          if InterfacePath<>'' then
+          begin
+            localudev_intfdevice := udev_device_new_from_syspath(localudev, pchar(InterfacePath));
+            DebugInfo:='Interface Class: '+udev_device_get_sysattr_value(localudev_intfdevice, 'bInterfaceClass');
+          end;
+          }
+        end;
+
+        if Pos('hiddev',LocalRawNode)>0 then
+        begin
+          {$IFDEF debug}
+          DebugInfo:='Adding correct hid device !!';
+          {$ENDIF}
+          PnPInfo := TJvHidPnPInfo.Create(LocalDeviceId,localudev_rawdevice,LocalRawNode,localudev_usbdevice,LocalUSBNode);
+          HidDev := TJvHidDevice.CtlCreate(PnPInfo, Self);
+          NewList.Add(HidDev);
+          Inc(Devn);
+        end;
+
+      end;
+
+      localudev_list_entry := udev_list_entry_get_next(localudev_list_entry);
+
+    end;
+    udev_enumerate_unref(localudev_enumerate);
+    udev_unref(localudev);
+  end;
+
+begin
+  Changed:=False;
+  // get new device list
+  NewList := THidDevList.Create;
+
+  FillInList;
+
+  // unplug devices in FList which are not in NewList
+  for I := FList.Count - 1 downto 0 do
+  begin
+    HidDev := TJvHidDevice(FList.Items[I]);
+    for J := NewList.Count - 1 downto 0 do
+      if (TJvHidDevice(NewList.Items[J]).PnPInfo.DeviceID = HidDev.PnPInfo.DeviceID) and
+        HidDev.IsPluggedIn then
+      begin
+        HidDev := nil;
+        Break;
+      end;
+    if HidDev <> nil then
+    begin
+      HidDev.DoUnplug;
+      DoRemoval(HidDev);
+      // delete from list
+      if not HidDev.IsCheckedOut then
+      begin
+        FList.Delete(I);
+        HidDev.Free;
+      end;
+      Changed := True;
+    end;
+  end;
+
+  // delete devices from NewList which are in FList
+  for I := 0 to NewList.Count - 1 do
+  begin
+    HidDev:=TJvHidDevice(NewList[I]);
+    for J := 0 to FList.Count - 1 do
+      if (HidDev.PnPInfo.DeviceID = TJvHidDevice(FList[J]).PnPInfo.DeviceID) and
+        TJvHidDevice(FList[J]).IsPluggedIn then
+      begin
+        HidDev.FMyController := nil; // prevent Free/Destroy from accessing this controller
+        HidDev.Free;
+        HidDev := nil;
+        Break;
+      end;
+  end;
+
+  // add the remains in NewList to FList
+  for I := 0 to NewList.Count - 1 do
+  begin
+    HidDev:=TJvHidDevice(NewList[I]);
+    if HidDev <> nil then
+    begin
+      FList.Add(HidDev);
+      Changed := True;
+      DoArrival(HidDev);
+    end;
+  end;
+
+  // throw away helper list
+  NewList.Free;
+
+  // recount the devices
+  FNumCheckedInDevices := 0;
+  FNumCheckedOutDevices := 0;
+  FNumUnpluggedDevices := 0;
+  for I := 0 to FList.Count - 1 do
+  begin
+    HidDev := TJvHidDevice(FList.Items[I]);
+    Inc(FNumCheckedInDevices, Ord(not HidDev.IsCheckedOut));
+    Inc(FNumCheckedOutDevices, Ord(HidDev.IsCheckedOut));
+    Inc(FNumUnpluggedDevices, Ord(not HidDev.IsPluggedIn));
+  end;
+  FNumCheckedOutDevices := FNumCheckedOutDevices - FNumUnpluggedDevices;
+
+  if Changed then
+    DoDeviceChange;
+end;
+
+
+procedure TJvHidDeviceController.CheckIn(var HidDev: TJvHidDevice);
+begin
+  if HidDev <> nil then
+  begin
+    HidDev.StopThread;
+    HidDev.CloseFile;
+
+    if HidDev.IsPluggedIn then
+    begin
+      HidDev.FIsCheckedOut := False;
+      Dec(FNumCheckedOutDevices);
+      Inc(FNumCheckedInDevices);
+    end
+    else
+      HidDev.Free;
+    HidDev := nil;
+  end;
+end;
+
+function TJvHidDeviceController.GetDebugInfo: string;
+begin
+  Result := FDebugInfo.Text;
+  FDebugInfo.Clear;
+end;
+
+procedure TJvHidDeviceController.SetDebugInfo(value:string);
+begin
+  FDebugInfo.Append(value);
+end;
+
+
+constructor TJvHidDeviceReadThread.CtlCreate(const Dev: TJvHidDevice);
+begin
+  inherited Create(True);
+  FreeOnTerminate:=False;
+  Device := Dev;
+  NumBytesRead := 0;
+  Finalize(Report);
+  SetLength(Report, Dev.Caps.InputReportByteLength);
+  Start;
+end;
+
+constructor TJvHidDeviceReadThread.Create(CreateSuspended: Boolean);
+begin
+  // direct creation of thread not allowed !!
+end;
+
+procedure TJvHidDeviceReadThread.DoData;
+begin
+  Device.OnData(Device, Report[0], @Report[1], NumBytesRead);
+end;
+
+procedure TJvHidDeviceReadThread.DoDataError;
+begin
+  //if Assigned(Device.FDataError) then
+  //  Device.FDataError(Device, FErr);
+end;
+
+procedure TJvHidDeviceReadThread.Execute;
+var
+  readSet: TFDSet;
+  receiveBuffer: array[0..63] of hiddev_event;
+  fd,ret:cint;
+  i:word;
+
+  selectTimeout: TTimeVal;
+
+begin
+  if (Device.HidFileHandle=INVALID_HANDLE_VALUE)  then
+  begin
+    Exit;
+  end;
+
+  fd :=cint(Device.HidFileHandle);
+
+  try
+    while not Terminated do
+    begin
+      FillChar(Report[0], Device.Caps.InputReportByteLength, #0);
+      fpFD_ZERO(readSet);
+      fpFD_SET(fd, readSet);
+      selectTimeout.tv_sec:= Device.ThreadSleepTime DIV 1000;
+      selectTimeout.tv_usec:= Device.ThreadSleepTime * 1000;
+      IF fpSelect(fd+1, @readSet, NIL, NIL, @selectTimeout) > 0 THEN
+      begin
+        if fpFD_ISSET(fd, readSet) = 0 then continue;
+
+        ret:= fpRead(cint(Device.HidFileHandle), receiveBuffer, sizeof(receiveBuffer[0])*(Device.Caps.InputReportByteLength-1));
+        if ret>0 then
+        begin
+          NumBytesRead := (ret DIV sizeof(receiveBuffer[0]));
+          for i := 0 to (NumBytesRead-1) do Report[i+1]:=receiveBuffer[i].value;
+          if not Terminated then DoData;
+        end;
+      end;
+    end;
+  finally
+  end;
+end;
+
+procedure TJvHidDevice.SetThreadSleepTime(const SleepTime: Integer);
+begin
+  // limit to 10 msec .. 10 sec
+  if (SleepTime >= 10) and (SleepTime <= 10000) then
+    FThreadSleepTime := SleepTime;
+end;
+
+
+function TJvHidDevice.GetDeviceString(Idx: Byte): string;
+var
+  Hstring1:hiddev_string_descriptor;
+function ArrayToString(const a: array of Char): string;
+var
+  i:word;
+begin
+  if Length(a)>0 then
+  begin
+    i:=0;
+    while ((a[i]<>chr(0)) AND (i<Length(a))) do Inc(i);
+    SetString(Result, PChar(@a[0]), i)
+  end
+  else
+    Result := '';
+end;
+begin
+  Result := '';
+  if Idx > 0 then if OpenFile then
+  begin
+    Hstring1.index:=Idx;
+    Hstring1.value[0]:=chr(0);
+    fpioctl(cint(HidFileHandle), HIDIOCGSTRING, @Hstring1);
+    Result:=ArrayToString(Hstring1.value);
+  end;
+end;
+
+function TJvHidDevice.GetVendorName: String;
+begin
+  if FVendorName = '' then
+  begin
+    FVendorName := GetDeviceString(1);
+  end;
+  Result := FVendorName;
+end;
+
+function TJvHidDevice.GetProductName: String;
+begin
+  if FProductName = '' then
+  begin
+    FProductName := GetDeviceString(2);
+  end;
+  Result := FProductName;
+end;
+
+function TJvHidDevice.GetSerialNumber: String;
+begin
+  if FSerialNumber = '' then
+  begin
+    FSerialNumber:=GetDeviceString(3);
+  end;
+  Result := FSerialNumber;
+end;
+
+function TJvHidDevice.GetPhysicalDescriptor: string;
+begin
+  if Length(FPhysicalDescriptor) = 0 then
+  begin
+
+  end;
+  Result := FPhysicalDescriptor;
+end;
+
+function TJvHidDevice.GetLanguageStrings: TStrings;
+begin
+  if FLanguageStrings.Count = 0 then
+  begin
+
+  end;
+  Result := FLanguageStrings;
+end;
+
+function TJvHidDevice.GetDebugInfo: string;
+begin
+  Result := FDebugInfo.Text;
+  FDebugInfo.Clear;
+end;
+
+procedure TJvHidDevice.SetDebugInfo(value:string);
+begin
+  fDebugInfo.Append(value);
+end;
+
+
+procedure TJvHidDevice.SetDataEvent(const DataEvent: TJvHidDataEvent);
+begin
+  // this assignment is a bit tricky because a thread may be running
+  // kill the thread with the old event still in effect
+  if not Assigned(DataEvent) then
+    StopThread;
+  // assign the new event and start the thread if needed
+  FData := DataEvent;
+  StartThread;
+end;
+
+procedure TJvHidDevice.StartThread;
+begin
+  if Assigned(FData) and IsPluggedIn and IsCheckedOut and
+     not Assigned(FDataThread) then
+  begin
+    FDataThread := TJvHidDeviceReadThread.CtlCreate(Self);
+  end;
+end;
+
+procedure TJvHidDevice.StopThread;
+begin
+  if Assigned(FDataThread) then
+  begin
+    FDataThread.Terminate;
+    FDataThread.WaitFor;
+    FDataThread.Free;
+    FDataThread := nil;
+  end;
+end;
+
+constructor TJvHidDevice.CtlCreate(const APnPInfo: TJvHidPnPInfo; const LocalController: TJvHidDeviceController);
+begin
+  inherited Create;
+
+  FHidFileHandle := INVALID_HANDLE_VALUE;
+  FUSBFileHandle := INVALID_HANDLE_VALUE;
+
+  FPnPInfo := APnPInfo;
+  FMyController := LocalController;
+  FIsPluggedIn := True;
+  FIsCheckedOut := False;
+  FIsEnumerated := False;
+  FVendorName := '';
+  FProductName := '';
+  FPhysicalDescriptor:='';
+  FSerialNumber := '';
+  FLanguageStrings := TStringList.Create;
+  FDebugInfo := TStringList.Create;
+  FThreadSleepTime := 100;
+  FDataThread := nil;
+
+  FillChar(fCaps, SizeOf(THIDPCaps), #0);
+
+  FillChar(FAttributes, SizeOf(THIDDAttributes), #0);
+  FAttributes.VendorID:=FPnPInfo.VendorID;
+  FAttributes.ProductID:=FPnPInfo.ProductID;
+
+  OnData := FMyController.OnDeviceData;
+  OnUnplug := FMyController.OnDeviceUnplug;
+
+  OpenFile;
+  CloseFile;
+end;
+
+
+// dummy constructor to catch invalid Create calls
+constructor TJvHidDevice.Create;
+begin
+  inherited Create;
+  FHidFileHandle := INVALID_HANDLE_VALUE;
+  FUSBFileHandle := INVALID_HANDLE_VALUE;
+  //raise EControllerError.CreateRes(@RsEDirectHidDeviceCreationNotAllowed);
+end;
+
+destructor TJvHidDevice.Destroy;
+var
+  I: Integer;
+  TmpOnData: TJvHidDataEvent;
+  TmpOnUnplug: TJvHidUnplugEvent;
+  Dev: TJvHidDevice;
+begin
+  // if we need to clone the object
+  TmpOnData := OnData;
+  TmpOnUnplug := OnUnplug;
+  // to prevent strange problems
+  OnData := nil;
+  OnUnplug := nil;
+
+  // free the data which needs special handling
+  CloseFile;
+
+  FLanguageStrings.Free;
+
+  if FMyController <> nil then
+    with FMyController do
+    begin
+      // delete device from controller list
+      for I := 0 to FList.Count - 1 do
+        if  TJvHidDevice(FList.Items[I]) = Self then
+        begin
+          // if device is plugged in create a checked in copy
+          if IsPluggedIn then
+          begin
+            Dev := nil;
+            try
+              Dev := TJvHidDevice.CtlCreate(FPnPInfo, FMyController);
+              // make it a complete clone
+              Dev.OnData := TmpOnData;
+              Dev.OnUnplug := TmpOnUnplug;
+              Dev.ThreadSleepTime := ThreadSleepTime;
+              FList.Items[I] := Dev;
+              // the FPnPInfo has been handed over to the new object
+              FPnPInfo := nil;
+              if IsCheckedOut then
+              begin
+                Dec(FNumCheckedOutDevices);
+                Inc(FNumCheckedInDevices);
+              end;
+            except
+              //on E:EControllerError do
+              begin
+                FList.Delete(I);
+                Dev.Free;
+                Dec(FNumUnpluggedDevices);
+              end;
+            end;
+          end
+          else
+          begin
+            FList.Delete(I);
+            Dec(FNumUnpluggedDevices);
+          end;
+          Break;
+        end;
+    end;
+  FPnPInfo.Free;
+  inherited Destroy;
+end;
+
+
+function TJvHidDevice.IsAccessible: Boolean;
+begin
+  Result := IsPluggedIn and (IsCheckedOut or FIsEnumerated);
+end;
+
+
+function TJvHidDevice.GetCaps: THIDPCaps;
+var
+  finfo_out:hiddev_field_info;
+begin
+  if Openfile then
+  begin
+
+    if fCaps.OutputReportByteLength=0 then
+    begin
+      finfo_out.report_type := HID_REPORT_TYPE_OUTPUT;
+      finfo_out.report_id   := HID_REPORT_ID_FIRST;
+      finfo_out.field_index := 0;
+      if ((fpioctl(cint(HidFileHandle), HIDIOCGFIELDINFO, @finfo_out))>=0)
+         then fCaps.OutputReportByteLength:=finfo_out.maxusage+1;
+    end;
+
+    if fCaps.InputReportByteLength=0 then
+    begin
+      finfo_out.report_type := HID_REPORT_TYPE_INPUT;
+      finfo_out.report_id   := HID_REPORT_ID_FIRST;
+      finfo_out.field_index := 0;
+      if ((fpioctl(cint(HidFileHandle), HIDIOCGFIELDINFO, @finfo_out))>=0)
+         then fCaps.InputReportByteLength:=finfo_out.maxusage+1;
+    end;
+
+    if fCaps.FeatureReportByteLength=0 then
+    begin
+      finfo_out.report_type := HID_REPORT_TYPE_FEATURE;
+      finfo_out.report_id   := HID_REPORT_ID_FIRST;
+      finfo_out.field_index := 0;
+      if ((fpioctl(cint(HidFileHandle), HIDIOCGFIELDINFO, @finfo_out))>=0)
+         then fCaps.FeatureReportByteLength:=finfo_out.maxusage+1;
+    end;
+
+  end;
+  Result:=fCaps;
+end;
+
+function TJvHidDevice.GetAttributes: THIDDAttributes;
+var
+  device_info:hiddev_devinfo;
+begin
+  if Openfile then
+  begin
+    fpioctl(cint(HidFileHandle), HIDIOCGDEVINFO, @device_info);
+    if FAttributes.VendorID=0 then FAttributes.VendorID:=device_info.vendor;
+    if FAttributes.ProductID=0 then FAttributes.ProductID:=device_info.product;
+    if FAttributes.VersionNumber=0 then FAttributes.VersionNumber:=device_info.version;
+  end;
+  Result:=FAttributes;
+end;
+
+function TJvHidDevice.CheckOut: Boolean;
+begin
+  Result := Assigned(FMyController) and IsPluggedIn and not IsCheckedOut;
+  if Result then
+  begin
+    FIsCheckedOut := True;
+    Inc(FMyController.FNumCheckedOutDevices);
+    Dec(FMyController.FNumCheckedInDevices);
+    StartThread;
+  end;
+end;
+
+
+function TJvHidDevice.OpenFile: Boolean;
+//var
+//  device_info:hiddev_devinfo;
+begin
+  if PnPInfo.HidPath='' then
+  begin
+    FHidFileHandle := INVALID_HANDLE_VALUE;
+    Result:=False;
+    {$IFDEF debug}
+    DebugInfo:='HidPath empty';
+    {$ENDIF}
+    exit;
+  end;
+
+  // check if open allowed (propagates this state)
+  if IsAccessible then
+    if HidFileHandle = INVALID_HANDLE_VALUE then // if not already opened
+    begin
+      fHidFileHandle := THandle(fpOpen(PnPInfo.HidPath, O_RDWR)); //O_NONBLOCK
+      if HidFileHandle = INVALID_HANDLE_VALUE then
+         fHidFileHandle := THandle(fpOpen(PnPInfo.HidPath, O_RDONLY));
+      if HidFileHandle <> INVALID_HANDLE_VALUE then
+      begin
+        //fpioctl(cint(HidFileHandle), HIDIOCGDEVINFO, @device_info);
+        //PNPInfo.DeviceID:=device_info.devnum;
+        //FNumInputBuffers := 0;
+      end
+      else
+      begin
+       {$IFDEF debug}
+        DebugInfo:='fHidFileHandle error : ' + InttoStr(fpgeterrno);
+        if fpgeterrno=13 then DebugInfo:='Check ' + PnPInfo.HidPath + ' permission !!!';
+        {$ENDIF}
+      end;
+    end;
+  Result := HidFileHandle <> INVALID_HANDLE_VALUE;
+end;
+
+
+procedure TJvHidDevice.CloseFile;
+begin
+  if HidFileHandle <> INVALID_HANDLE_VALUE then
+     fpClose(cint(HidFileHandle));
+  //FNumInputBuffers := 0;
+  FHidFileHandle := INVALID_HANDLE_VALUE;
+end;
+
+
+function TJvHidDevice.ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
+var
+  rinfo_in:hiddev_report_info;
+  ref_multi:hiddev_usage_ref_multi;
+  ret:cint;
+  readBuffer: array[0..64] of hiddev_event;
+  readBufferByte: array[0..64] of byte;
+  i:integer;
+begin
+
+  ret:=-1;
+
+  BytesRead:=0;
+
+  {
+  if OpenFile then
+  begin
+    FillChar(readBufferByte, sizeof(readBufferByte), #0);
+    ret := FpRead( cint(HidFileHandle), readBuffer, sizeof(readBuffer[0])*(ToRead-1));
+    if ret>=0 then
+    begin
+      BytesRead := ret DIV sizeof(readBuffer[0]);
+      for i:=0 to BytesRead-1 do readBufferByte[i+1]:=readBuffer[i].value;
+      Move(Report,readBufferByte,1);
+      Move(readBufferByte,Report,BytesRead);
+    end;
+  end;
+  }
+
+
+  if OpenFile then
+  begin
+    rinfo_in.report_type := HID_REPORT_TYPE_INPUT;
+    //rinfo_in.report_id   := readBufferByte[0];
+    rinfo_in.report_id   := HID_REPORT_ID_FIRST;
+    rinfo_in.num_fields  := 1;
+    ret:=fpioctl(cint(HidFileHandle),HIDIOCGREPORT,@rinfo_in);
+    if ret>=0 then
+    begin
+      Move(Report,readBufferByte,1);
+      ref_multi.uref.report_type := HID_REPORT_TYPE_INPUT;
+      //ref_multi.uref.report_id := readBufferByte[0];
+      ref_multi.uref.report_id := HID_REPORT_ID_FIRST;
+      ref_multi.uref.field_index := 0;
+      ref_multi.uref.usage_index := 0;
+      ref_multi.num_values := ToRead-1;
+      ret:=fpioctl(cint(HidFileHandle), HIDIOCGUSAGES, @ref_multi);
+      if ret>=0 then
+      begin
+        for i := 0 to (ToRead-1) do readBufferByte[i+1]:=ref_multi.values[i];
+        Move(Report,readBufferByte,1);
+        Move(readBufferByte,Report,ToRead);
+        BytesRead:=ToRead;
+      end;
+    end;
+  end;
+  Result :=(ret>=0);
+end;
+
+
+function TJvHidDevice.WriteFile(var Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
+var
+  ref_multi:hiddev_usage_ref_multi;
+  rinfo_out:hiddev_report_info;
+  writeBufferByte: array[0..64] of byte;
+  i:integer;
+  ret:cint;
+begin
+  ret:=-1;
+
+  BytesWritten:=0;
+
+  if OpenFile then
+  begin
+    FillChar(writeBufferByte, SizeOf(writeBufferByte), #0);
+    Move(Report,writeBufferByte,ToWrite);
+    ref_multi.uref.report_type := HID_REPORT_TYPE_OUTPUT;
+    ref_multi.uref.report_id := writeBufferByte[0];
+    //ref_multi.uref.report_id := HID_REPORT_ID_FIRST;
+    ref_multi.uref.field_index := 0;
+    ref_multi.uref.usage_index := 0;
+    ref_multi.num_values := ToWrite-1;
+    for i := 0 to ToWrite-1 do ref_multi.values[i]:=writeBufferByte[i+1];
+    ret:=fpioctl(cint(HidFileHandle), HIDIOCSUSAGES, @ref_multi);
+    if (ret>=0) then
+    begin
+      rinfo_out.report_type := HID_REPORT_TYPE_OUTPUT;
+      rinfo_out.report_id   := writeBufferByte[0];
+      //rinfo_out.report_id   := HID_REPORT_ID_FIRST;
+      rinfo_out.num_fields  := 1;
+      ret:=fpioctl(cint(HidFileHandle),HIDIOCSREPORT,@rinfo_out);
+      if (ret>=0) then
+      begin
+        BytesWritten:=ToWrite;
+      end;
+    end;
+  end;
+  Result :=(ret>=0);
+end;
+
+procedure TJvHidDevice.DoUnplug;
+begin
+  CloseFile;
+  FIsPluggedIn := False;
+  // event even for checked in devices
+  if Assigned(FUnplug) then
+    FUnplug(Self);
+  // guarantees that event is only called once
+  OnUnplug := nil;
+end;
+
+procedure TJvHidDevice.ShowReports(report_type:word);
+function controlName(usage_code:integer):string;
+var
+  hi,lo:integer;
+begin
+  hi := (usage_code SHR 16) AND $FFFF;
+  lo := usage_code AND $FFFF;
+  case (hi) of
+    $80: Result:='(USB Monitor usage page)';
+    $81: Result:='(USB Enumerated Values usage page)';
+    $83: Result:='(Reserved usage page)';
+  else
+    Result:='(unknown usage page)';
+  end;
+end;
+var
+  rinfo:hiddev_report_info;
+  finfo:hiddev_field_info;
+  uref:hiddev_usage_ref;
+  i,j,ret:integer;
+begin
+
+  if Openfile then
+  begin
+    rinfo.report_type := report_type;
+    rinfo.report_id := HID_REPORT_ID_FIRST;
+    ret := fpioctl(cint(HidFileHandle), HIDIOCGREPORTINFO, @rinfo);
+    while (ret >= 0) do
+      begin
+      DebugInfo:=Format('HIDIOCGREPORTINFO: report_id=0x%X (%U fields)',[rinfo.report_id, rinfo.num_fields]);
+      for i := 0 to rinfo.num_fields-1 do
+      begin
+        finfo.report_type := rinfo.report_type;
+        finfo.report_id   := rinfo.report_id;
+        finfo.field_index := i;
+        fpioctl(cint(HidFileHandle), HIDIOCGFIELDINFO, @finfo);
+
+        DebugInfo:=Format('HIDIOCGFIELDINFO: field_index=%U maxusage=%U flags=0x%X',
+                       [finfo.field_index, finfo.maxusage, finfo.flags]);
+        DebugInfo:=Format('physical=0x%X logical=0x%X application=0x%X',
+                       [finfo.physical, finfo.logical, finfo.application]);
+        DebugInfo:=Format('logical_minimum=%D,maximum=%D physical_minimum=%D,maximum=%D',
+                       [finfo.logical_minimum,  finfo.logical_maximum,
+		       finfo.physical_minimum, finfo.physical_maximum]);
+
+        for j := 0 to finfo.maxusage-1 do
+        begin
+          uref.report_type := finfo.report_type;
+	  uref.report_id   := finfo.report_id;
+	  uref.field_index := i;
+	  uref.usage_index := j;
+	  fpioctl(cint(HidFileHandle), HIDIOCGUCODE, @uref);
+	  fpioctl(cint(HidFileHandle), HIDIOCGUSAGE, @uref);
+          DebugInfo:=Format(' >> usage_index=%U usage_code=0x%X (%S) value=%D',
+                         [uref.usage_index,uref.usage_code,controlName(uref.usage_code),uref.value]);
+        end;
+      end;
+      rinfo.report_id := rinfo.report_id OR HID_REPORT_ID_NEXT;
+      ret := fpioctl(cint(HidFileHandle), HIDIOCGREPORTINFO, @rinfo);
+    end;
+  end;
+end;
+
+end.
+
