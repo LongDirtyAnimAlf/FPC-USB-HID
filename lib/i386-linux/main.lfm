@@ -57,4 +57,4 @@ object Form1: TForm1
     OnClick = btnInfoClick
     TabOrder = 4
   end
-end
+end

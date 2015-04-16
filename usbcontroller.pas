@@ -47,12 +47,17 @@ unit usbcontroller;
 
 {$mode objfpc}{$H+}
 {$PACKRECORDS C}
-{$LINKLIB udev}
 
+{.$DEFINE udevstatic}
+{.$DEFINE usegenerics}
 {.$DEFINE debug}
 
 {.$DEFINE hidraw}
 {$DEFINE hiddev}
+
+{$ifdef udevstatic}
+{$LINKLIB udev}
+{$endif}
 
 {$IFDEF hiddev}
 {.$DEFINE oldkernel}
@@ -60,7 +65,6 @@ unit usbcontroller;
 
 {$Q-}
 {$H+}
-{$M+}
 
 interface
 
@@ -470,44 +474,106 @@ type
     procedure   DeviceChange;
   end;
 
-  function udev_new:Pudev_handle;cdecl;external;
-  function udev_unref(udev:Pudev_handle):Pudev_handle;cdecl;external;
-  function udev_device_get_devtype(dev:Pudev_device_handle):Pchar;cdecl;external;
 
-  function udev_enumerate_new(udev:Pudev_handle):Pudev_enumerate_handle;cdecl;external;
-  function udev_enumerate_unref(udev_enumerate:Pudev_enumerate_handle):Pudev_enumerate_handle;cdecl;external;
-  function udev_enumerate_add_match_subsystem(udev_enumerate:Pudev_enumerate_handle;subsystem:Pchar):integer;cdecl;external;
-  function udev_enumerate_add_match_sysattr(udev_enumerate:Pudev_enumerate_handle;subsystem,devtype:Pchar):integer;cdecl;external;
+{$ifndef udevstatic}
+var
+{$endif}
+  {$ifdef udevstatic}function {$endif}udev_new{$ifndef udevstatic}: function{$endif}:Pudev_handle;cdecl;{$ifdef udevstatic}external;{$endif}
 
-  function udev_enumerate_scan_devices(udev_enumerate:Pudev_enumerate_handle):integer;cdecl;external;
-  function udev_enumerate_get_list_entry(udev_enumerate:Pudev_enumerate_handle):Pudev_list_entry_handle;cdecl;external;
+  {$ifdef udevstatic}function {$endif}udev_unref{$ifndef udevstatic}: function{$endif}(udev:Pudev_handle):Pudev_handle;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_devtype{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
 
-  function udev_list_entry_get_name(list_entry:Pudev_list_entry_handle):Pchar;cdecl;external;
-  function udev_list_entry_get_next(list_entry:Pudev_list_entry_handle):Pudev_list_entry_handle;cdecl;external;
+  {$ifdef udevstatic}function {$endif}udev_enumerate_new{$ifndef udevstatic}: function{$endif}(udev:Pudev_handle):Pudev_enumerate_handle;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_enumerate_unref{$ifndef udevstatic}: function{$endif}(udev_enumerate:Pudev_enumerate_handle):Pudev_enumerate_handle;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_enumerate_add_match_subsystem{$ifndef udevstatic}: function{$endif}(udev_enumerate:Pudev_enumerate_handle;subsystem:Pchar):integer;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_enumerate_add_match_sysattr{$ifndef udevstatic}: function{$endif}(udev_enumerate:Pudev_enumerate_handle;subsystem,devtype:Pchar):integer;cdecl;{$ifdef udevstatic}external;{$endif}
 
-  function udev_monitor_new_from_netlink(udev:Pudev_handle;name:Pchar):Pudev_monitor_handle;cdecl;external;
-  function udev_monitor_receive_device(mon:Pudev_monitor_handle):Pudev_device_handle;cdecl;external;
-  function udev_monitor_filter_add_match_subsystem_devtype(mon:Pudev_monitor_handle;subsystem,devtype:Pchar):integer;cdecl;external;
-  function udev_monitor_enable_receiving(mon:Pudev_monitor_handle):integer;cdecl;external;
-  function udev_monitor_get_fd(mon:Pudev_monitor_handle):integer;cdecl;external;
+  {$ifdef udevstatic}function {$endif}udev_enumerate_scan_devices{$ifndef udevstatic}: function{$endif}(udev_enumerate:Pudev_enumerate_handle):integer;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_enumerate_get_list_entry{$ifndef udevstatic}: function{$endif}(udev_enumerate:Pudev_enumerate_handle):Pudev_list_entry_handle;cdecl;{$ifdef udevstatic}external;{$endif}
 
-  function udev_device_unref(dev:Pudev_device_handle):Pudev_device_handle;cdecl;external;
-  function udev_device_get_sysattr_value(dev:Pudev_device_handle;sysattr:Pchar):Pchar;cdecl;external;
-  function udev_device_get_action(dev:Pudev_device_handle):Pchar;cdecl;external;
-  function udev_device_get_devnode(dev:Pudev_device_handle):Pchar;cdecl;external;
-  function udev_device_get_devpath(dev:Pudev_device_handle):Pchar;cdecl;external;
-  function udev_device_get_syspath(dev:Pudev_device_handle):Pchar;cdecl;external;
-  function udev_device_new_from_syspath(udev:Pudev_handle;syspath:Pchar):Pudev_device_handle;cdecl;external;
-  function udev_device_get_parent_with_subsystem_devtype(dev:Pudev_device_handle;subsystem,devtype:Pchar):Pudev_device_handle;cdecl;external;
-  function udev_device_get_property_value(dev:Pudev_device_handle;key:Pchar):Pchar;cdecl;external;
+  {$ifdef udevstatic}function {$endif}udev_list_entry_get_name{$ifndef udevstatic}: function{$endif}(list_entry:Pudev_list_entry_handle):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_list_entry_get_next{$ifndef udevstatic}: function{$endif}(list_entry:Pudev_list_entry_handle):Pudev_list_entry_handle;cdecl;{$ifdef udevstatic}external;{$endif}
+
+  {$ifdef udevstatic}function {$endif}udev_monitor_new_from_netlink{$ifndef udevstatic}: function{$endif}(udev:Pudev_handle;name:Pchar):Pudev_monitor_handle;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_monitor_receive_device{$ifndef udevstatic}: function{$endif}(mon:Pudev_monitor_handle):Pudev_device_handle;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_monitor_filter_add_match_subsystem_devtype{$ifndef udevstatic}: function{$endif}(mon:Pudev_monitor_handle;subsystem,devtype:Pchar):integer;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_monitor_enable_receiving{$ifndef udevstatic}: function{$endif}(mon:Pudev_monitor_handle):integer;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_monitor_get_fd{$ifndef udevstatic}: function{$endif}(mon:Pudev_monitor_handle):integer;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_monitor_unref{$ifndef udevstatic}: function{$endif}(mon:Pudev_monitor_handle):Pudev_monitor_handle;cdecl;{$ifdef udevstatic}external;{$endif}
+
+  {$ifdef udevstatic}function {$endif}udev_device_unref{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pudev_device_handle;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_sysattr_value{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle;sysattr:Pchar):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_action{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_devnode{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_devpath{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_syspath{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_new_from_syspath{$ifndef udevstatic}: function{$endif}(udev:Pudev_handle;syspath:Pchar):Pudev_device_handle;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_parent_with_subsystem_devtype{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle;subsystem,devtype:Pchar):Pudev_device_handle;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_property_value{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle;key:Pchar):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
 
 implementation
 
 uses
   SysUtils;
 
-//=== { TJvHidPnPInfo } ======================================================
+var
+  // UdevOk could be used in whole unit ... not for now ... will fail already during init when no udev-lib found .. lazy ...
+  UdevOk: Boolean = True;
+  {$ifndef udevstatic}
+  libudev: TLibHandle = NilHandle;
+  {$endif}
 
+{$ifndef udevstatic}
+procedure LoadUdevLibrary;
+var
+  e:Exception;
+begin
+  libudev:= LoadLibrary('libudev.'+SharedSuffix+'.1');
+  if libudev = NilHandle then libudev:= LoadLibrary('libudev.'+SharedSuffix+'.1');
+  UdevOk:= libudev <> NilHandle;
+  if UdevOk then
+  try
+    pointer(udev_new):= GetProcAddress(libudev, 'udev_new');
+    pointer(udev_unref):= GetProcedureAddress(libudev, 'udev_unref');
+    pointer(udev_list_entry_get_next):= GetProcedureAddress(libudev, 'udev_list_entry_get_next');
+    pointer(udev_list_entry_get_name):= GetProcedureAddress(libudev, 'udev_list_entry_get_name');
+    pointer(udev_device_unref):= GetProcedureAddress(libudev, 'udev_device_unref');
+    pointer(udev_device_new_from_syspath):= GetProcedureAddress(libudev, 'udev_device_new_from_syspath');
+    pointer(udev_device_get_devnode):= GetProcedureAddress(libudev, 'udev_device_get_devnode');
+    pointer(udev_device_get_devtype):= GetProcedureAddress(libudev, 'udev_device_get_devtype');
+    pointer(udev_device_get_syspath):= GetProcedureAddress(libudev, 'udev_device_get_syspath');
+    pointer(udev_device_get_action):= GetProcedureAddress(libudev, 'udev_device_get_action');
+    pointer(udev_device_get_property_value):= GetProcedureAddress(libudev, 'udev_device_get_property_value');
+    pointer(udev_device_get_sysattr_value):= GetProcedureAddress(libudev, 'udev_device_get_sysattr_value');
+    pointer(udev_monitor_unref):= GetProcedureAddress(libudev, 'udev_monitor_unref');
+    pointer(udev_monitor_new_from_netlink):= GetProcedureAddress(libudev, 'udev_monitor_new_from_netlink');
+    pointer(udev_monitor_filter_add_match_subsystem_devtype):= GetProcedureAddress(libudev, 'udev_monitor_filter_add_match_subsystem_devtype');
+    pointer(udev_monitor_enable_receiving):= GetProcedureAddress(libudev, 'udev_monitor_enable_receiving');
+    pointer(udev_monitor_get_fd):= GetProcedureAddress(libudev, 'udev_monitor_get_fd');
+    pointer(udev_monitor_receive_device):= GetProcedureAddress(libudev, 'udev_monitor_receive_device');
+    pointer(udev_enumerate_new):= GetProcedureAddress(libudev, 'udev_enumerate_new');
+    pointer(udev_enumerate_unref):= GetProcedureAddress(libudev, 'udev_enumerate_unref');
+    pointer(udev_enumerate_add_match_subsystem):= GetProcedureAddress(libudev, 'udev_enumerate_add_match_subsystem');
+    pointer(udev_enumerate_scan_devices):= GetProcedureAddress(libudev, 'udev_enumerate_scan_devices');
+    pointer(udev_enumerate_get_list_entry):= GetProcedureAddress(libudev, 'udev_enumerate_get_list_entry');
+  except
+    on E: Exception do
+    begin
+      UdevOk:= False;
+      UnloadLibrary(libudev);
+      e:=Exception.Create('No udev library found');
+      raise e;
+    end;
+  end;
+end;
+
+procedure FreeUdevLibrary;
+begin
+  if UdevOk then UnloadLibrary(libudev);
+end;
+{$endif}
+
+//=== { TJvHidPnPInfo } ======================================================
 constructor TJvHidPnPInfo.Create(ADeviceId:DWORD; ADevice:Pudev_device_handle; AHidDevicePath: String; AUSBDevice:Pudev_device_handle; AUSBDevicePath: String);
 function HexToInt(Hex : String) : Integer;
 const
@@ -521,8 +587,10 @@ begin
   For I := 1 to J do
     Result := Result+((Pos(Hex[J-I+1],HexSymbols)-1) shl ((I-1)*4));
 end;
+{
 var
   device_info:hiddev_devinfo;
+}
 begin
   inherited Create;
 
@@ -572,7 +640,7 @@ var
   fd_monitor:cint;
   Action:string;
 begin
-  localudev:=udev_new;
+  localudev:=udev_new();
   if (localudev = nil) then
   begin
     //FUSBController.DebugInfo.append('Fatal error while creating new udev structure.');
@@ -655,6 +723,8 @@ begin
       end;
     end;
   end;
+  udev_monitor_unref(localudev_monitor);
+  localudev_monitor:=nil;
 end;
 
 { TJvHidDeviceController }
@@ -710,7 +780,7 @@ begin
 
   for I := 0 to FList.Count - 1 do
   begin
-    HidDev := TJvHidDevice(FList.Items[I]);
+    HidDev := {$ifndef usegenerics}TJvHidDevice{$endif}(FList.Items[I]);
     if Assigned(HidDev) then
     begin
       with HidDev do
@@ -785,7 +855,7 @@ begin
     // change all OnData events with the same old value
     for I := 0 to FList.Count - 1 do
     begin
-      Dev := TJvHidDevice(FList.Items[I]);
+      Dev := {$ifndef usegenerics}TJvHidDevice{$endif}(FList.Items[I]);
       if @Dev.OnData = @FDevDataEvent then
         Dev.OnData := DataEvent;
     end;
@@ -842,7 +912,7 @@ begin
     // change all OnUnplug events with the same old value
     for I := 0 to FList.Count - 1 do
     begin
-      Dev := TJvHidDevice(FList.Items[I]);
+      Dev := {$ifndef usegenerics}TJvHidDevice{$endif}(FList.Items[I]);
       if @Dev.OnUnplug = @FDevUnplugEvent then
         Dev.OnUnplug := Unplugger;
     end;
@@ -852,10 +922,10 @@ end;
 
 function TJvHidDeviceController.CheckThisOut(var HidDev: TJvHidDevice; Idx: Integer; Check: Boolean): Boolean;
 begin
-  Result := Check and not TJvHidDevice(FList.Items[Idx]).IsCheckedOut;
+  Result := Check and not {$ifndef usegenerics}TJvHidDevice{$endif}(FList.Items[Idx]).IsCheckedOut;
   if Result then
   begin
-    HidDev := TJvHidDevice(FList[Idx]);
+    HidDev := {$ifndef usegenerics}TJvHidDevice{$endif}(FList[Idx]);
     HidDev.FIsCheckedOut := True;
     Inc(FNumCheckedOutDevices);
     Dec(FNumCheckedInDevices);
@@ -875,7 +945,7 @@ begin
   if ProductName <> '' then
     for I := 0 to FList.Count - 1 do
     begin
-      Result := CheckThisOut(HidDev, I, ProductName = TJvHidDevice(FList[I]).ProductName);
+      Result := CheckThisOut(HidDev, I, ProductName = {$ifndef usegenerics}TJvHidDevice{$endif}(FList[I]).ProductName);
       if Result then
         Break;
     end;
@@ -893,7 +963,7 @@ begin
   if VendorName <> '' then
     for I := 0 to FList.Count - 1 do
     begin
-      Result := CheckThisOut(HidDev, I, VendorName = TJvHidDevice(FList[I]).VendorName);
+      Result := CheckThisOut(HidDev, I, VendorName = {$ifndef usegenerics}TJvHidDevice{$endif}(FList[I]).VendorName);
       if Result then
         Break;
     end;
@@ -914,7 +984,7 @@ begin
   HidDev := nil;
   for I := 0 to FList.Count - 1 do
   begin
-    Dev := TJvHidDevice(FList[I]);
+    Dev := {$ifndef usegenerics}TJvHidDevice{$endif}(FList[I]);
     if not Dev.IsCheckedOut then
     begin
       Dev.FIsEnumerated := True;
@@ -943,8 +1013,8 @@ begin
   HidDev := nil;
   for I := 0 to FList.Count - 1 do
   begin
-    Result := CheckThisOut(HidDev, I, (Vid = TJvHidDevice(FList[I]).Attributes.VendorID) and
-      ((Pid = TJvHidDevice(FList[I]).Attributes.ProductID) or (Pid = -1)));
+    Result := CheckThisOut(HidDev, I, (Vid = {$ifndef usegenerics}TJvHidDevice{$endif}(FList[I]).Attributes.VendorID) and
+      ((Pid = {$ifndef usegenerics}TJvHidDevice{$endif}(FList[I]).Attributes.ProductID) or (Pid = -1)));
     if Result then
       Break;
   end;
@@ -968,9 +1038,9 @@ var
 begin
   Result := 0;
   for I := 0 to FList.Count - 1 do
-    if TJvHidDevice(FList[I]).IsPluggedIn and
-      (Vid = TJvHidDevice(FList[I]).Attributes.VendorID) and
-      ((Pid = TJvHidDevice(FList[I]).Attributes.ProductID) or (Pid = -1)) then
+    if {$ifndef usegenerics}TJvHidDevice{$endif}(FList[I]).IsPluggedIn and
+      (Vid = {$ifndef usegenerics}TJvHidDevice{$endif}(FList[I]).Attributes.VendorID) and
+      ((Pid = {$ifndef usegenerics}TJvHidDevice{$endif}(FList[I]).Attributes.ProductID) or (Pid = -1)) then
       Inc(Result);
 end;
 
@@ -980,8 +1050,8 @@ var
 begin
   Result := 0;
   for I := 0 to FList.Count - 1 do
-    if TJvHidDevice(FList[I]).IsPluggedIn and
-      (ProductName = TJvHidDevice(FList[I]).ProductName) then
+    if {$ifndef usegenerics}TJvHidDevice{$endif}(FList[I]).IsPluggedIn and
+      (ProductName = {$ifndef usegenerics}TJvHidDevice{$endif}(FList[I]).ProductName) then
       Inc(Result);
 end;
 
@@ -991,8 +1061,8 @@ var
 begin
   Result := 0;
   for I := 0 to FList.Count - 1 do
-    if TJvHidDevice(FList[I]).IsPluggedIn and
-      (VendorName = TJvHidDevice(FList[I]).VendorName) then
+    if {$ifndef usegenerics}TJvHidDevice{$endif}(FList[I]).IsPluggedIn and
+      (VendorName = {$ifndef usegenerics}TJvHidDevice{$endif}(FList[I]).VendorName) then
       Inc(Result);
 end;
 
@@ -1004,9 +1074,9 @@ begin
   Result := 0;
   for I := 0 to FList.Count - 1 do
   begin
-    if TJvHidDevice(FList[I]).IsPluggedIn then
+    if {$ifndef usegenerics}TJvHidDevice{$endif}(FList[I]).IsPluggedIn then
     begin
-      Dev := TJvHidDevice(FList[I]);
+      Dev := {$ifndef usegenerics}TJvHidDevice{$endif}(FList[I]);
       Dev.FIsEnumerated := True;
       if Check(Dev) then
         Inc(Result);
@@ -1050,7 +1120,7 @@ begin
     // change all DevThreadSleepTime with the same old value
     for I := 0 to FList.Count - 1 do
     begin
-      Dev := TJvHidDevice(FList.Items[I]);
+      Dev := {$ifndef usegenerics}TJvHidDevice{$endif}(FList.Items[I]);
       if Dev.ThreadSleepTime = FDevThreadSleepTime then
         Dev.ThreadSleepTime := DevTime;
     end;
@@ -1075,7 +1145,8 @@ var
     Devn: Integer;
     HidDev: TJvHidDevice;
     path:Pchar;
-    LocalRawNode,LocalHidNode,LocalInterfaceNode,LocalUSBNode:string;
+    LocalRawNode,LocalUSBNode:string;
+    LocalHidNode,LocalInterfaceNode:string;
     LocalDeviceId:DWORD;
     localudev:Pudev_handle;
     localudev_enumerate:Pudev_enumerate_handle;
@@ -1099,7 +1170,7 @@ var
     LocalInterfaceNode:='Empty';
     LocalUSBNode:='Empty';
 
-    localudev:=udev_new;
+    localudev:=udev_new();
     if (localudev = nil) then Exit;
     Devn := 0;
 
@@ -1148,7 +1219,6 @@ var
           DebugInfo:='HID_PHYS_2: '+udev_device_get_property_value(localudev_hiddevice, 'HID_PHYS');
           DebugInfo:='HID_ID_2: '+udev_device_get_property_value(localudev_hiddevice, 'HID_ID');
           {$ENDIF}
-
 
           {$IFDEF debug}
           uevent:=tstringlist.Create;
@@ -1271,7 +1341,7 @@ begin
   // unplug devices in FList which are not in NewList
   for I := FList.Count - 1 downto 0 do
   begin
-    HidDev := TJvHidDevice(FList.Items[I]);
+    HidDev := {$ifndef usegenerics}TJvHidDevice{$endif}(FList.Items[I]);
     for J := NewList.Count - 1 downto 0 do
       if (TJvHidDevice(NewList.Items[J]).PnPInfo.DeviceID = HidDev.PnPInfo.DeviceID) and
         HidDev.IsPluggedIn then
@@ -1296,10 +1366,10 @@ begin
   // delete devices from NewList which are in FList
   for I := 0 to NewList.Count - 1 do
   begin
-    HidDev:=TJvHidDevice(NewList[I]);
+    HidDev:={$ifndef usegenerics}TJvHidDevice{$endif}(NewList[I]);
     for J := 0 to FList.Count - 1 do
-      if (HidDev.PnPInfo.DeviceID = TJvHidDevice(FList[J]).PnPInfo.DeviceID) and
-        TJvHidDevice(FList[J]).IsPluggedIn then
+      if (HidDev.PnPInfo.DeviceID = {$ifndef usegenerics}TJvHidDevice{$endif}(FList[J]).PnPInfo.DeviceID) and
+        {$ifndef usegenerics}TJvHidDevice{$endif}(FList[J]).IsPluggedIn then
       begin
         HidDev.FMyController := nil; // prevent Free/Destroy from accessing this controller
         HidDev.Free;
@@ -1329,7 +1399,7 @@ begin
   FNumUnpluggedDevices := 0;
   for I := 0 to FList.Count - 1 do
   begin
-    HidDev := TJvHidDevice(FList.Items[I]);
+    HidDev := {$ifndef usegenerics}TJvHidDevice{$endif}(FList.Items[I]);
     Inc(FNumCheckedInDevices, Ord(not HidDev.IsCheckedOut));
     Inc(FNumCheckedOutDevices, Ord(HidDev.IsCheckedOut));
     Inc(FNumUnpluggedDevices, Ord(not HidDev.IsPluggedIn));
@@ -1632,7 +1702,7 @@ begin
     begin
       // delete device from controller list
       for I := 0 to FList.Count - 1 do
-        if  TJvHidDevice(FList.Items[I]) = Self then
+        if  {$ifndef usegenerics}TJvHidDevice{$endif}(FList.Items[I]) = Self then
         begin
           // if device is plugged in create a checked in copy
           if IsPluggedIn then
@@ -1967,5 +2037,12 @@ begin
   end;
 end;
 
+{$ifndef udevstatic}
+initialization
+  LoadUdevLibrary;
+
+finalization
+  FreeUdevLibrary;
+{$endif}
 end.
-
+

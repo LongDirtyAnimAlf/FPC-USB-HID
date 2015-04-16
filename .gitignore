@@ -63,7 +63,5 @@ Temporary Items
 *.log
 backup/
 
-lib/*/*.ppu
-lib/*/*.s
-lib/*/*.o
-lib/*/*.obj
+lib/
+bin/
