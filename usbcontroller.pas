@@ -69,7 +69,6 @@ unit usbcontroller;
 interface
 
 uses
-  Dialogs,
   Classes,  baseunix, unix
   {$IFDEF usegenerics}
   ,fgl
@@ -818,11 +817,11 @@ begin
     if FEnabled then
     begin
       DeviceChange;
-      //StartControllerThread;
+      StartControllerThread;
     end
     else
     begin
-      //StopControllerThread;
+      StopControllerThread;
     end;
   end;
 end;
