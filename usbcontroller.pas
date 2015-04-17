@@ -198,20 +198,20 @@ type
    end;
 
 const
-  HIDIOCSUSAGE          = (_IOW shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0C;
-  HIDIOCSREPORT         = (_IOW shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $08;
-  HIDIOCGUCODE          = (_IOWR shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0D;
-  HIDIOCGUSAGE          = (_IOWR shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0B;
-  HIDIOCGREPORTINFO     = (_IOWR shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $09;
-  HIDIOCGFIELDINFO      = (_IOWR shl 30) + (sizeof(hiddev_field_info) shl 16) + (Ord('H') shl 8) + $0A;
-  HIDIOCGDEVINFO        = (_IOR shl 30) + (sizeof(hiddev_devinfo) shl 16) + (Ord('H') shl 8) + $03;
-  HIDIOCGSTRING         = (_IOR shl 30) + (sizeof(hiddev_string_descriptor) shl 16) + (Ord('H') shl 8) + $04;
-  HIDIOCGREPORT         = (_IOW shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $07;
-  HIDIOCGUSAGES         = (_IOWR shl 30) + (sizeof(hiddev_usage_ref_multi) shl 16) + (Ord('H') shl 8) + $13;
-  HIDIOCSUSAGES         = (_IOW shl 30) + (sizeof(hiddev_usage_ref_multi) shl 16) + (Ord('H') shl 8) + $14;
+  HIDIOCSUSAGE          = cint32((_IOW shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0C);
+  HIDIOCSREPORT         = cint32((_IOW shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $08);
+  HIDIOCGUCODE          = cint32((_IOWR shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0D);
+  HIDIOCGUSAGE          = cint32((_IOWR shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0B);
+  HIDIOCGREPORTINFO     = cint32((_IOWR shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $09);
+  HIDIOCGFIELDINFO      = cint32((_IOWR shl 30) + (sizeof(hiddev_field_info) shl 16) + (Ord('H') shl 8) + $0A);
+  HIDIOCGDEVINFO        = cint32((_IOR shl 30) + (sizeof(hiddev_devinfo) shl 16) + (Ord('H') shl 8) + $03);
+  HIDIOCGSTRING         = cint32((_IOR shl 30) + (sizeof(hiddev_string_descriptor) shl 16) + (Ord('H') shl 8) + $04);
+  HIDIOCGREPORT         = cint32((_IOW shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $07);
+  HIDIOCGUSAGES         = cint32((_IOWR shl 30) + (sizeof(hiddev_usage_ref_multi) shl 16) + (Ord('H') shl 8) + $13);
+  HIDIOCSUSAGES         = cint32((_IOW shl 30) + (sizeof(hiddev_usage_ref_multi) shl 16) + (Ord('H') shl 8) + $14);
 
-  //HIDIOCSFEATURE(len)    = (_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $06;
-  //HIDIOCGFEATURE(len)    = (_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $07;
+  //HIDIOCSFEATURE(len)    = cint32((_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $06);
+  //HIDIOCGFEATURE(len)    = cint32((_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $07);
 
 type
   TJvHidDeviceController = class; // forward declaration
@@ -286,7 +286,7 @@ type
     property Service: string read FService;
     property UINumber: DWORD read FUINumber;
     property UINumberFormat: string read FUINumberFormat;
-    constructor Create(ADeviceId:DWORD; ADevice:Pudev_device_handle; AHidDevicePath: String; AUSBDevice:Pudev_device_handle; AUSBDevicePath: String);
+    constructor Create(ADeviceId:DWORD; AHidDevicePath: String; AUSBDevice:Pudev_device_handle; AUSBDevicePath: String);
     destructor Destroy; override;
   end;
 
@@ -448,13 +448,13 @@ type
     function    CheckOut(var HidDev: TJvHidDevice): Boolean;
     function    CheckOutByID(var HidDev: TJvHidDevice; const Vid, Pid: Integer): Boolean;
     function    CheckOutByIndex(var HidDev: TJvHidDevice; const Idx: Integer): Boolean;
-    function    CheckOutByProductName(var HidDev: TJvHidDevice; const ProductName: WideString): Boolean;
-    function    CheckOutByVendorName(var HidDev: TJvHidDevice; const VendorName: WideString): Boolean;
+    function    CheckOutByProductName(var HidDev: TJvHidDevice; const ProductName: String): Boolean;
+    function    CheckOutByVendorName(var HidDev: TJvHidDevice; const VendorName: String): Boolean;
     function    CheckOutByCallback(var HidDev: TJvHidDevice; Check: TJvHidCheckCallback): Boolean;
     // methods to count HID device objects
     function    CountByID(const Vid, Pid: Integer): Integer;
-    function    CountByProductName(const ProductName: WideString): Integer;
-    function    CountByVendorName(const VendorName: WideString): Integer;
+    function    CountByProductName(const ProductName: String): Integer;
+    function    CountByVendorName(const VendorName: String): Integer;
     function    CountByCallback(Check: TJvHidCheckCallback): Integer;
 
     property    DebugInfo: String read GetDebugInfo write SetDebugInfo;
@@ -581,8 +581,18 @@ begin
 end;
 {$endif}
 
+procedure InitWithoutHint(out x);
+begin
+{$PUSH}
+{$HINTS OFF}
+  FillChar(x,sizeof(x),0);
+  //ZeroMemory(@x, SizeOf(x));
+{$POP}
+end;
+
+
 //=== { TJvHidPnPInfo } ======================================================
-constructor TJvHidPnPInfo.Create(ADeviceId:DWORD; ADevice:Pudev_device_handle; AHidDevicePath: String; AUSBDevice:Pudev_device_handle; AUSBDevicePath: String);
+constructor TJvHidPnPInfo.Create(ADeviceId:DWORD; AHidDevicePath: String; AUSBDevice:Pudev_device_handle; AUSBDevicePath: String);
 function HexToInt(Hex : String) : Integer;
 const
   HexSymbols : String = '0123456789ABCDEF';
@@ -944,7 +954,7 @@ end;
 // method CheckOutByProductName hands out the first HidDevice with a matching ProductName
 
 function TJvHidDeviceController.CheckOutByProductName(var HidDev: TJvHidDevice;
-  const ProductName: WideString): Boolean;
+  const ProductName: String): Boolean;
 var
   I: Integer;
 begin
@@ -962,7 +972,7 @@ end;
 // method CheckOutByVendorName hands out the first HidDevice with a matching VendorName
 
 function TJvHidDeviceController.CheckOutByVendorName(var HidDev: TJvHidDevice;
-  const VendorName: WideString): Boolean;
+  const VendorName: String): Boolean;
 var
   I: Integer;
 begin
@@ -1052,7 +1062,7 @@ begin
       Inc(Result);
 end;
 
-function TJvHidDeviceController.CountByProductName(const ProductName: WideString): Integer;
+function TJvHidDeviceController.CountByProductName(const ProductName: String): Integer;
 var
   I: Integer;
 begin
@@ -1063,7 +1073,7 @@ begin
       Inc(Result);
 end;
 
-function TJvHidDeviceController.CountByVendorName(const VendorName: WideString): Integer;
+function TJvHidDeviceController.CountByVendorName(const VendorName: String): Integer;
 var
   I: Integer;
 begin
@@ -1323,7 +1333,7 @@ var
           {$IFDEF debug}
           DebugInfo:='Adding correct hid device !!';
           {$ENDIF}
-          PnPInfo := TJvHidPnPInfo.Create(LocalDeviceId,localudev_rawdevice,LocalRawNode,localudev_usbdevice,LocalUSBNode);
+          PnPInfo := TJvHidPnPInfo.Create(LocalDeviceId,LocalRawNode,localudev_usbdevice,LocalUSBNode);
           HidDev := TJvHidDevice.CtlCreate(PnPInfo, Self);
           NewList.Add(HidDev);
           Inc(Devn);
@@ -1492,6 +1502,8 @@ begin
   end;
 
   fd :=cint(Device.HidFileHandle);
+
+  InitWithoutHint(receiveBuffer);
 
   try
     while not Terminated do
@@ -1899,6 +1911,8 @@ begin
   end;
   }
 
+  InitWithoutHint(readBuffer);
+  InitWithoutHint(readBufferByte);
 
   if OpenFile then
   begin
@@ -1941,6 +1955,8 @@ begin
   ret:=-1;
 
   BytesWritten:=0;
+
+  InitWithoutHint(writeBufferByte);
 
   if OpenFile then
   begin
