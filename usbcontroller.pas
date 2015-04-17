@@ -69,6 +69,7 @@ unit usbcontroller;
 interface
 
 uses
+  Dialogs,
   Classes,  baseunix, unix
   {$IFDEF usegenerics}
   ,fgl
@@ -479,42 +480,41 @@ type
 var
 {$endif}
   {$ifdef udevstatic}function {$endif}udev_new{$ifndef udevstatic}: function{$endif}:Pudev_handle;cdecl;{$ifdef udevstatic}external;{$endif}
-
   {$ifdef udevstatic}function {$endif}udev_unref{$ifndef udevstatic}: function{$endif}(udev:Pudev_handle):Pudev_handle;cdecl;{$ifdef udevstatic}external;{$endif}
-  {$ifdef udevstatic}function {$endif}udev_device_get_devtype{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
 
   {$ifdef udevstatic}function {$endif}udev_enumerate_new{$ifndef udevstatic}: function{$endif}(udev:Pudev_handle):Pudev_enumerate_handle;cdecl;{$ifdef udevstatic}external;{$endif}
   {$ifdef udevstatic}function {$endif}udev_enumerate_unref{$ifndef udevstatic}: function{$endif}(udev_enumerate:Pudev_enumerate_handle):Pudev_enumerate_handle;cdecl;{$ifdef udevstatic}external;{$endif}
-  {$ifdef udevstatic}function {$endif}udev_enumerate_add_match_subsystem{$ifndef udevstatic}: function{$endif}(udev_enumerate:Pudev_enumerate_handle;subsystem:Pchar):integer;cdecl;{$ifdef udevstatic}external;{$endif}
-  {$ifdef udevstatic}function {$endif}udev_enumerate_add_match_sysattr{$ifndef udevstatic}: function{$endif}(udev_enumerate:Pudev_enumerate_handle;subsystem,devtype:Pchar):integer;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_enumerate_add_match_subsystem{$ifndef udevstatic}: function{$endif}(udev_enumerate:Pudev_enumerate_handle;const subsystem:Pansichar):integer;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_enumerate_add_match_sysattr{$ifndef udevstatic}: function{$endif}(udev_enumerate:Pudev_enumerate_handle;const subsystem:Pansichar;const devtype:Pansichar):integer;cdecl;{$ifdef udevstatic}external;{$endif}
 
   {$ifdef udevstatic}function {$endif}udev_enumerate_scan_devices{$ifndef udevstatic}: function{$endif}(udev_enumerate:Pudev_enumerate_handle):integer;cdecl;{$ifdef udevstatic}external;{$endif}
   {$ifdef udevstatic}function {$endif}udev_enumerate_get_list_entry{$ifndef udevstatic}: function{$endif}(udev_enumerate:Pudev_enumerate_handle):Pudev_list_entry_handle;cdecl;{$ifdef udevstatic}external;{$endif}
 
-  {$ifdef udevstatic}function {$endif}udev_list_entry_get_name{$ifndef udevstatic}: function{$endif}(list_entry:Pudev_list_entry_handle):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_list_entry_get_name{$ifndef udevstatic}: function{$endif}(list_entry:Pudev_list_entry_handle):Pansichar;cdecl;{$ifdef udevstatic}external;{$endif}
   {$ifdef udevstatic}function {$endif}udev_list_entry_get_next{$ifndef udevstatic}: function{$endif}(list_entry:Pudev_list_entry_handle):Pudev_list_entry_handle;cdecl;{$ifdef udevstatic}external;{$endif}
 
-  {$ifdef udevstatic}function {$endif}udev_monitor_new_from_netlink{$ifndef udevstatic}: function{$endif}(udev:Pudev_handle;name:Pchar):Pudev_monitor_handle;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_monitor_new_from_netlink{$ifndef udevstatic}: function{$endif}(udev:Pudev_handle;const name:Pansichar):Pudev_monitor_handle;cdecl;{$ifdef udevstatic}external;{$endif}
   {$ifdef udevstatic}function {$endif}udev_monitor_receive_device{$ifndef udevstatic}: function{$endif}(mon:Pudev_monitor_handle):Pudev_device_handle;cdecl;{$ifdef udevstatic}external;{$endif}
-  {$ifdef udevstatic}function {$endif}udev_monitor_filter_add_match_subsystem_devtype{$ifndef udevstatic}: function{$endif}(mon:Pudev_monitor_handle;subsystem,devtype:Pchar):integer;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_monitor_filter_add_match_subsystem_devtype{$ifndef udevstatic}: function{$endif}(mon:Pudev_monitor_handle;const subsystem:Pansichar;const devtype:Pansichar):integer;cdecl;{$ifdef udevstatic}external;{$endif}
   {$ifdef udevstatic}function {$endif}udev_monitor_enable_receiving{$ifndef udevstatic}: function{$endif}(mon:Pudev_monitor_handle):integer;cdecl;{$ifdef udevstatic}external;{$endif}
   {$ifdef udevstatic}function {$endif}udev_monitor_get_fd{$ifndef udevstatic}: function{$endif}(mon:Pudev_monitor_handle):integer;cdecl;{$ifdef udevstatic}external;{$endif}
   {$ifdef udevstatic}function {$endif}udev_monitor_unref{$ifndef udevstatic}: function{$endif}(mon:Pudev_monitor_handle):Pudev_monitor_handle;cdecl;{$ifdef udevstatic}external;{$endif}
 
   {$ifdef udevstatic}function {$endif}udev_device_unref{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pudev_device_handle;cdecl;{$ifdef udevstatic}external;{$endif}
-  {$ifdef udevstatic}function {$endif}udev_device_get_sysattr_value{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle;sysattr:Pchar):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
-  {$ifdef udevstatic}function {$endif}udev_device_get_action{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
-  {$ifdef udevstatic}function {$endif}udev_device_get_devnode{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
-  {$ifdef udevstatic}function {$endif}udev_device_get_devpath{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
-  {$ifdef udevstatic}function {$endif}udev_device_get_syspath{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
-  {$ifdef udevstatic}function {$endif}udev_device_new_from_syspath{$ifndef udevstatic}: function{$endif}(udev:Pudev_handle;syspath:Pchar):Pudev_device_handle;cdecl;{$ifdef udevstatic}external;{$endif}
-  {$ifdef udevstatic}function {$endif}udev_device_get_parent_with_subsystem_devtype{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle;subsystem,devtype:Pchar):Pudev_device_handle;cdecl;{$ifdef udevstatic}external;{$endif}
-  {$ifdef udevstatic}function {$endif}udev_device_get_property_value{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle;key:Pchar):Pchar;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_sysattr_value{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle;const sysattr:Pansichar):Pansichar;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_action{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pansichar;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_devnode{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pansichar;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_devtype{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pansichar;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_devpath{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pansichar;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_syspath{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle):Pansichar;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_new_from_syspath{$ifndef udevstatic}: function{$endif}(udev:Pudev_handle;const syspath:Pansichar):Pudev_device_handle;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_parent_with_subsystem_devtype{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle;const subsystem:Pansichar;const devtype:Pansichar):Pudev_device_handle;cdecl;{$ifdef udevstatic}external;{$endif}
+  {$ifdef udevstatic}function {$endif}udev_device_get_property_value{$ifndef udevstatic}: function{$endif}(dev:Pudev_device_handle;const key:Pansichar):Pansichar;cdecl;{$ifdef udevstatic}external;{$endif}
 
 implementation
 
 uses
-  SysUtils;
+  SysUtils,DynLibs;
 
 var
   // UdevOk could be used in whole unit ... not for now ... will fail already during init when no udev-lib found .. lazy ...
@@ -529,33 +529,42 @@ var
   e:Exception;
 begin
   libudev:= LoadLibrary('libudev.'+SharedSuffix+'.1');
-  if libudev = NilHandle then libudev:= LoadLibrary('libudev.'+SharedSuffix+'.1');
-  UdevOk:= libudev <> NilHandle;
+  if libudev = NilHandle then libudev:= LoadLibrary('libudev.'+SharedSuffix+'.0');
+  UdevOk:= (libudev <> NilHandle);
   if UdevOk then
   try
     pointer(udev_new):= GetProcAddress(libudev, 'udev_new');
     pointer(udev_unref):= GetProcedureAddress(libudev, 'udev_unref');
-    pointer(udev_list_entry_get_next):= GetProcedureAddress(libudev, 'udev_list_entry_get_next');
-    pointer(udev_list_entry_get_name):= GetProcedureAddress(libudev, 'udev_list_entry_get_name');
-    pointer(udev_device_unref):= GetProcedureAddress(libudev, 'udev_device_unref');
-    pointer(udev_device_new_from_syspath):= GetProcedureAddress(libudev, 'udev_device_new_from_syspath');
-    pointer(udev_device_get_devnode):= GetProcedureAddress(libudev, 'udev_device_get_devnode');
-    pointer(udev_device_get_devtype):= GetProcedureAddress(libudev, 'udev_device_get_devtype');
-    pointer(udev_device_get_syspath):= GetProcedureAddress(libudev, 'udev_device_get_syspath');
-    pointer(udev_device_get_action):= GetProcedureAddress(libudev, 'udev_device_get_action');
-    pointer(udev_device_get_property_value):= GetProcedureAddress(libudev, 'udev_device_get_property_value');
-    pointer(udev_device_get_sysattr_value):= GetProcedureAddress(libudev, 'udev_device_get_sysattr_value');
-    pointer(udev_monitor_unref):= GetProcedureAddress(libudev, 'udev_monitor_unref');
-    pointer(udev_monitor_new_from_netlink):= GetProcedureAddress(libudev, 'udev_monitor_new_from_netlink');
-    pointer(udev_monitor_filter_add_match_subsystem_devtype):= GetProcedureAddress(libudev, 'udev_monitor_filter_add_match_subsystem_devtype');
-    pointer(udev_monitor_enable_receiving):= GetProcedureAddress(libudev, 'udev_monitor_enable_receiving');
-    pointer(udev_monitor_get_fd):= GetProcedureAddress(libudev, 'udev_monitor_get_fd');
-    pointer(udev_monitor_receive_device):= GetProcedureAddress(libudev, 'udev_monitor_receive_device');
+
     pointer(udev_enumerate_new):= GetProcedureAddress(libudev, 'udev_enumerate_new');
     pointer(udev_enumerate_unref):= GetProcedureAddress(libudev, 'udev_enumerate_unref');
     pointer(udev_enumerate_add_match_subsystem):= GetProcedureAddress(libudev, 'udev_enumerate_add_match_subsystem');
+    pointer(udev_enumerate_add_match_sysattr):= GetProcedureAddress(libudev, 'udev_enumerate_add_match_sysattr');
+
     pointer(udev_enumerate_scan_devices):= GetProcedureAddress(libudev, 'udev_enumerate_scan_devices');
     pointer(udev_enumerate_get_list_entry):= GetProcedureAddress(libudev, 'udev_enumerate_get_list_entry');
+
+    pointer(udev_list_entry_get_name):= GetProcedureAddress(libudev, 'udev_list_entry_get_name');
+    pointer(udev_list_entry_get_next):= GetProcedureAddress(libudev, 'udev_list_entry_get_next');
+
+    pointer(udev_monitor_new_from_netlink):= GetProcedureAddress(libudev, 'udev_monitor_new_from_netlink');
+    pointer(udev_monitor_receive_device):= GetProcedureAddress(libudev, 'udev_monitor_receive_device');
+    pointer(udev_monitor_filter_add_match_subsystem_devtype):= GetProcedureAddress(libudev, 'udev_monitor_filter_add_match_subsystem_devtype');
+    pointer(udev_monitor_enable_receiving):= GetProcedureAddress(libudev, 'udev_monitor_enable_receiving');
+    pointer(udev_monitor_get_fd):= GetProcedureAddress(libudev, 'udev_monitor_get_fd');
+    pointer(udev_monitor_unref):= GetProcedureAddress(libudev, 'udev_monitor_unref');
+
+    pointer(udev_device_unref):= GetProcedureAddress(libudev, 'udev_device_unref');
+    pointer(udev_device_get_sysattr_value):= GetProcedureAddress(libudev, 'udev_device_get_sysattr_value');
+    pointer(udev_device_get_action):= GetProcedureAddress(libudev, 'udev_device_get_action');
+    pointer(udev_device_get_devnode):= GetProcedureAddress(libudev, 'udev_device_get_devnode');
+    pointer(udev_device_get_devtype):= GetProcedureAddress(libudev, 'udev_device_get_devtype');
+    pointer(udev_device_get_devpath):= GetProcedureAddress(libudev, 'udev_device_get_devpath');
+    pointer(udev_device_get_syspath):= GetProcedureAddress(libudev, 'udev_device_get_syspath');
+    pointer(udev_device_new_from_syspath):= GetProcedureAddress(libudev, 'udev_device_new_from_syspath');
+    pointer(udev_device_get_parent_with_subsystem_devtype):= GetProcedureAddress(libudev, 'udev_device_get_parent_with_subsystem_devtype');
+    pointer(udev_device_get_property_value):= GetProcedureAddress(libudev, 'udev_device_get_property_value');
+
   except
     on E: Exception do
     begin
@@ -809,11 +818,11 @@ begin
     if FEnabled then
     begin
       DeviceChange;
-      StartControllerThread;
+      //StartControllerThread;
     end
     else
     begin
-      StopControllerThread;
+      //StopControllerThread;
     end;
   end;
 end;
@@ -1199,18 +1208,18 @@ var
 
       if(localudev_rawdevice<>nil) then
       begin
+
         LocalRawNode:=udev_device_get_devnode(localudev_rawdevice);
+
         {$IFDEF debug}
         DebugInfo:='Found raw node: '+LocalRawNode;
         DebugInfo:='HID_PHYS_1: '+udev_device_get_property_value(localudev_rawdevice, 'HID_PHYS');
         DebugInfo:='HID_ID_1: '+udev_device_get_property_value(localudev_rawdevice, 'HID_ID');
         {$ENDIF}
-
         localudev_hiddevice := udev_device_get_parent_with_subsystem_devtype(
         		       localudev_rawdevice,
         		       'hid',
         		       nil);
-
         if(localudev_hiddevice<>nil) then
         begin
           LocalHidNode:=udev_device_get_devnode(localudev_hiddevice);
@@ -1257,7 +1266,6 @@ var
           {$ENDIF}
           localudev_intfdevice:=localudev_hiddevice;
         end;
-
         localudev_usbdevice := udev_device_get_parent_with_subsystem_devtype(
                              localudev_intfdevice,
       	                     'usb',
