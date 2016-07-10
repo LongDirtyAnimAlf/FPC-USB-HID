@@ -1,7 +1,5 @@
 unit usb2;
 
-{$mode objfpc}{$H+}
-
 interface
 
 uses
@@ -9,7 +7,11 @@ uses
   {$IFDEF usegenerics}
   ,fgl
   {$ENDIF}
+  {$ifdef Unix}
   ,usbcontroller
+  {$else}
+  ,JvHidControllerClass
+  {$endif}
   ;
 
 const
@@ -106,8 +108,10 @@ type
 implementation
 
 uses
+  {$ifdef UNIX}
   Unix,
   BaseUnix,
+  {$endif}
   IniFiles,
   StrUtils;
 
@@ -130,10 +134,9 @@ begin
   HidCtrl:=HidDev;
   if HidCtrl<>nil then
   begin
-    //disable for now on Linux.
     OnData:=nil;
     // enable this for non-blocking read of USB !!!
-    //OnData:=@ShowRead;
+    //OnData:=ShowRead;
   end;
 end;
 
@@ -208,10 +211,9 @@ begin
 
   HidCtl:=TJvHidDeviceController.Create(nil);
   // either enable this, or the other two, to detect USB device changes
-  HidCtl.OnDeviceChange:=@DeviceChange;
-  //HidCtl.OnArrival:= @DeviceArrival;
-  //HidCtl.OnRemoval:= @DeviceRemoval;
-  AddInfo(HidCtl.DebugInfo);
+  HidCtl.OnDeviceChange:=DeviceChange;
+  //HidCtl.OnArrival:= DeviceArrival;
+  //HidCtl.OnRemoval:= DeviceRemoval;
 end;
 
 destructor TUSB.Destroy;
@@ -243,7 +245,9 @@ begin
   if Value <> FEnabled then
   begin
     FEnabled := Value;
+    {$ifdef UNIX}
     HidCtl.Enabled:=FEnabled;
+    {$endif}
   end;
 end;
 
@@ -271,7 +275,9 @@ begin
     error:=(NOT Ctrl.HidCtrl.WriteFile(Ctrl.LocalData, Ctrl.HidCtrl.Caps.OutputReportByteLength, Written));
     if (error) then
     begin
+      {$ifdef UNIX}
       Err := fpgeterrno;
+      {$endif}
       AddErrors(Format('USB normal write error: %s (%x)', [SysErrorMessage(Err), Err]));
     end;
     if (NOT error) AND (NOT ReadOnly) then
@@ -293,7 +299,9 @@ begin
         if error then
         begin
           FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
+          {$ifdef UNIX}
           Err := fpgeterrno;
+          {$endif}
           AddErrors(Format('USB normal read error: %s (%x)', [SysErrorMessage(Err), Err]));
         end;
       end;
@@ -314,7 +322,7 @@ begin
   if ((HidDev.Attributes.VendorID = Vendor) AND
       (HidDev.Attributes.ProductID = Product) ) then
   begin
-    for board:=0 to AUSBList.Count-1 do
+    for board:=AUSBList.Count-1 downto 0 do
     begin
       LocalHidDev:=TUSBController(AUSBList.Items[board]);
       //if ((Assigned(LocalHidDev.HidCtrl)) and (NOT LocalHidDev.HidCtrl.IsPluggedIn)) then
@@ -410,7 +418,8 @@ var
   HidDev:TJvHidDevice;
 begin
   AddInfo('Devices change !!');
-  for i:=0 to HidCtl.HidDevices.Count-1 do
+  i:=0;
+  while i<HidCtl.HidDevices.Count do
   begin
     HidDev:=TJvHidDevice(HidCtl.HidDevices[i]);
     AddInfo('HID-device#'+InttoStr(i)+'. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
@@ -428,6 +437,7 @@ begin
         DeviceRemoval(HidDev);
       end;
     end;
+    Inc(i);
   end;
 end;
 
@@ -593,7 +603,9 @@ end;
 
 function TUSB.GetInfo:String;
 begin
+  {$ifdef UNIX}
   AddInfo(HidCtl.DebugInfo);
+  {$endif}
   if FInfo.Count>0 then
   begin
     result:=FInfo.Text;
@@ -656,4 +668,4 @@ begin
   result:=TUSBController(AUSBList.Items[board]).Serial;
 end;
 
-end.
+end.

@@ -1,6 +1,10 @@
-program FpcUsbLinuxHid;
+program FpcUsbHid;
 
-{$mode objfpc}{$H+}
+{$IFDEF LINUX}
+  {$IFDEF FPC_CROSSCOMPILING}
+    {$linklib libc_nonshared.a}
+  {$ENDIF}
+{$ENDIF}
 
 {$define UseCThreads}
 

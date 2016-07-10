@@ -3,14 +3,15 @@
   <ProjectSession>
     <PathDelim Value="\"/>
     <Version Value="9"/>
-    <BuildModes Active="linuxarmhf"/>
-    <Units Count="28">
+    <BuildModes Active="windows"/>
+    <Units Count="30">
       <Unit0>
-        <Filename Value="FpcUsbLinuxHid.lpr"/>
+        <Filename Value="FpcUsbHid.lpr"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="-1"/>
-        <CursorPos X="25" Y="21"/>
-        <UsageCount Value="55"/>
+        <IsVisibleTab Value="True"/>
+        <UsageCount Value="56"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit0>
       <Unit1>
         <Filename Value="main.pas"/>
@@ -19,24 +20,24 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="Main"/>
-        <IsVisibleTab Value="True"/>
-        <UsageCount Value="55"/>
+        <EditorIndex Value="1"/>
+        <UsageCount Value="56"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit1>
       <Unit2>
         <Filename Value="usb2.pas"/>
-        <UnitName Value="usb2"/>
-        <EditorIndex Value="1"/>
-        <UsageCount Value="30"/>
+        <EditorIndex Value="2"/>
+        <UsageCount Value="31"/>
         <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit2>
       <Unit3>
         <Filename Value="usbcontroller.pas"/>
-        <UnitName Value="usbcontroller"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="-1"/>
         <UsageCount Value="30"/>
-        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit3>
       <Unit4>
         <Filename Value="..\..\superdad\development\fpc\rtl\inc\exeinfo.pp"/>
@@ -44,6 +45,7 @@
         <TopLine Value="1011"/>
         <CursorPos X="5" Y="1020"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit4>
       <Unit5>
         <Filename Value="..\..\superdad\development\fpc\rtl\linux\arm\syscall.inc"/>
@@ -51,6 +53,7 @@
         <TopLine Value="285"/>
         <CursorPos Y="302"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit5>
       <Unit6>
         <Filename Value="..\..\superdad\development\fpc\rtl\inc\system.inc"/>
@@ -58,6 +61,7 @@
         <TopLine Value="1029"/>
         <CursorPos Y="1040"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit6>
       <Unit7>
         <Filename Value="..\..\superdad\development\fpc\rtl\unix\tthread.inc"/>
@@ -65,6 +69,7 @@
         <TopLine Value="244"/>
         <CursorPos Y="255"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit7>
       <Unit8>
         <Filename Value="..\..\superdad\development\fpc\rtl\inc\objpas.inc"/>
@@ -72,6 +77,7 @@
         <TopLine Value="278"/>
         <CursorPos Y="287"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit8>
       <Unit9>
         <Filename Value="..\..\superdad\development\lazarus\lcl\include\customform.inc"/>
@@ -79,6 +85,7 @@
         <TopLine Value="185"/>
         <CursorPos Y="196"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit9>
       <Unit10>
         <Filename Value="..\..\superdad\development\lazarus\lcl\include\application.inc"/>
@@ -86,6 +93,7 @@
         <TopLine Value="1075"/>
         <CursorPos Y="1086"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit10>
       <Unit11>
         <Filename Value="..\..\superdad\development\lazarus\lcl\forms.pp"/>
@@ -93,6 +101,7 @@
         <TopLine Value="1831"/>
         <CursorPos Y="1842"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit11>
       <Unit12>
         <Filename Value="..\..\superdad\development\fpc\rtl\inc\objpash.inc"/>
@@ -100,6 +109,7 @@
         <TopLine Value="193"/>
         <CursorPos X="21" Y="202"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit12>
       <Unit13>
         <Filename Value="C:\development\fpc\rtl\inc\dynlibh.inc"/>
@@ -107,6 +117,7 @@
         <TopLine Value="35"/>
         <CursorPos X="14" Y="54"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit13>
       <Unit14>
         <Filename Value="C:\development\fpc\rtl\inc\dynlibs.pas"/>
@@ -114,12 +125,14 @@
         <TopLine Value="12"/>
         <CursorPos X="3" Y="27"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit14>
       <Unit15>
         <Filename Value="C:\development\fpc\rtl\unix\sysdlh.inc"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="12" Y="21"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit15>
       <Unit16>
         <Filename Value="C:\development\fpc\rtl\objpas\classes\classesh.inc"/>
@@ -127,6 +140,7 @@
         <TopLine Value="10"/>
         <CursorPos X="24" Y="25"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit16>
       <Unit17>
         <Filename Value="C:\development\fpc\rtl\win32\windows.pp"/>
@@ -134,6 +148,7 @@
         <TopLine Value="22"/>
         <CursorPos X="31" Y="26"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit17>
       <Unit18>
         <Filename Value="C:\development\fpc\packages\winunits-jedi\src\jwawinsock.pas"/>
@@ -142,25 +157,28 @@
         <TopLine Value="1458"/>
         <CursorPos X="19" Y="1475"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit18>
       <Unit19>
         <Filename Value="C:\development\fpc\packages\libc\src\kernelioctl.pp"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="21" Y="132"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit19>
       <Unit20>
         <Filename Value="C:\development\fpc\packages\libc\src\nif_ppp.inc"/>
         <EditorIndex Value="-1"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit20>
       <Unit21>
         <Filename Value="C:\development\fpc\packages\libogcfpc\src\network.pp"/>
-        <UnitName Value="network"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="274"/>
         <CursorPos X="11" Y="286"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit21>
       <Unit22>
         <Filename Value="C:\development\fpc\packages\rtl-extra\src\win\winsock2.pp"/>
@@ -169,6 +187,7 @@
         <TopLine Value="385"/>
         <CursorPos X="23" Y="346"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit22>
       <Unit23>
         <Filename Value="C:\development\fpc\packages\rtl-extra\src\wince\winsock2.pp"/>
@@ -177,6 +196,7 @@
         <TopLine Value="308"/>
         <CursorPos X="23" Y="323"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit23>
       <Unit24>
         <Filename Value="C:\development\fpc\rtl\unix\bunxh.inc"/>
@@ -184,6 +204,7 @@
         <TopLine Value="83"/>
         <CursorPos X="53" Y="98"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit24>
       <Unit25>
         <Filename Value="C:\development\fpc\rtl\unix\aliasptp.inc"/>
@@ -191,6 +212,7 @@
         <TopLine Value="11"/>
         <CursorPos X="36" Y="26"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit25>
       <Unit26>
         <Filename Value="C:\development\fpc\rtl\linux\ptypes.inc"/>
@@ -198,6 +220,7 @@
         <TopLine Value="135"/>
         <CursorPos X="23" Y="150"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit26>
       <Unit27>
         <Filename Value="C:\development\fpc\rtl\unix\ctypes.inc"/>
@@ -205,125 +228,114 @@
         <TopLine Value="21"/>
         <CursorPos X="31" Y="36"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit27>
+      <Unit28>
+        <Filename Value="jvcl\jvcl\run\Hid.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="2200"/>
+        <CursorPos X="5" Y="2223"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit28>
+      <Unit29>
+        <Filename Value="jvcl\jvcl\run\JvHidControllerClass.pas"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit29>
     </Units>
-    <JumpHistory Count="30" HistoryIndex="29">
+    <JumpHistory Count="23" HistoryIndex="22">
       <Position1>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1226" Column="53" TopLine="1218"/>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="595" Column="23" TopLine="588"/>
       </Position1>
       <Position2>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1508" Column="52" TopLine="1495"/>
+        <Filename Value="usb2.pas"/>
       </Position2>
       <Position3>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1496" Column="25" TopLine="1482"/>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="607" Column="11" TopLine="577"/>
       </Position3>
       <Position4>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="305" Column="24" TopLine="290"/>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="422" Column="22" TopLine="130"/>
       </Position4>
       <Position5>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1496" Column="14" TopLine="1482"/>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="215" Column="26" TopLine="199"/>
       </Position5>
       <Position6>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1495" Column="9" TopLine="1481"/>
+        <Filename Value="main.pas"/>
+        <Caret Line="49" Column="29" TopLine="32"/>
       </Position6>
       <Position7>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="584" TopLine="560"/>
+        <Filename Value="main.pas"/>
+        <Caret Line="8" Column="3"/>
       </Position7>
       <Position8>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1505" Column="16" TopLine="1490"/>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="13" Column="13"/>
       </Position8>
       <Position9>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="584" Column="44" TopLine="569"/>
+        <Filename Value="main.pas"/>
+        <Caret Line="130" Column="8" TopLine="122"/>
       </Position9>
       <Position10>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1505" Column="11" TopLine="1491"/>
+        <Filename Value="main.pas"/>
+        <Caret Line="18" Column="17"/>
       </Position10>
       <Position11>
-        <Filename Value="usbcontroller.pas"/>
+        <Filename Value="main.pas"/>
+        <Caret Line="24" Column="27"/>
       </Position11>
       <Position12>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1166" TopLine="1141"/>
+        <Filename Value="main.pas"/>
+        <Caret Line="67" TopLine="38"/>
       </Position12>
       <Position13>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="584" Column="17" TopLine="575"/>
+        <Filename Value="main.pas"/>
+        <Caret Line="68" Column="15" TopLine="40"/>
       </Position13>
       <Position14>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1505" Column="34" TopLine="1480"/>
+        <Filename Value="main.pas"/>
+        <Caret Line="94" Column="30" TopLine="66"/>
       </Position14>
       <Position15>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1913" Column="35" TopLine="1908"/>
+        <Filename Value="main.pas"/>
+        <Caret Line="133" Column="15" TopLine="105"/>
       </Position15>
       <Position16>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1889" Column="3" TopLine="1874"/>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="130" Column="20" TopLine="118"/>
       </Position16>
       <Position17>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1914" Column="35" TopLine="1893"/>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="214" Column="29" TopLine="200"/>
       </Position17>
       <Position18>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1958" Column="8" TopLine="1945"/>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="322" Column="29" TopLine="312"/>
       </Position18>
       <Position19>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="589" Column="9" TopLine="574"/>
+        <Filename Value="usb2.pas"/>
       </Position19>
       <Position20>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="584" Column="34" TopLine="576"/>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="423" Column="43" TopLine="406"/>
       </Position20>
       <Position21>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="289" Column="45" TopLine="276"/>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="421" Column="13" TopLine="406"/>
       </Position21>
       <Position22>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="595" Column="51" TopLine="583"/>
+        <Filename Value="main.pas"/>
+        <Caret Line="6" Column="12"/>
       </Position22>
       <Position23>
-        <Filename Value="usbcontroller.pas"/>
+        <Filename Value="FpcUsbHid.lpr"/>
+        <Caret Line="8" Column="3"/>
       </Position23>
-      <Position24>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="289" Column="41" TopLine="265"/>
-      </Position24>
-      <Position25>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="595" Column="28" TopLine="570"/>
-      </Position25>
-      <Position26>
-        <Filename Value="main.pas"/>
-      </Position26>
-      <Position27>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1336" Column="56" TopLine="1321"/>
-      </Position27>
-      <Position28>
-        <Filename Value="usbcontroller.pas"/>
-        <Caret Line="1999" Column="18" TopLine="1989"/>
-      </Position28>
-      <Position29>
-        <Filename Value="usbcontroller.pas"/>
-      </Position29>
-      <Position30>
-        <Filename Value="main.pas"/>
-        <Caret Line="21" Column="33" TopLine="6"/>
-      </Position30>
     </JumpHistory>
   </ProjectSession>
 </CONFIG>

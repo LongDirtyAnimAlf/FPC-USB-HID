@@ -1,7 +1,5 @@
 unit Main;
 
-{$mode objfpc}{$H+}
-
 interface
 
 uses
@@ -22,6 +20,7 @@ type
     procedure btnHIDCreateClick(Sender: TObject);
     procedure btnHIDEnableClick(Sender: TObject);
     procedure btnInfoClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
   private
     { private declarations }
@@ -47,7 +46,7 @@ begin
   TButton(Sender).Enabled:=False;
   Memo1.Lines.Append('HID Created.');
   NewUSB:=TUSB.Create;
-  NewUSB.OnUSBDeviceChange:=@UpdateUSBDevice;
+  NewUSB.OnUSBDeviceChange:=UpdateUSBDevice;
   Memo1.Lines.Append('Ready.');
   S:=NewUSB.Info;
   if Length(S)>0 then
@@ -61,7 +60,10 @@ begin
     Memo1.Lines.Append('ERRORS:');
     Memo1.Lines.Append(S);
   end;
+  {$ifndef Windows}
+  // on Windows, HID is enabled by default !
   btnHIDEnable.Enabled:=True;
+  {$endif}
   btnInfo.Enabled:=True;
 end;
 
@@ -121,6 +123,14 @@ begin
   end else Memo1.Lines.Append('No new USB info.');
 end;
 
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  {$ifdef Windows}
+  // on Windows, HID is enabled by default !
+  btnHIDEnable.Enabled:=False;
+  {$endif}
+end;
+
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   if Assigned(NewUSB) then NewUSB.Free;
@@ -146,4 +156,4 @@ begin
 end;
 
 end.
-
+

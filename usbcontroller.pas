@@ -69,7 +69,8 @@ unit usbcontroller;
 interface
 
 uses
-  Classes,  baseunix, unix
+  Classes,
+  baseunix, unix
   {$IFDEF usegenerics}
   ,fgl
   {$ENDIF}
@@ -100,10 +101,7 @@ const
   HID_STRING_SIZE         = 256;
   HID_MAX_MULTI_USAGES    = 1024;
 
-  _IO                   = 0;
-  _IOW                  = 1;
-  _IOR                  = 2;
-  _IOWR                 = 3;
+
 
 type
   Pudev_handle = ^udev_handle;
@@ -198,6 +196,21 @@ type
    end;
 
 const
+
+  _IO                   = 0;
+  _IOW                  = 1;
+  _IOR                  = 2;
+  _IOWR                 = 3;
+
+  IOCPARM_MASK = $7f;
+  IOC_VOID = $20000000;
+  IOC_OUT = $40000000;
+  IOC_IN = $80000000;
+  IOC_INOUT = IOC_IN or IOC_OUT;
+  FIONREAD =cardinal( IOC_OUT or ((4 and IOCPARM_MASK) shl 16) or (102 shl 8) or 127);
+
+
+
   HIDIOCSUSAGE          = cint32((_IOW shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0C);
   HIDIOCSREPORT         = cint32((_IOW shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $08);
   HIDIOCGUCODE          = cint32((_IOWR shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0D);

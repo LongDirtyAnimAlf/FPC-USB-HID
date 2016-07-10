@@ -6,7 +6,7 @@
     <General>
       <SessionStorage Value="InProjectDir"/>
       <MainUnit Value="0"/>
-      <Title Value="FpcUsbLinuxHid"/>
+      <Title Value="FpcUsbHid"/>
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
       <Icon Value="0"/>
@@ -17,14 +17,20 @@
     <VersionInfo>
       <StringTable ProductVersion=""/>
     </VersionInfo>
-    <BuildModes Count="2">
+    <MacroValues Count="1">
+      <Macro1 Name="LCLWidgetType" Value="gtk2"/>
+    </MacroValues>
+    <BuildModes Count="3">
       <Item1 Name="linuxarmhf" Default="True"/>
       <Item2 Name="linuxi386">
+        <MacroValues Count="1">
+          <Macro1 Name="LCLWidgetType" Value="gtk2"/>
+        </MacroValues>
         <CompilerOptions>
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="bin\$(TargetCPU)-$(TargetOS)\FpcUsbLinuxHid"/>
+            <Filename Value="bin\$(TargetCPU)-$(TargetOS)\FpcUsbHid"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -33,6 +39,11 @@
           </SearchPaths>
           <Conditionals Value="if TargetCPU='arm' then
    LinkerOptions := ' =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF';"/>
+          <Parsing>
+            <SyntaxOptions>
+              <SyntaxMode Value="Delphi"/>
+            </SyntaxOptions>
+          </Parsing>
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
             <TargetCPU Value="i386"/>
@@ -54,6 +65,56 @@
           </Linking>
         </CompilerOptions>
       </Item2>
+      <Item3 Name="windows">
+        <MacroValues Count="1">
+          <Macro2 Name="LCLWidgetType" Value="win32"/>
+        </MacroValues>
+        <CompilerOptions>
+          <Version Value="11"/>
+          <PathDelim Value="\"/>
+          <Target>
+            <Filename Value="bin\$(TargetCPU)-$(TargetOS)\FpcUsbHid"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir);jvcl\jvcl\common;jcl\jcl\source\include"/>
+            <OtherUnitFiles Value="jvcl\jvcl\run;jcl\jcl\source\common;jcl\jcl\source\windows"/>
+            <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <Conditionals Value="if TargetCPU='arm' then
+   LinkerOptions := ' =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF';"/>
+          <Parsing>
+            <SyntaxOptions>
+              <SyntaxMode Value="Delphi"/>
+              <IncludeAssertionCode Value="True"/>
+            </SyntaxOptions>
+          </Parsing>
+          <CodeGeneration>
+            <SmartLinkUnit Value="True"/>
+            <Checks>
+              <IOChecks Value="True"/>
+              <RangeChecks Value="True"/>
+              <OverflowChecks Value="True"/>
+              <StackChecks Value="True"/>
+            </Checks>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <StripSymbols Value="True"/>
+              <UseExternalDbgSyms Value="True"/>
+            </Debugging>
+            <LinkSmart Value="True"/>
+            <Options>
+              <Win32>
+                <GraphicApplication Value="True"/>
+              </Win32>
+            </Options>
+          </Linking>
+        </CompilerOptions>
+      </Item3>
+      <SharedMatrixOptions Count="2">
+        <Item1 ID="942274179114" Modes="linuxarmhf,linuxi386" Type="IDEMacro" MacroName="LCLWidgetType" Value="gtk2"/>
+        <Item2 ID="553587040282" Modes="windows" Type="IDEMacro" MacroName="LCLWidgetType" Value="win32"/>
+      </SharedMatrixOptions>
     </BuildModes>
     <PublishOptions>
       <Version Value="2"/>
@@ -70,7 +131,7 @@
     </RequiredPackages>
     <Units Count="2">
       <Unit0>
-        <Filename Value="FpcUsbLinuxHid.lpr"/>
+        <Filename Value="FpcUsbHid.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
       <Unit1>
@@ -87,7 +148,7 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="bin\$(TargetCPU)-$(TargetOS)\FpcUsbLinuxHid"/>
+      <Filename Value="bin\$(TargetCPU)-$(TargetOS)\FpcUsbHid"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
@@ -96,6 +157,11 @@
     </SearchPaths>
     <Conditionals Value="if TargetCPU='arm' then
    LinkerOptions := ' =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF';"/>
+    <Parsing>
+      <SyntaxOptions>
+        <SyntaxMode Value="Delphi"/>
+      </SyntaxOptions>
+    </Parsing>
     <CodeGeneration>
       <SmartLinkUnit Value="True"/>
       <TargetCPU Value="arm"/>

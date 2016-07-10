@@ -1,0 +1,4 @@
+{"version":1,"strings":[
+{"hash":165990067,"name":"jvhidcontrollerclass.serrfailedtoregisterwindowclass","sourcebytes":[70,97,105,108,101,100,32,116,111,32,114,101,103,105,115,116,101,114,32,109,101,115,115,97,103,101,32,119,105,110,100,111,119,32,99,108,97,115,115],"value":"Failed to register message window class"},
+{"hash":17313315,"name":"jvhidcontrollerclass.serrfailedtocreatewindow","sourcebytes":[70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,109,101,115,115,97,103,101,32,119,105,110,100,111,119,32,37,115],"value":"Failed to create message window %s"}
+]}
