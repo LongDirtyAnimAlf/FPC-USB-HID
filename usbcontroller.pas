@@ -346,6 +346,7 @@ type
     FSerialNumber: String;
     FPhysicalDescriptor: string;
     FLanguageStrings: TStringList;
+    FPollingDelayTime: Integer;
     FThreadSleepTime: Integer;
     FData: TJvHidDataEvent;
     FUnplug: TJvHidUnplugEvent;
@@ -364,6 +365,7 @@ type
     function GetDebugInfo: string;
     procedure SetDebugInfo(value:String);
     procedure SetDataEvent(const DataEvent: TJvHidDataEvent);
+    procedure SetPollingDelayTime(const DelayTime: Integer);
     procedure SetThreadSleepTime(const SleepTime: Integer);
     procedure StartThread;
     procedure StopThread;
@@ -396,6 +398,7 @@ type
     property ProductName: String read GetProductName;
     property SerialNumber: String read GetSerialNumber;
     property Tag: Integer read FTag write FTag;
+    property PollingDelayTime: Integer read FPollingDelayTime write SetPollingDelayTime;
     property ThreadSleepTime: Integer read FThreadSleepTime write SetThreadSleepTime;
     property DeviceStrings[Idx: Byte]: string read GetDeviceString;
     property OnData: TJvHidDataEvent read FData write SetDataEvent;
@@ -427,6 +430,7 @@ type
     FDeviceChangeEvent: TNotifyEvent;
     FDevUnplugEvent: TJvHidUnplugEvent;
     FRemovalEvent: TJvHidUnplugEvent;
+    FDevPollingDelayTime: Integer;
     FDevThreadSleepTime: Integer;
     FContinue: Boolean;
     FRunning: Boolean;
@@ -440,6 +444,7 @@ type
     FInDeviceChange: Boolean;
     FDebugInfo: TStringList;
     function    CheckThisOut(var HidDev: TJvHidDevice; Idx: Integer; Check: Boolean): Boolean;
+    procedure   SetDevPollingDelayTime(const DevTime: Integer);
     procedure   SetDevThreadSleepTime(const DevTime: Integer);
     procedure   SetEnabled(Value: Boolean );
     procedure   SetDevData(const DataEvent: TJvHidDataEvent);
@@ -477,6 +482,7 @@ type
     property    NumUnpluggedDevices: Integer read FNumUnpluggedDevices;
   published
     property    Enabled: Boolean read FEnabled write SetEnabled;
+    property    DevPollingDelayTime: Integer read FDevPollingDelayTime write SetDevPollingDelayTime default 0;
     property    DevThreadSleepTime: Integer read FDevThreadSleepTime write SetDevThreadSleepTime default 100;
     property    ThreadPriority: TThreadPriority read FPriority write FPriority default tpNormal;
     property    OnDeviceData: TJvHidDataEvent read FDevDataEvent write SetDevData;
@@ -774,6 +780,7 @@ begin
   FNumCheckedInDevices := 0;
   FNumCheckedOutDevices := 0;
   FNumUnpluggedDevices := 0;
+  DevPollingDelayTime := 0;
   FDevThreadSleepTime := 100;
 
   FInDeviceChange := False;
@@ -1138,7 +1145,23 @@ begin
 end;
 
 
-
+procedure TJvHidDeviceController.SetDevPollingDelayTime(const DevTime: Integer);
+var
+  I: Integer;
+  Dev: TJvHidDevice;
+begin
+  if DevTime <> FDevPollingDelayTime then
+  begin
+    // change all DevPollingDelayTime with the same old value
+    for I := 0 to FList.Count - 1 do
+    begin
+      Dev := {$ifndef usegenerics}TJvHidDevice{$endif}(FList.Items[I]);
+      if Dev.PollingDelayTime = FDevPollingDelayTime then
+        Dev.PollingDelayTime := DevTime;
+    end;
+    FDevPollingDelayTime := DevTime;
+  end;
+end;
 
 
 procedure TJvHidDeviceController.SetDevThreadSleepTime(const DevTime: Integer);
@@ -1536,11 +1559,20 @@ begin
           NumBytesRead := (ret DIV sizeof(receiveBuffer[0]));
           for i := 0 to (NumBytesRead-1) do Report[i+1]:=receiveBuffer[i].value;
           if not Terminated then DoData;
+          //if Device.PollingDelayTime > 0 then  // Throttle device polling
+          //  SleepEx(Device.PollingDelayTime, True);
         end;
       end;
     end;
   finally
   end;
+end;
+
+procedure TJvHidDevice.SetPollingDelayTime(const DelayTime: Integer);
+begin
+  // limit to 0 sec .. 10 sec
+  if (DelayTime >= 0) and (DelayTime <= 10000) then
+    FPollingDelayTime := DelayTime;
 end;
 
 procedure TJvHidDevice.SetThreadSleepTime(const SleepTime: Integer);
@@ -1745,6 +1777,7 @@ begin
               // make it a complete clone
               Dev.OnData := TmpOnData;
               Dev.OnUnplug := TmpOnUnplug;
+              Dev.PollingDelayTime := PollingDelayTime;
               Dev.ThreadSleepTime := ThreadSleepTime;
               FList.Items[I] := Dev;
               // the FPnPInfo has been handed over to the new object
