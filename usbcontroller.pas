@@ -430,10 +430,9 @@ type
     FDeviceChangeEvent: TNotifyEvent;
     FDevUnplugEvent: TJvHidUnplugEvent;
     FRemovalEvent: TJvHidUnplugEvent;
+    FControllerMonitorThread:TJvHidDeviceControllerMonitorThread;
     FDevPollingDelayTime: Integer;
     FDevThreadSleepTime: Integer;
-    FContinue: Boolean;
-    FRunning: Boolean;
     FEnabled: Boolean;
     FEventPipe: TFilDes;
     FDevDataEvent: TJvHidDataEvent;
@@ -458,7 +457,6 @@ type
     procedure   DoDeviceChange;
     procedure   StartControllerThread;
     procedure   StopControllerThread;
-    property    Continue: Boolean read FContinue write FContinue;
   public
     constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
@@ -663,7 +661,7 @@ constructor TJvHidDeviceControllerMonitorThread.CreateUSBChangeThread(USBControl
 begin
   inherited Create(True);
   FUSBController := USBController;
-  FreeOnTerminate := True;
+  FreeOnTerminate := False;
 end;
 
 procedure TJvHidDeviceControllerMonitorThread.Execute;
@@ -676,6 +674,7 @@ var
   fd:cint;
   fd_monitor:cint;
   Action:string;
+  //selectTimeout: TTimeVal;
 begin
   localudev:=udev_new();
   if (localudev = nil) then
@@ -692,7 +691,7 @@ begin
     exit;
   end{$IFDEF debug} else FUSBController.DebugInfo:='Enum :creating new udev monitor structure success.'{$ENDIF};
 
-  if (FUSBController.FEventPipe[0] = -1)  then
+  if ( (FUSBController.FEventPipe[0] = -1) OR (FUSBController.FEventPipe[1] = -1) )  then
   begin
     {$IFDEF debug}FUSBController.DebugInfo:='Enum: fatal error event pipe.';{$ENDIF}
     Exit;
@@ -718,12 +717,17 @@ begin
   if fd_monitor >= fd
      then fd := fd_monitor + 1;
 
-  while FUSBController.Continue do
+  while NOT Terminated do
   begin
     fpFD_ZERO(readSet);
     fpFD_SET(fd_monitor, readSet);
     fpFD_SET(FUSBController.FEventPipe[0], readSet);
-    IF (fpSelect(fd + 1, @readSet, NIL, NIL, NIL) > 0) then
+
+    //selectTimeout.tv_sec:=1;
+    //selectTimeout.tv_usec:=0;
+
+    //if (fpSelect(fd + 1, @readSet, NIL, NIL, @selectTimeout) > 0) then
+    if (fpSelect(fd + 1, @readSet, NIL, NIL, NIL) > 0) then
     begin
       if fpFD_ISSET(FUSBController.FEventPipe[0], readSet) = 1 then
       begin
@@ -777,6 +781,8 @@ begin
   FRemovalEvent := nil;
   FDevDataEvent := nil;
 
+  FControllerMonitorThread:=nil;
+
   FNumCheckedInDevices := 0;
   FNumCheckedOutDevices := 0;
   FNumUnpluggedDevices := 0;
@@ -784,19 +790,24 @@ begin
   FDevThreadSleepTime := 100;
 
   FInDeviceChange := False;
-  FRunning  := False;
-  FContinue := False;
+
   fEnabled:=False;
 
   FDebugInfo := TStringList.Create;
 
   FList := THidDevList.Create;
 
+  // read part of pipe
   FEventPipe[0] := -1;
+  // write part of pipe
+  FEventPipe[1] := -1;
 
   if FpPipe(FEventPipe) = 0 then
   begin
+    // set read part of pipe to non-blocking
     FpFcntl(FEventPipe[0], F_SetFl, FpFcntl(FEventPipe[0], F_GetFl) or O_NONBLOCK);
+    // set write part of pipe to non-blocking
+    FpFcntl(FEventPipe[1], F_SetFl, FpFcntl(FEventPipe[1], F_GetFl) or O_NONBLOCK);
   end;
 end;
 
@@ -807,10 +818,18 @@ var
 begin
   StopControllerThread;
 
+  // close read part of pipe
   if FEventPipe[0] <> -1 then
   begin
     FpClose(FEventPipe[0]);
     FEventPipe[0] := -1;
+  end;
+
+  // close write part of pipe
+  if FEventPipe[1] <> -1 then
+  begin
+    FpClose(FEventPipe[1]);
+    FEventPipe[1] := -1;
   end;
 
   FDeviceChangeEvent := nil;
@@ -858,29 +877,33 @@ end;
 
 procedure TJvHidDeviceController.StartControllerThread;
 begin
-  if FRunning then
-    Exit;
-  FContinue := True;
   if not (csDesigning in ComponentState) then
   begin
-    with TJvHidDeviceControllerMonitorThread.CreateUSBChangeThread(Self) do
+    if NOT Assigned(FControllerMonitorThread) then
     begin
-      Priority := FPriority;
-      Start;
+      FControllerMonitorThread:=TJvHidDeviceControllerMonitorThread.CreateUSBChangeThread(Self);
+      FControllerMonitorThread.Priority := FPriority;
+      FControllerMonitorThread.Start;
     end;
   end;
-  FRunning := True;
 end;
 
 procedure TJvHidDeviceController.StopControllerThread;
 var
   buf: Char;
 begin
-  FContinue := False;
-  FRunning  := False;
+  if Assigned(FControllerMonitorThread) then FControllerMonitorThread.Terminate;
+
   // signal thread !!
   buf := #0;
-  FpWrite(FEventPipe[0], buf, 1);
+  FpWrite(FEventPipe[1], buf, 1);
+
+  if Assigned(FControllerMonitorThread) then
+  begin
+    FControllerMonitorThread.WaitFor;
+    FControllerMonitorThread.Destroy;
+    FControllerMonitorThread:=nil;
+  end;
 end;
 
 procedure TJvHidDeviceController.SetDevData(const DataEvent: TJvHidDataEvent);
@@ -1426,7 +1449,8 @@ begin
       begin
         HidDev.FMyController := nil; // prevent Free/Destroy from accessing this controller
         HidDev.Free;
-        HidDev := nil;
+        HidDev:=nil;
+        NewList[I]:=nil;
         Break;
       end;
   end;
@@ -1434,9 +1458,9 @@ begin
   // add the remains in NewList to FList
   for I := 0 to NewList.Count - 1 do
   begin
-    HidDev:=TJvHidDevice(NewList[I]);
-    if HidDev <> nil then
+    if NewList[I] <> nil then
     begin
+      HidDev:=TJvHidDevice(NewList[I]);
       FList.Add(HidDev);
       Changed := True;
       DoArrival(HidDev);
@@ -1560,7 +1584,7 @@ begin
           for i := 0 to (NumBytesRead-1) do Report[i+1]:=receiveBuffer[i].value;
           if not Terminated then DoData;
           //if Device.PollingDelayTime > 0 then  // Throttle device polling
-          //  SleepEx(Device.PollingDelayTime, True);
+          //  SysUtils.Sleep(Device.PollingDelayTime);
         end;
       end;
     end;

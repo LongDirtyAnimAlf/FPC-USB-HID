@@ -219,21 +219,32 @@ end;
 destructor TUSB.Destroy;
 var
   board:word;
-  HidDev:TUSBController;
+  aController:TUSBController;
+  aHidCtrl:TJvHidDevice;
 begin
-  HidCtl.Destroy;
+  HidCtl.OnArrival:= nil;
+  HidCtl.OnRemoval:= nil;
+  HidCtl.OnDeviceChange:=nil;
 
   if AUSBList.Count>0 then
   begin
     for board:=Pred(AUSBList.Count) downto 0  do
     begin
-      HidDev:=TUSBController(AUSBList.Items[board]);
-      HidDev.HidCtrl:=nil;
-      HidDev.Free;
+      if Assigned(AUSBList.Items[board]) then
+      begin
+        aController:={$ifndef usegenerics}TUSBController{$endif}(AUSBList.Items[board]);
+        aHidCtrl:=aController.HidCtrl;
+        aController.Destroy;
+        if Assigned(aHidCtrl) then HidCtl.CheckIn(aHidCtrl);
+      end;
+      AUSBList.Delete(board);
     end;
   end;
 
   AUSBList.Free;
+
+  HidCtl.Destroy;
+  HidCtl:=nil;
 
   FErrors.Free;
   FInfo.Free;
@@ -316,24 +327,31 @@ end;
 procedure TUSB.DeviceRemoval(HidDev: TJvHidDevice);
 var
   board:integer;
-  LocalHidDev:TUSBController;
+  aController:TUSBController;
+  aHidCtrl:TJvHidDevice;
 begin
   AddInfo('Device removal. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
   if ((HidDev.Attributes.VendorID = Vendor) AND
       (HidDev.Attributes.ProductID = Product) ) then
   begin
-    for board:=AUSBList.Count-1 downto 0 do
+    for board:=Pred(AUSBList.Count) downto 0 do
     begin
-      LocalHidDev:=TUSBController(AUSBList.Items[board]);
-      //if ((Assigned(LocalHidDev.HidCtrl)) and (NOT LocalHidDev.HidCtrl.IsPluggedIn)) then
-      if (LocalHidDev.HidCtrl=HidDev) then
+      if Assigned(AUSBList.Items[board]) then
       begin
-        if Assigned(FOnUSBDeviceChange) then
+        aController:={$ifndef usegenerics}TUSBController{$endif}(AUSBList.Items[board]);
+        aHidCtrl:=aController.HidCtrl;
+        //if ((Assigned(aHidCtrl)) and (NOT aHidCtrl.IsPluggedIn)) then
+        if ((Assigned(aHidCtrl)) and (aHidCtrl=HidDev)) then
         begin
-          FOnUSBDeviceChange(Self,-1*board);
+          if Assigned(FOnUSBDeviceChange) then
+          begin
+            FOnUSBDeviceChange(Self,-1*board);
+          end;
+          aController.Destroy;
+          if Assigned(aHidCtrl) then HidCtl.CheckIn(aHidCtrl);
+          AUSBList.Items[board]:=nil;
+          break;
         end;
-        HidCtl.CheckIn(LocalHidDev.HidCtrl);
-        break;
       end;
     end;
     if HidCtl.NumCheckedOutDevices=0 then FEmulation:=True;
@@ -344,6 +362,7 @@ procedure TUSB.DeviceArrival(HidDev: TJvHidDevice);
 var
   newboard:integer;
   NewUSBController : TUSBController;
+  aHidCtrl:TJvHidDevice;
 begin
 
   AddInfo('Device arrival. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
@@ -390,6 +409,9 @@ begin
       if NewUSBController.Serial='' then
       begin
         AddInfo('Severe error while receiving serial number of controller !!!!');
+        AddInfo('Therefor: destroying the USB controller !!');
+        NewUSBController.Destroy;
+        HidCtl.CheckIn(HidDev);
         exit;
       end;
 
@@ -397,10 +419,30 @@ begin
 
       AddInfo('S/N of board '+InttoStr(newboard)+': '+NewUSBController.Serial);
 
-      while AUSBList.Count<(newboard+1) do
+      if AUSBList.Count<(newboard+1) then
       begin
-        AUSBList.Add(TUSBController.Create(nil));
+        AUSBList.Count:=newboard+1;
       end;
+
+      if AUSBList.Items[newboard]<>nil then
+      begin
+        AddInfo('Strange error: list-position of board already taken !!');
+        AddInfo('Therefor: destroying the USB controller !!');
+
+        // there are two possibilities to handle this: destroy new arrival or destroy previous contents of list
+        // both are here just to prevent any memory leaks, because this should never happen !!
+
+        // destroy new arrival
+        //NewUSBController.Destroy;
+        //HidCtl.CheckIn(HidDev);
+        //exit;
+
+        // destroy previous contents of list at position of board
+        aHidCtrl:={$ifndef usegenerics}TUSBController{$endif}(AUSBList.Items[newboard]).HidCtrl;
+        {$ifndef usegenerics}TUSBController{$endif}(AUSBList.Items[newboard]).Destroy;
+        if Assigned(aHidCtrl) then HidCtl.CheckIn(aHidCtrl);
+      end;
+
 
       AUSBList.Items[newboard]:=NewUSBController;
 
@@ -580,7 +622,7 @@ function TUSB.CheckParameters(board:word):boolean;
 begin
   result:=true;
   if  FEmulation then exit;
-  result:=NOT ( (board<AUSBList.Count) AND (Assigned(TUSBController(AUSBList.Items[board]).HidCtrl)) );
+  result:=NOT ( (board<AUSBList.Count) AND (Assigned({$ifndef usegenerics}TUSBController{$endif}(AUSBList.Items[board]).HidCtrl)) );
 end;
 
 function TUSB.GetErrors:String;
@@ -665,7 +707,7 @@ begin
   if FEmulation then exit;
   if AUSBList.Count=0 then exit;
   if board>AUSBList.Count then exit;
-  result:=TUSBController(AUSBList.Items[board]).Serial;
+  result:={$ifndef usegenerics}TUSBController{$endif}(AUSBList.Items[board]).Serial;
 end;
 
 end.

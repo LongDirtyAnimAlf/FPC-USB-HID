@@ -133,7 +133,10 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  if Assigned(NewUSB) then NewUSB.Free;
+  if Assigned(NewUSB) then
+  begin
+    NewUSB.Destroy;
+  end;
 end;
 
 procedure TForm1.UpdateUSBDevice(Sender: TObject;datacarrier:integer);
