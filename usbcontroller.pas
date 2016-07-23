@@ -1577,18 +1577,38 @@ begin
       begin
         if fpFD_ISSET(fd, readSet) = 0 then continue;
 
-        ret:= fpRead(cint(Device.HidFileHandle), receiveBuffer, sizeof(receiveBuffer[0])*(Device.Caps.InputReportByteLength-1));
+        ret:= fpRead(cint(Device.HidFileHandle), receiveBuffer, sizeof(hiddev_event)*(Device.Caps.InputReportByteLength-1));
         if ret>0 then
         begin
-          NumBytesRead := (ret DIV sizeof(receiveBuffer[0]));
-          for i := 0 to (NumBytesRead-1) do Report[i+1]:=receiveBuffer[i].value;
-          if not Terminated then DoData;
-          //if Device.PollingDelayTime > 0 then  // Throttle device polling
-          //  SysUtils.Sleep(Device.PollingDelayTime);
+
+          if not Terminated then
+          begin
+
+            NumBytesRead := (ret DIV sizeof(hiddev_event));
+            // the below should not be necessary, but just to be absolutely sure !!
+            if (NumBytesRead>(Device.Caps.InputReportByteLength-1)) then NumBytesRead:=(Device.Caps.InputReportByteLength-1);
+
+            if (NumBytesRead > 0) then
+            begin
+              // copy data bytes
+              for i := 0 to (NumBytesRead-1) do Report[i+1]:=receiveBuffer[i].value;
+
+              // choose one of the below to signal the availability of data
+              if not Terminated then DoData;
+              //if not Terminated then Synchronize(@DoData);
+              //if not Terminated then Queue(@DoData);
+            end;
+
+            //to prevent CPU burning ... for compatibility with JvHidControllerClass
+            if Device.PollingDelayTime > 0 then  // Throttle device polling
+              SysUtils.Sleep(Device.PollingDelayTime);
+
+          end;
         end;
       end;
     end;
   finally
+    Finalize(Report);
   end;
 end;
 
