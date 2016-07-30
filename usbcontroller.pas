@@ -1621,9 +1621,9 @@ begin
               for i := 0 to (NumBytesRead-1) do Report[i+1]:=receiveBuffer[i].value;
 
               // choose one of the below to signal the availability of data
-              if not Terminated then DoData;
-              //if not Terminated then Synchronize(@DoData);
-              //if not Terminated then Queue(@DoData);
+              DoData;
+              //Synchronize(@DoData);
+              //Queue(@DoData);
             end;
 
             //to prevent CPU burning ... for compatibility with JvHidControllerClass

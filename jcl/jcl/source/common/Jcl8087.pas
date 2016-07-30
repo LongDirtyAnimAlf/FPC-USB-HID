@@ -167,6 +167,8 @@ begin
   Set8087ControlWord((CW and $F3FF) or (Word(Rounding) shl 10));
 end;
 
+{$PUSH}
+{$R-}
 function Set8087ControlWord(const Control: Word): Word;
 var
   StackControl: Word;
@@ -176,6 +178,7 @@ asm
           FSTCW   Result         // save the old control word
           FLDCW   StackControl   // load the new control word
 end;
+{$POP}
 
 function ClearPending8087Exceptions: T8087Exceptions;
 
@@ -260,6 +263,8 @@ begin
     Include(Result, emPrecision);
 end;
 
+{$PUSH}
+{$R-}
 function SetMasked8087Exceptions(Exceptions: T8087Exceptions; ClearBefore: Boolean): T8087Exceptions;
 
   function ClearPendingExceptions: Word;
@@ -313,6 +318,7 @@ begin
   if (OldCW and $20) <> 0 then
     Include(Result, emPrecision);
 end;
+{$POP}
 
 function Mask8087Exceptions(Exceptions: T8087Exceptions): T8087Exceptions;
 begin
