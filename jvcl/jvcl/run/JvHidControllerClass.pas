@@ -36,9 +36,6 @@ uses
   {$IFDEF UNITVERSIONING}
   JclUnitVersioning,
   {$ENDIF UNITVERSIONING}
-  {$ifdef FPC}
-  LCLIntf,
-  {$endif}
   Windows,
   Classes, Forms, Messages, Sysutils, SyncObjs,
   JvComponentBase,
@@ -508,6 +505,9 @@ const
 implementation
 
 uses
+  {$ifdef FPC}
+  LCLIntf,
+  {$endif}
   JvResources;
 
 type
@@ -1799,7 +1799,9 @@ procedure TJvHidDeviceController.EventPipe(var Msg: TMessage);
 begin
   // sort out WM_DEVICECHANGE : DBT_DEVNODES_CHANGED
   if not (csDestroying in ComponentState) and
-   (Msg.Msg = WM_DEVICECHANGE) and (TWMDeviceChange(Msg).Event = DBT_DEVNODES_CHANGED) then
+   (Msg.Msg = WM_DEVICECHANGE) and
+   (TWMDeviceChange(Msg).Event = DBT_DEVNODES_CHANGED)
+  then
     if not FInDeviceChange then
     begin
       FLParam := Msg.LParam;
@@ -1837,6 +1839,7 @@ var
     Handled: Boolean;
     RetryCreate: Boolean;
     DevicePath: string;
+    FErr: DWORD;
   begin
     if not IsHidLoaded then
       Exit;
@@ -1856,7 +1859,8 @@ var
         BytesReturned := 0;
         //evalue size needed to store the detailed interface data in FunctionClassDeviceData
         SetupDiGetDeviceInterfaceDetail(PnPHandle, @DeviceInterfaceData, nil, 0, BytesReturned, @DevData);
-        if (BytesReturned <> 0) and (GetLastError = ERROR_INSUFFICIENT_BUFFER) then
+        FErr := GetLastError;
+        if (BytesReturned <> 0) and (FErr = ERROR_INSUFFICIENT_BUFFER) then
         begin
           FunctionClassDeviceData := AllocMem(BytesReturned);
           try
@@ -1890,13 +1894,27 @@ var
               
               if Assigned(HidDev) then
                 NewList.Add(HidDev);
+            end
+            else
+            begin
+              FErr := GetLastError;
+              if FErr=ERROR_INVALID_USER_BUFFER
+                 then raise EHidClientError.Create('SetupDiGetDeviceInterfaceDetail user buffer size error')
+                 else if FErr=ERROR_INSUFFICIENT_BUFFER then raise EHidClientError.Create('SetupDiGetDeviceInterfaceDetail buffer size error')
+                 else raise EHidClientError.Create('SetupDiGetDeviceInterfaceDetail error '+InttoStr(FErr));
             end;
           finally
             FreeMem(FunctionClassDeviceData);
           end;
         end;
+      end
+      else
+      begin
+        FErr := GetLastError;
+        if FErr=ERROR_INVALID_USER_BUFFER
+           then raise EHidClientError.Create('DeviceInterfaceData.cbSize member is not set correctly')
+           else if FErr<>ERROR_NO_MORE_ITEMS then raise EHidClientError.Create('SetupDiEnumDeviceInterfaces error');
       end;
-
       Inc(Devn);
     until not Success;
     SetupDiDestroyDeviceInfoList(PnPHandle);
