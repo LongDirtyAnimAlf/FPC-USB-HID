@@ -577,7 +577,7 @@ begin
           SleepRet := SleepEx(Device.ThreadSleepTime, True);
         until Terminated or (SleepRet = WAIT_IO_COMPLETION);
         // show data read
-        if not Terminated then
+        if (not Terminated) then
         begin
           NumBytesRead := Device.HidOverlappedReadResult;
           if NumBytesRead > 0 then
@@ -585,16 +585,25 @@ begin
             if IsLibrary then
               DoData
             else
+              // choose one of the below to signal the availability of data
               DoData;
+              //Synchronize(DoData);
+              //Queue(DoData);
           if Device.PollingDelayTime > 0 then  // Throttle device polling
             SleepEx(Device.PollingDelayTime, True);
         end;
       end
       else
       begin
-        FErr := GetLastError;
-        DoDataError;
-        SleepEx(Device.ThreadSleepTime, True);  // avoid 100% CPU usage (Mantis 5749)
+        if (not Terminated) then
+        begin
+          FErr := GetLastError;
+          // choose one of the below to signal the error
+          DoDataError;
+          //Synchronize(DoDataError);
+          //Queue(DoDataError);
+          SleepEx(Device.ThreadSleepTime, True);  // avoid 100% CPU usage (Mantis 5749)
+        end;
       end;
     end;
   finally
@@ -820,6 +829,7 @@ begin
   FDataThread := nil;
   OnData := Controller.OnDeviceData;
   OnUnplug := Controller.OnDeviceUnplug;
+  OnDataError := Controller.OnDeviceDataError;
 
   FHidFileHandle := CreateFile(PChar(PnPInfo.DevicePath), GENERIC_READ or GENERIC_WRITE,
     FILE_SHARE_READ or FILE_SHARE_WRITE, nil, OPEN_EXISTING, 0, 0);

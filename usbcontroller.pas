@@ -236,6 +236,8 @@ type
   TJvHidDataEvent = procedure(HidDev: TJvHidDevice; ReportID: Byte;
     const Data: Pointer; Size: Word) of object;
 
+  TJvHidDataErrorEvent = procedure(HidDev: TJvHidDevice; Error: DWORD) of object;
+
   // check out test function
   TJvHidCheckCallback = function(HidDev: TJvHidDevice): Boolean; stdcall;
 
@@ -252,7 +254,6 @@ type
     FDriver: string;
     FProductID: DWORD;
     FVendorID: DWORD;
-    FDeviceClass: DWORD;
     FFriendlyName: string;
     FMfg: string;
     FAddress: string;
@@ -306,6 +307,7 @@ type
 
   TJvHidDeviceReadThread = class(TThread)
   private
+    FErr: DWORD;
     procedure DoData;
     procedure DoDataError;
     constructor CtlCreate(const Dev: TJvHidDevice);
@@ -349,6 +351,7 @@ type
     FPollingDelayTime: Integer;
     FThreadSleepTime: Integer;
     FData: TJvHidDataEvent;
+    FDataError: TJvHidDataErrorEvent;
     FUnplug: TJvHidUnplugEvent;
     FDataThread: TJvHidDeviceReadThread;
     FTag: Integer;
@@ -402,7 +405,7 @@ type
     property ThreadSleepTime: Integer read FThreadSleepTime write SetThreadSleepTime;
     property DeviceStrings[Idx: Byte]: string read GetDeviceString;
     property OnData: TJvHidDataEvent read FData write SetDataEvent;
-    //property OnDataError: TJvHidDataErrorEvent read FDataError write FDataError;
+    property OnDataError: TJvHidDataErrorEvent read FDataError write FDataError;
     property OnUnplug: TJvHidUnplugEvent read FUnplug write FUnplug;
   end;
 
@@ -428,6 +431,7 @@ type
     FPriority: TThreadPriority;
     FArrivalEvent: TJvHidPlugEvent;
     FDeviceChangeEvent: TNotifyEvent;
+    FDeviceDataError: TJvHidDataErrorEvent;
     FDevUnplugEvent: TJvHidUnplugEvent;
     FRemovalEvent: TJvHidUnplugEvent;
     FControllerMonitorThread:TJvHidDeviceControllerMonitorThread;
@@ -447,6 +451,7 @@ type
     procedure   SetDevThreadSleepTime(const DevTime: Integer);
     procedure   SetEnabled(Value: Boolean );
     procedure   SetDevData(const DataEvent: TJvHidDataEvent);
+    procedure   SetDeviceDataError(const DataErrorEvent: TJvHidDataErrorEvent);
     procedure   SetDeviceChangeEvent(const Notifier: TNotifyEvent);
     procedure   SetDevUnplug(const Unplugger: TJvHidUnplugEvent);
     function    GetDebugInfo: String;
@@ -484,6 +489,7 @@ type
     property    DevThreadSleepTime: Integer read FDevThreadSleepTime write SetDevThreadSleepTime default 100;
     property    ThreadPriority: TThreadPriority read FPriority write FPriority default tpNormal;
     property    OnDeviceData: TJvHidDataEvent read FDevDataEvent write SetDevData;
+    property    OnDeviceDataError: TJvHidDataErrorEvent read FDeviceDataError write SetDeviceDataError;
     property    OnArrival: TJvHidPlugEvent read FArrivalEvent write FArrivalEvent;
     property    OnDeviceChange: TNotifyEvent read FDeviceChangeEvent write SetDeviceChangeEvent;
     property    OnDeviceUnplug: TJvHidUnplugEvent read FDevUnplugEvent write SetDevUnplug;
@@ -962,6 +968,27 @@ begin
     HidDev.FIsEnumerated := False;
   end;
 end;
+
+procedure TJvHidDeviceController.SetDeviceDataError(const DataErrorEvent: TJvHidDataErrorEvent);
+var
+  I: Integer;
+  Dev: TJvHidDevice;
+begin
+  if (TMethod(DataErrorEvent).Code <> TMethod(FDeviceDataError).Code) or
+     (TMethod(DataErrorEvent).Data <> TMethod(FDeviceDataError).Data) then
+  begin
+    // change all OnDataError events with the same old value
+    for I := 0 to FList.Count - 1 do
+    begin
+      Dev := {$ifndef usegenerics}TJvHidDevice{$endif}(FList.Items[I]);
+      if (TMethod(Dev.OnDataError).Code = TMethod(FDeviceDataError).Code) and
+         (TMethod(Dev.OnDataError).Data = TMethod(FDeviceDataError).Data) then
+        Dev.OnDataError := DataErrorEvent;
+    end;
+    FDeviceDataError := DataErrorEvent;
+  end;
+end;
+
 
 procedure TJvHidDeviceController.SetDevUnplug(const Unplugger: TJvHidUnplugEvent);
 var
@@ -1542,8 +1569,8 @@ end;
 
 procedure TJvHidDeviceReadThread.DoDataError;
 begin
-  //if Assigned(Device.FDataError) then
-  //  Device.FDataError(Device, FErr);
+  if Assigned(Device.FDataError) then
+     Device.FDataError(Device, FErr);
 end;
 
 procedure TJvHidDeviceReadThread.Execute;
@@ -1603,6 +1630,18 @@ begin
             if Device.PollingDelayTime > 0 then  // Throttle device polling
               SysUtils.Sleep(Device.PollingDelayTime);
 
+          end;
+        end
+        else
+        begin
+          if (Not Terminated) AND (ret=-1) then
+          begin
+            FErr := fpGetErrno;
+            // choose one of the below to signal the error
+            DoDataError;
+            //Synchronize(@DoDataError);
+            //Queue(@DoDataError);
+            SysUtils.Sleep(Device.ThreadSleepTime);
           end;
         end;
       end;
@@ -1771,6 +1810,7 @@ begin
 
   OnData := FMyController.OnDeviceData;
   OnUnplug := FMyController.OnDeviceUnplug;
+  OnDataError := FMyController.OnDeviceDataError;
 
   OpenFile;
   CloseFile;
