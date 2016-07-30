@@ -67,7 +67,12 @@ type
 type
   // WARNING: Those types are defined as DWORD for simplicity under old versions
   // of Delphi but they really should be defined as pointers to their base types
+  {$ifdef FPC}
+  ULONG_PTR = NativeUInt;
+  {$else}
   ULONG_PTR = DWORD;
+  {$endif}
+
   {$EXTERNALSYM ULONG_PTR}
   DWORD_PTR = DWORD;
   {$EXTERNALSYM DWORD_PTR}

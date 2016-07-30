@@ -611,6 +611,7 @@
   {$ASMMODE Intel}
   {$UNDEF BORLAND}
   {$DEFINE CPUASM}
+  {$DEFINE DEFAULT_JVCL_INC}
    // FPC defines CPU32, CPU64 and Unix automatically
 {$ENDIF}
 

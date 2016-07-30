@@ -574,6 +574,10 @@ type
     Msg: Cardinal;
     {$IFDEF COMPILER16_UP}
     MsgFiller: TDWordFiller;
+    {$ELSE}
+    {$IFDEF FPC}
+    MsgFiller: TDWordFiller;
+    {$ENDIF FPC}
     {$ENDIF COMPILER16_UP}
     Event: WPARAM;
     dwData: Pointer;
