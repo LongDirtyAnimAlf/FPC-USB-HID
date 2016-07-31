@@ -20,8 +20,7 @@ const
 type
   TReport = packed record
     ReportID: byte;
-    Data:    array [0..15] of byte;
-    //Data:    array of byte;
+    Data:    array [0..15] of byte; // <-- this needs to be adapted to your report size
   end;
 
   TUSBController = class
@@ -81,8 +80,6 @@ type
     function  CheckAddressNewer(Ctrl: TUSBController):integer;
     function  CheckParameters(board:word):boolean;overload;
 
-    function  ReadSerial(Ctrl: TUSBController):string;
-
     procedure HandleCRCError(HidCtrl: TJvHidDevice);overload;
 
     function  FGetSerial(board:word):string;
@@ -108,22 +105,18 @@ type
 implementation
 
 uses
-  {$ifdef UNIX}
+  {$ifdef MSWINDOWS}
+  Windows,
+  {$else}
   Unix,
   BaseUnix,
   {$endif}
   IniFiles,
   StrUtils;
 
-type
-  TCommands = (
-    CMD_get_serial=100,
-    CMD_set_serial=101
-  );
-
 const
-  Vendor                        = $04D8;
-  Product                       = $003F;
+  Vendor                        = $045E;
+  Product                       = $0916;
 
   ErrorDelay                    = 100;
   USBTimeout                    = 200;
@@ -286,7 +279,9 @@ begin
     error:=(NOT Ctrl.HidCtrl.WriteFile(Ctrl.LocalData, Ctrl.HidCtrl.Caps.OutputReportByteLength, Written));
     if (error) then
     begin
-      {$ifdef UNIX}
+      {$ifdef MSWINDOWS}
+      Err := GetLastError;
+      {$else}
       Err := fpgeterrno;
       {$endif}
       AddErrors(Format('USB normal write error: %s (%x)', [SysErrorMessage(Err), Err]));
@@ -310,7 +305,9 @@ begin
         if error then
         begin
           FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
-          {$ifdef UNIX}
+          {$ifdef MSWINDOWS}
+          Err := GetLastError;
+          {$else}
           Err := fpgeterrno;
           {$endif}
           AddErrors(Format('USB normal read error: %s (%x)', [SysErrorMessage(Err), Err]));
@@ -387,24 +384,14 @@ begin
       NewUSBController := TUSBController.Create(HidDev);
 
       Sleep(200);
-      //Setlength(NewUSBController.LocalData.Data,HidDev.Caps.InputReportByteLength);
 
       with NewUSBController do
       begin
-        Serial:='';
+        Serial:=HidDev.SerialNumber;
         FaultCounter:=0;
       end;
 
       Sleep(200);
-
-      with NewUSBController do
-      begin
-        if HidCtrl.DeviceStrings[4]<>HidCtrl.DeviceStrings[1] then
-        begin
-          Serial:=HidCtrl.DeviceStrings[4];
-        end;
-      end;
-      if NewUSBController.Serial='' then ReadSerial(NewUSBController);
 
       if NewUSBController.Serial='' then
       begin
@@ -501,67 +488,6 @@ begin
   result:=0;
 
   error:=False;
-
-  if (NOT error) then
-  begin
-    if (Ctrl.Serial='0-0-0-0-0-0')
-       OR
-       (Ctrl.Serial='0000-0000-0000-0000-0000-0000')
-       OR
-       (Ctrl.Serial='65535-65535-65535-65535-65535-65535')
-       OR
-       (Ctrl.Serial='FFFF-FFFF-FFFF-FFFF-FFFF-FFFF')
-       OR
-       (RightStr(Ctrl.Serial,4)='FFFF')
-       then
-    begin
-      ErrorCounter:=1;
-
-      repeat
-
-        with Ctrl do
-        begin
-          FillChar(LocalData, SizeOf(LocalData), 0);
-
-          LocalData.Data[0] := byte(CMD_set_serial);
-          LocalData.Data[1] := Random($FF);
-          LocalData.Data[2] := Random($FF);
-          LocalData.Data[3] := Random($FF);
-          LocalData.Data[4] := Random($FF);
-          LocalData.Data[5] := Random($FF);
-          LocalData.Data[6] := Random($FF);
-          LocalData.Data[7] := Random($FF);
-          LocalData.Data[8] := Random($FF);
-          LocalData.Data[9] := Random($FF);
-          LocalData.Data[10] := Random($FF);
-          LocalData.Data[11] := Random($FF);
-          LocalData.Data[12] := Random($FF);
-        end;
-        error:=HidReadWrite(Ctrl,True);
-
-        if (NOT error) then with Ctrl.LocalData do
-        begin
-          if (data[0]=byte(CMD_set_serial)) then
-          begin
-            Ctrl.Serial:=
-              InttoHex(WORD(data[1]+data[2]*256),4)+'-'+
-              InttoHex(WORD(data[3]+data[4]*256),4)+'-'+
-              InttoHex(WORD(data[5]+data[6]*256),4)+'-'+
-              InttoHex(WORD(data[7]+data[8]*256),4)+'-'+
-              InttoHex(WORD(data[9]+data[10]*256),4)+'-'+
-              InttoHex(WORD(data[11]+data[12]*256),4);
-          end
-          else
-          begin
-            error:=True;
-          end;
-        end;
-        if ( (error) AND (ErrorCounter<MaxErrors) ) then sleep(25);
-        Inc(ErrorCounter);
-      until ((NOT error) OR (ErrorCounter>MaxErrors) );
-      if error then AddErrors('Controller set serial number error');
-    end;
-  end;
 
   if (NOT error)  then
   begin
@@ -662,43 +588,6 @@ begin
    while FErrors.Count>1000 do FErrors.Delete(0);
    FErrors.Append(DateTimeToStr(Now)+': '+data);
   end;
-end;
-
-function TUSB.ReadSerial(Ctrl: TUSBController):string;
-var
-  error:boolean;
-  ErrorCounter:word;
-begin
-  Result:='';
-
-  ErrorCounter:=1;
-
-  repeat
-    FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
-    Ctrl.LocalData.Data[0] := Integer(CMD_get_serial);
-
-    error:=HidReadWrite(Ctrl,False);
-
-    if (NOT error) then with Ctrl.LocalData do
-    begin
-      if ( data[0]=byte(CMD_get_serial) ) then
-      begin
-        result:=
-          InttoHex(WORD(data[1]+data[2]*256),4)+'-'+
-          InttoHex(WORD(data[3]+data[4]*256),4)+'-'+
-          InttoHex(WORD(data[5]+data[6]*256),4)+'-'+
-          InttoHex(WORD(data[7]+data[8]*256),4)+'-'+
-          InttoHex(WORD(data[9]+data[10]*256),4)+'-'+
-          InttoHex(WORD(data[11]+data[12]*256),4);
-        Ctrl.Serial:=Result;
-      end else error:=True;
-    end;
-
-    if ( (error) AND (ErrorCounter<MaxErrors) ) then sleep(25);
-    Inc(ErrorCounter);
-
-  until ((NOT error) OR (ErrorCounter>MaxErrors) );
-  if error then AddErrors('Controller read serial number error');
 end;
 
 function TUSB.FGetSerial(board:word):string;

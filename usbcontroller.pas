@@ -1421,6 +1421,9 @@ var
           {$ENDIF}
           PnPInfo := TJvHidPnPInfo.Create(LocalDeviceId,LocalRawNode,localudev_usbdevice,LocalUSBNode);
           HidDev := TJvHidDevice.CtlCreate(PnPInfo, Self);
+          HidDev.FVendorName   := udev_device_get_sysattr_value(localudev_usbdevice,'manufacturer');
+          HidDev.FProductName  := udev_device_get_sysattr_value(localudev_usbdevice,'product');
+          HidDev.FSerialNumber := udev_device_get_sysattr_value(localudev_usbdevice,'serial');
           NewList.Add(HidDev);
           Inc(Devn);
         end;
