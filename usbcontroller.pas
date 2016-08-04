@@ -753,7 +753,11 @@ begin
         if not FUSBController.FInDeviceChange then
         begin
           FUSBController.FInDeviceChange := True;
-          FUSBController.DeviceChange;
+
+          // choose one of the following
+          //FUSBController.DeviceChange;
+          Synchronize(@FUSBController.DeviceChange);
+
           FUSBController.FInDeviceChange := False;
         end;
         {$IFDEF debug}
