@@ -388,6 +388,10 @@ begin
       with NewUSBController do
       begin
         Serial:=HidDev.SerialNumber;
+        if Serial='' then
+        begin
+          Serial:=InttoStr(HidDev.Attributes.VendorID)+'_'+InttoStr(HidDev.Attributes.ProductID)+'_'+InttoStr(HidDev.PnPInfo.DeviceID);
+        end;
         FaultCounter:=0;
       end;
 
@@ -438,6 +442,13 @@ begin
         FOnUSBDeviceChange(Self,newboard);
       end;
     end;
+  end
+  else
+  begin
+    if Assigned(FOnUSBDeviceChange) then
+    begin
+      FOnUSBDeviceChange(Self,0);
+    end;
   end;
 end;
 
@@ -467,6 +478,10 @@ begin
       end;
     end;
     Inc(i);
+  end;
+  if Assigned(FOnUSBDeviceChange) then
+  begin
+    FOnUSBDeviceChange(Self,0);
   end;
 end;
 

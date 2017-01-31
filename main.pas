@@ -13,10 +13,8 @@ type
   TForm1 = class(TForm)
     btnHIDCreate: TButton;
     btnHIDEnable: TButton;
-    btnGetSerial: TButton;
     btnInfo: TButton;
     Memo1: TMemo;
-    procedure btnGetSerialClick(Sender: TObject);
     procedure btnHIDCreateClick(Sender: TObject);
     procedure btnHIDEnableClick(Sender: TObject);
     procedure btnInfoClick(Sender: TObject);
@@ -67,27 +65,6 @@ begin
   btnInfo.Enabled:=True;
 end;
 
-procedure TForm1.btnGetSerialClick(Sender: TObject);
-var
-  S:string;
-begin
-  Memo1.Lines.Append('Get HID serial:');
-  Memo1.Lines.Append(NewUSB.GetSerial[1]);
-  Memo1.Lines.Append('Ready.');
-  S:=NewUSB.Info;
-  if Length(S)>0 then
-  begin
-    Memo1.Lines.Append('INFO:');
-    Memo1.Lines.Append(S);
-  end;
-  S:=NewUSB.Errors;
-  if Length(S)>0 then
-  begin
-    Memo1.Lines.Append('ERRORS:');
-    Memo1.Lines.Append(S);
-  end;
-end;
-
 procedure TForm1.btnHIDEnableClick(Sender: TObject);
 var
   S:string;
@@ -108,7 +85,6 @@ begin
     Memo1.Lines.Append('ERRORS:');
     Memo1.Lines.Append(S);
   end;
-  btnGetSerial.Enabled:=True;
 end;
 
 procedure TForm1.btnInfoClick(Sender: TObject);
@@ -143,7 +119,7 @@ procedure TForm1.UpdateUSBDevice(Sender: TObject;datacarrier:integer);
 var
   S:string;
 begin
-  Memo1.Lines.Append('Measuremain board: '+InttoStr(datacarrier));
+  Memo1.Lines.Append('HID device index: '+InttoStr(datacarrier));
   S:=NewUSB.Info;
   if Length(S)>0 then
   begin
