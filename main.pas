@@ -119,7 +119,7 @@ procedure TForm1.UpdateUSBDevice(Sender: TObject;datacarrier:integer);
 var
   S:string;
 begin
-  Memo1.Lines.Append('HID device index: '+InttoStr(datacarrier));
+  if datacarrier>0 then Memo1.Lines.Append('HID device index: '+InttoStr(datacarrier));
   S:=NewUSB.Info;
   if Length(S)>0 then
   begin

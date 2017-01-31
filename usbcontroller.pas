@@ -52,8 +52,8 @@ unit usbcontroller;
 {.$DEFINE usegenerics}
 {.$DEFINE debug}
 
-{.$DEFINE hidraw}
-{$DEFINE hiddev}
+{$DEFINE hidraw}
+{.$DEFINE hiddev}
 
 {$ifdef udevstatic}
 {$LINKLIB udev}
@@ -1418,7 +1418,12 @@ var
           }
         end;
 
+        {$IFDEF hidraw}
+        if Pos('hidraw',LocalRawNode)>0 then
+        {$ENDIF}
+        {$IFDEF hiddev}
         if Pos('hiddev',LocalRawNode)>0 then
+        {$ENDIF}
         begin
           {$IFDEF debug}
           DebugInfo:='Adding correct hid device !!';
@@ -1731,7 +1736,7 @@ function TJvHidDevice.GetPhysicalDescriptor: string;
 begin
   if Length(FPhysicalDescriptor) = 0 then
   begin
-
+    FPhysicalDescriptor:=Self.PnPInfo.HidPath;
   end;
   Result := FPhysicalDescriptor;
 end;

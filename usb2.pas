@@ -456,13 +456,20 @@ procedure TUSB.DeviceChange(Sender:TObject);
 var
   i:integer;
   HidDev:TJvHidDevice;
+  s:string;
 begin
   AddInfo('Devices change !!');
   i:=0;
   while i<HidCtl.HidDevices.Count do
   begin
     HidDev:=TJvHidDevice(HidCtl.HidDevices[i]);
-    AddInfo('HID-device#'+InttoStr(i)+'. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
+    s:='HID';
+    {$ifdef Unix}
+    if Pos('hidraw',HidDev.PhysicalDescriptor)>0 then s:='HIDraw';
+    if Pos('hiddev',HidDev.PhysicalDescriptor)>0 then s:='HIDdev';
+    {$endif}
+    AddInfo(s+'-device#'+InttoStr(i)+'. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
+    AddInfo('Name: '+HidDev.ProductName+'. Vendor: '+HidDev.VendorName+'.');
     if ( (HidDev.Attributes.VendorID = Vendor) AND
        (HidDev.Attributes.ProductID = Product) ) then
     begin
