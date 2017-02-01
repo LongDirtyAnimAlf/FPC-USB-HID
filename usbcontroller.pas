@@ -52,8 +52,8 @@ unit usbcontroller;
 {.$DEFINE usegenerics}
 {.$DEFINE debug}
 
-{$DEFINE hidraw}
-{.$DEFINE hiddev}
+{.$DEFINE hidraw}
+{$DEFINE hiddev}
 
 {$ifdef udevstatic}
 {$LINKLIB udev}
