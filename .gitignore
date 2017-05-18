@@ -51,6 +51,7 @@ Temporary Items
 *.rst
 !docs/*.rst
 *.res
+!jcl/jcl/source/common/*.res
 
 *.dcu
 *.identcache
