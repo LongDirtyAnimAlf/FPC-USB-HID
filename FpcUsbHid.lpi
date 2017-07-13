@@ -14,12 +14,90 @@
     <i18n>
       <EnableI18N LFM="False"/>
     </i18n>
-    <MacroValues Count="1">
-      <Macro1 Name="LCLWidgetType" Value="gtk2"/>
-    </MacroValues>
-    <BuildModes Count="6">
-      <Item1 Name="linuxarmhf" Default="True"/>
-      <Item2 Name="linuxi386">
+    <BuildModes Count="8">
+      <Item1 Name="Debug" Default="True"/>
+      <Item2 Name="Release">
+        <CompilerOptions>
+          <Version Value="11"/>
+          <PathDelim Value="\"/>
+          <Target>
+            <Filename Value="bin\$(TargetCPU)-$(TargetOS)\FpcUsbHid"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir);jvcl\jvcl\common;jcl\jcl\source\include"/>
+            <OtherUnitFiles Value="jvcl\jvcl\run;jcl\jcl\source\common;jcl\jcl\source\windows"/>
+            <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <Conditionals Value="if TargetCPU='arm' then
+   LinkerOptions := ' =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF';"/>
+          <Parsing>
+            <SyntaxOptions>
+              <SyntaxMode Value="Delphi"/>
+            </SyntaxOptions>
+          </Parsing>
+          <CodeGeneration>
+            <SmartLinkUnit Value="True"/>
+            <Optimizations>
+              <OptimizationLevel Value="3"/>
+            </Optimizations>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <GenerateDebugInfo Value="False"/>
+            </Debugging>
+            <LinkSmart Value="True"/>
+            <Options>
+              <Win32>
+                <GraphicApplication Value="True"/>
+              </Win32>
+            </Options>
+          </Linking>
+        </CompilerOptions>
+      </Item2>
+      <Item3 Name="linuxarmhf">
+        <MacroValues Count="1">
+          <Macro1 Name="LCLWidgetType" Value="gtk2"/>
+        </MacroValues>
+        <CompilerOptions>
+          <Version Value="11"/>
+          <PathDelim Value="\"/>
+          <Target>
+            <Filename Value="bin\$(TargetCPU)-$(TargetOS)\FpcUsbHid"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <Libraries Value="C:\development\cross\lib\arm-linux-RPi2\"/>
+            <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <Conditionals Value="if TargetCPU='arm' then
+   LinkerOptions := ' =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF';"/>
+          <Parsing>
+            <SyntaxOptions>
+              <SyntaxMode Value="Delphi"/>
+            </SyntaxOptions>
+          </Parsing>
+          <CodeGeneration>
+            <SmartLinkUnit Value="True"/>
+            <TargetCPU Value="arm"/>
+            <TargetOS Value="linux"/>
+            <Optimizations>
+              <OptimizationLevel Value="2"/>
+            </Optimizations>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <GenerateDebugInfo Value="False"/>
+            </Debugging>
+            <LinkSmart Value="True"/>
+            <Options>
+              <Win32>
+                <GraphicApplication Value="True"/>
+              </Win32>
+            </Options>
+          </Linking>
+        </CompilerOptions>
+      </Item3>
+      <Item4 Name="linuxi386">
         <MacroValues Count="1">
           <Macro1 Name="LCLWidgetType" Value="gtk2"/>
         </MacroValues>
@@ -61,8 +139,8 @@
             </Options>
           </Linking>
         </CompilerOptions>
-      </Item2>
-      <Item3 Name="windows">
+      </Item4>
+      <Item5 Name="windows">
         <MacroValues Count="1">
           <Macro2 Name="LCLWidgetType" Value="win32"/>
         </MacroValues>
@@ -108,8 +186,8 @@
             </Options>
           </Linking>
         </CompilerOptions>
-      </Item3>
-      <Item4 Name="windows64">
+      </Item5>
+      <Item6 Name="windows64">
         <CompilerOptions>
           <Version Value="11"/>
           <PathDelim Value="\"/>
@@ -154,8 +232,8 @@
             </Options>
           </Linking>
         </CompilerOptions>
-      </Item4>
-      <Item5 Name="linuxx64">
+      </Item6>
+      <Item7 Name="linuxx64">
         <CompilerOptions>
           <Version Value="11"/>
           <PathDelim Value="\"/>
@@ -194,8 +272,8 @@
             </Options>
           </Linking>
         </CompilerOptions>
-      </Item5>
-      <Item6 Name="FreeBSDx64">
+      </Item7>
+      <Item8 Name="FreeBSDx64">
         <CompilerOptions>
           <Version Value="11"/>
           <PathDelim Value="\"/>
@@ -234,7 +312,7 @@
             </Options>
           </Linking>
         </CompilerOptions>
-      </Item6>
+      </Item8>
       <SharedMatrixOptions Count="2">
         <Item1 ID="942274179114" Modes="linuxarmhf,linuxi386" Type="IDEMacro" MacroName="LCLWidgetType" Value="gtk2"/>
         <Item2 ID="553587040282" Modes="windows" Type="IDEMacro" MacroName="LCLWidgetType" Value="win32"/>
@@ -275,8 +353,8 @@
       <Filename Value="bin\$(TargetCPU)-$(TargetOS)\FpcUsbHid"/>
     </Target>
     <SearchPaths>
-      <IncludeFiles Value="$(ProjOutDir)"/>
-      <Libraries Value="C:\development\cross\lib\arm-linux-RPi2\"/>
+      <IncludeFiles Value="$(ProjOutDir);jvcl\jvcl\common;jcl\jcl\source\include"/>
+      <OtherUnitFiles Value="jvcl\jvcl\run;jcl\jcl\source\common;jcl\jcl\source\windows"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Conditionals Value="if TargetCPU='arm' then
@@ -284,21 +362,24 @@
     <Parsing>
       <SyntaxOptions>
         <SyntaxMode Value="Delphi"/>
+        <IncludeAssertionCode Value="True"/>
       </SyntaxOptions>
     </Parsing>
     <CodeGeneration>
-      <SmartLinkUnit Value="True"/>
-      <TargetCPU Value="arm"/>
-      <TargetOS Value="linux"/>
-      <Optimizations>
-        <OptimizationLevel Value="2"/>
-      </Optimizations>
+      <Checks>
+        <IOChecks Value="True"/>
+        <RangeChecks Value="True"/>
+        <OverflowChecks Value="True"/>
+        <StackChecks Value="True"/>
+      </Checks>
+      <VerifyObjMethodCallValidity Value="True"/>
     </CodeGeneration>
     <Linking>
       <Debugging>
-        <GenerateDebugInfo Value="False"/>
+        <DebugInfoType Value="dsDwarf2Set"/>
+        <UseHeaptrc Value="True"/>
+        <UseExternalDbgSyms Value="True"/>
       </Debugging>
-      <LinkSmart Value="True"/>
       <Options>
         <Win32>
           <GraphicApplication Value="True"/>

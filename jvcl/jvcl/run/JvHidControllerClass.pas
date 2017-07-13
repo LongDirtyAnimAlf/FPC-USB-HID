@@ -406,11 +406,13 @@ type
     FLParam: LPARAM;
     // window to catch WM_DEVICECHANGE
     FHWnd: HWND;
+    FEnabled: Boolean;
     // internal worker functions
     function CheckThisOut(var HidDev: TJvHidDevice; Idx: Integer; Check: Boolean): Boolean;
     procedure EventPipe(var Msg: TMessage);
     // internal event implementors
     procedure SetOnDeviceChange(const Notifier: TNotifyEvent);
+    procedure SetEnabled(Value: Boolean);
     procedure SetDevPollingDelayTime(const DevTime: Integer);
     procedure SetDevThreadSleepTime(const DevTime: Integer);
     procedure SetOnDeviceData(const DataEvent: TJvHidDataEvent);
@@ -467,6 +469,7 @@ type
     property NumCheckedOutDevices: Integer read FNumCheckedOutDevices;
     property NumUnpluggedDevices: Integer read FNumUnpluggedDevices;
   published
+    property Enabled: Boolean read FEnabled write SetEnabled;
     property DevPollingDelayTime: Integer read FDevPollingDelayTime write SetDevPollingDelayTime default 0;
     property DevThreadSleepTime: Integer read FDevThreadSleepTime write SetDevThreadSleepTime default 100;
     property Version: string read FVersion write FDummy stored False;
@@ -1720,15 +1723,6 @@ begin
   if IsHidLoaded then
   begin
     HidD_GetHidGuid(FHidGuid);
-    // only hook messages if there is a HID DLL
-    {$ifdef FPC}
-    FHWnd := LCLIntf.AllocateHWnd(EventPipe);
-    {$else}
-    FHWnd := AllocateHWnd(EventPipe);
-    {$endif}
-    // this one executes after Create completed which ensures
-    // that all global elements like Application.MainForm are initialized
-    PostMessage(FHWnd, WM_DEVICECHANGE, DBT_DEVNODES_CHANGED, -1);
   end
   else
     FHidGuid := cHidGuid;
@@ -1745,13 +1739,8 @@ begin
   SetOnDeviceChange(nil);
   SetOnDeviceUnplug(nil);
   FOnEnumerate := nil;
-  // unhook event pipe
-  if IsHidLoaded then
-  {$ifdef FPC}
-    LCLIntf.DeallocateHWnd(FHWnd);
-  {$else}
-  DeallocateHWnd(FHWnd);
-  {$endif}
+
+  Enabled:=False;
 
   for I := 0 to FList.Count - 1 do
   begin
@@ -1774,6 +1763,8 @@ begin
 
   inherited Destroy;
 end;
+
+
 
 procedure TJvHidDeviceController.DoArrival(HidDev: TJvHidDevice);
 begin
@@ -2052,6 +2043,45 @@ begin
     end;
   end;
 end;
+
+procedure TJvHidDeviceController.SetEnabled(Value: Boolean);
+begin
+  if Value <> FEnabled then
+  begin
+    FEnabled := Value;
+    if FEnabled then
+    begin
+      if IsHidLoaded then
+      begin
+        // hook event pipe
+        {$ifdef FPC}
+        FHWnd := LCLIntf.AllocateHWnd(EventPipe);
+        {$else}
+        FHWnd := AllocateHWnd(EventPipe);
+        {$endif}
+        // send change message to enumerate devices
+        if not FInDeviceChange then
+        begin
+          FInDeviceChange := True;
+          DeviceChange;
+          FInDeviceChange := False;
+        end;
+      end;
+    end
+    else
+    begin
+      // unhook event pipe
+      if IsHidLoaded then
+      {$ifdef FPC}
+      LCLIntf.DeallocateHWnd(FHWnd);
+      {$else}
+      DeallocateHWnd(FHWnd);
+      {$endif}
+    end;
+  end;
+end;
+
+
 
 // assign DevPollingDelayTime
 

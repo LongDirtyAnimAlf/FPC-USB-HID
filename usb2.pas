@@ -249,9 +249,7 @@ begin
   if Value <> FEnabled then
   begin
     FEnabled := Value;
-    {$ifdef UNIX}
     HidCtl.Enabled:=FEnabled;
-    {$endif}
   end;
 end;
 
@@ -274,7 +272,7 @@ begin
     //Ctrl.HidCtrl.FlushQueue;
     if (NOT ReadOnly) then
     begin
-      if Assigned(Ctrl.HidCtrl.OnData) then Ctrl.LocalDataTimer.ResetEvent;
+      if Assigned(Ctrl.OnData) then Ctrl.LocalDataTimer.ResetEvent;
     end;
     error:=(NOT Ctrl.HidCtrl.WriteFile(Ctrl.LocalData, Ctrl.HidCtrl.Caps.OutputReportByteLength, Written));
     if (error) then
@@ -289,7 +287,7 @@ begin
     if (NOT error) AND (NOT ReadOnly) then
     begin
       error:=True;
-      if Assigned(Ctrl.HidCtrl.OnData) then
+      if Assigned(Ctrl.OnData) then
       begin
         if Ctrl.LocalDataTimer.WaitFor(USBTimeout) = wrSignaled
            then error:=False
