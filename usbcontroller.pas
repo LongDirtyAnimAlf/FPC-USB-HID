@@ -315,9 +315,9 @@ type
     procedure Execute; override;
   public
     Device: TJvHidDevice;
-    NumBytesRead: word;
+    NumBytesRead: longword;
     Report: array of Byte;
-    constructor Create(CreateSuspended: Boolean);
+    constructor Create({%H-}CreateSuspended: Boolean);
   end;
 
   THIDPCAPS = record
@@ -372,6 +372,8 @@ type
     procedure SetThreadSleepTime(const SleepTime: Integer);
     procedure StartThread;
     procedure StopThread;
+    function CanRead(Timeout: Integer): Boolean;
+    function CanWrite(Timeout: Integer): Boolean;
     constructor CtlCreate(const APnPInfo: TJvHidPnPInfo; const LocalController: TJvHidDeviceController);
   protected
     // internal event implementor
@@ -384,7 +386,7 @@ type
     procedure CloseFile;
     function OpenFile: Boolean;
     function ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
-    function WriteFile(var Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
+    function WriteFile(const Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
     function CheckOut: Boolean;
     procedure ShowReports(report_type:word);
     property HidFileHandle:THandle read FHidFileHandle;
@@ -755,9 +757,8 @@ begin
           FUSBController.FInDeviceChange := True;
 
           // choose one of the following
-          //FUSBController.DeviceChange;
-          Synchronize(@FUSBController.DeviceChange);
-
+          FUSBController.DeviceChange;
+          //Synchronize(@FUSBController.DeviceChange);
           FUSBController.FInDeviceChange := False;
         end;
         {$IFDEF debug}
@@ -1430,9 +1431,9 @@ var
           {$ENDIF}
           PnPInfo := TJvHidPnPInfo.Create(LocalDeviceId,LocalRawNode,localudev_usbdevice,LocalUSBNode);
           HidDev := TJvHidDevice.CtlCreate(PnPInfo, Self);
-          HidDev.FVendorName   := udev_device_get_sysattr_value(localudev_usbdevice,'manufacturer');
-          HidDev.FProductName  := udev_device_get_sysattr_value(localudev_usbdevice,'product');
-          HidDev.FSerialNumber := udev_device_get_sysattr_value(localudev_usbdevice,'serial');
+          //HidDev.FVendorName   := udev_device_get_sysattr_value(localudev_usbdevice,'manufacturer');
+          //HidDev.FProductName  := udev_device_get_sysattr_value(localudev_usbdevice,'product');
+          //HidDev.FSerialNumber := udev_device_get_sysattr_value(localudev_usbdevice,'serial');
           NewList.Add(HidDev);
           Inc(Devn);
         end;
@@ -1565,7 +1566,18 @@ begin
   Device := Dev;
   NumBytesRead := 0;
   Finalize(Report);
-  SetLength(Report, Dev.Caps.InputReportByteLength);
+  if (Device.Caps.InputReportByteLength>0) then
+  begin
+  SetLength(Report, Device.Caps.InputReportByteLength);
+  {
+  //Empty readbuffer
+  while Device.CanRead(Device.ThreadSleepTime) do
+  begin
+    Device.ReadFile(Report,Device.Caps.InputReportByteLength,{%H-}BytesRead);
+  end;
+}
+  FillChar(Report[0], Device.Caps.InputReportByteLength, #0);
+  end else Terminate;
   Start;
 end;
 
@@ -1591,32 +1603,30 @@ var
   receiveBuffer: array[0..63] of hiddev_event;
   fd,ret:cint;
   i:word;
-
   selectTimeout: TTimeVal;
-
 begin
-  if (Device.HidFileHandle=INVALID_HANDLE_VALUE)  then
-  begin
-    Exit;
-  end;
+  if (Device.HidFileHandle=INVALID_HANDLE_VALUE)  then exit;
 
   fd :=cint(Device.HidFileHandle);
 
-  InitWithoutHint(receiveBuffer);
+  selectTimeout.tv_sec:= (Device.ThreadSleepTime DIV 1000);
+  selectTimeout.tv_usec:= ((Device.ThreadSleepTime MOD 1000) * 1000);
 
   try
     while not Terminated do
     begin
-      FillChar(Report[0], Device.Caps.InputReportByteLength, #0);
       fpFD_ZERO(readSet);
       fpFD_SET(fd, readSet);
-      selectTimeout.tv_sec:= Device.ThreadSleepTime DIV 1000;
-      selectTimeout.tv_usec:= Device.ThreadSleepTime * 1000;
+
       IF fpSelect(fd+1, @readSet, NIL, NIL, @selectTimeout) > 0 THEN
       begin
-        if fpFD_ISSET(fd, readSet) = 0 then continue;
+        if fpFD_ISSET(fd, readSet) = 0 then continue; // we had a timeout : go on with wait for data !
+
+        InitWithoutHint(receiveBuffer);
+        FillChar(Report[1], Device.Caps.InputReportByteLength-1, #0);
 
         ret:= fpRead(cint(Device.HidFileHandle), receiveBuffer, sizeof(hiddev_event)*(Device.Caps.InputReportByteLength-1));
+
         if ret>0 then
         begin
 
@@ -1631,7 +1641,6 @@ begin
             begin
               // copy data bytes
               for i := 0 to (NumBytesRead-1) do Report[i+1]:=receiveBuffer[i].value;
-
               // choose one of the below to signal the availability of data
               DoData;
               //Synchronize(@DoData);
@@ -1646,14 +1655,16 @@ begin
         end
         else
         begin
-          if (Not Terminated) AND (ret=-1) then
+          if (Not Terminated) AND (ret<0) then
           begin
             FErr := fpGetErrno;
-            // choose one of the below to signal the error
-            DoDataError;
-            //Synchronize(@DoDataError);
-            //Queue(@DoDataError);
-            SysUtils.Sleep(Device.ThreadSleepTime);
+            if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINPROGRESS) then
+            begin
+              DoDataError;
+              //Synchronize(@DoDataError);
+              //Queue(@DoDataError);
+              SysUtils.Sleep(Device.ThreadSleepTime);
+            end;
           end;
         end;
       end;
@@ -2023,70 +2034,95 @@ begin
   FHidFileHandle := INVALID_HANDLE_VALUE;
 end;
 
+function TJvHidDevice.CanRead(Timeout: Integer): Boolean;
+var
+  TimeVal: PTimeVal;
+  TimeV: TTimeVal;
+  FDSet: TFDSet;
+  fd:cint;
+begin
+  result:=false;
+
+  if (HidFileHandle=INVALID_HANDLE_VALUE)  then exit;
+
+  fd :=cint(HidFileHandle);
+
+  TimeV.tv_usec := (Timeout mod 1000) * 1000;
+  TimeV.tv_sec := Timeout div 1000;
+  TimeVal := @TimeV;
+  if Timeout = -1 then TimeVal := NIL;
+
+  fpFD_ZERO(FDSet);
+  fpFD_SET(fd, FDSet);
+
+  if fpSelect(fd+1, @FDSet, NIL, NIL, @TimeVal) > 0 THEN
+  begin
+    result:=(fpFD_ISSET(fd, FDSet) <> 0);
+  end;
+end;
+
+function TJvHidDevice.CanWrite(Timeout: Integer): Boolean;
+var
+  TimeVal: PTimeVal;
+  TimeV: TTimeVal;
+  FDSet: TFDSet;
+  fd:cint;
+begin
+  result:=false;
+
+  if (HidFileHandle=INVALID_HANDLE_VALUE)  then exit;
+
+  fd :=cint(HidFileHandle);
+
+  TimeV.tv_usec := (Timeout mod 1000) * 1000;
+  TimeV.tv_sec := Timeout div 1000;
+  TimeVal := @TimeV;
+  if Timeout = -1 then TimeVal := NIL;
+
+  fpFD_ZERO(FDSet);
+  fpFD_SET(fd, FDSet);
+
+  if fpSelect(fd+1, NIL, @FDSet, NIL, @TimeVal) > 0 THEN
+  begin
+    result:=(fpFD_ISSET(fd, FDSet) <> 0);
+  end;
+end;
 
 function TJvHidDevice.ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
 var
-  rinfo_in:hiddev_report_info;
-  ref_multi:hiddev_usage_ref_multi;
   ret:cint;
   readBuffer: array[0..64] of hiddev_event;
   readBufferByte: array[0..64] of byte;
   i:integer;
 begin
+  if (HidFileHandle=INVALID_HANDLE_VALUE)  then exit(false);
 
   ret:=-1;
 
   BytesRead:=0;
 
-  {
   if OpenFile then
   begin
-    FillChar(readBufferByte, sizeof(readBufferByte), #0);
-    ret := FpRead( cint(HidFileHandle), readBuffer, sizeof(readBuffer[0])*(ToRead-1));
-    if ret>=0 then
+    if CanRead(ThreadSleepTime) then
     begin
-      BytesRead := ret DIV sizeof(readBuffer[0]);
-      for i:=0 to BytesRead-1 do readBufferByte[i+1]:=readBuffer[i].value;
-      Move(Report,readBufferByte,1);
-      Move(readBufferByte,Report,BytesRead);
-    end;
-  end;
-  }
-
-  InitWithoutHint(readBuffer);
-  InitWithoutHint(readBufferByte);
-
-  if OpenFile then
-  begin
-    rinfo_in.report_type := HID_REPORT_TYPE_INPUT;
-    //rinfo_in.report_id   := readBufferByte[0];
-    rinfo_in.report_id   := HID_REPORT_ID_FIRST;
-    rinfo_in.num_fields  := 1;
-    ret:=fpioctl(cint(HidFileHandle),HIDIOCGREPORT,@rinfo_in);
-    if ret>=0 then
-    begin
-      Move(Report,readBufferByte,1);
-      ref_multi.uref.report_type := HID_REPORT_TYPE_INPUT;
-      //ref_multi.uref.report_id := readBufferByte[0];
-      ref_multi.uref.report_id := HID_REPORT_ID_FIRST;
-      ref_multi.uref.field_index := 0;
-      ref_multi.uref.usage_index := 0;
-      ref_multi.num_values := ToRead-1;
-      ret:=fpioctl(cint(HidFileHandle), HIDIOCGUSAGES, @ref_multi);
+      InitWithoutHint(readBuffer);
+      InitWithoutHint(readBufferByte);
+      ret := FpRead( cint(HidFileHandle), readBuffer, sizeof(readBuffer[0])*(ToRead));
       if ret>=0 then
       begin
-        for i := 0 to (ToRead-1) do readBufferByte[i+1]:=ref_multi.values[i];
+        BytesRead := ret DIV sizeof(readBuffer[0]);
+        for i:=0 to BytesRead-1 do readBufferByte[i+1]:=readBuffer[i].value;
         Move(Report,readBufferByte,1);
-        Move(readBufferByte,Report,ToRead);
-        BytesRead:=ToRead;
+        Move(readBufferByte,Report,BytesRead);
       end;
     end;
   end;
+
   Result :=(ret>=0);
 end;
 
 
-function TJvHidDevice.WriteFile(var Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
+function TJvHidDevice.WriteFile(const Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
 var
   ref_multi:hiddev_usage_ref_multi;
   rinfo_out:hiddev_report_info;
@@ -2094,15 +2130,15 @@ var
   i:integer;
   ret:cint;
 begin
+  if (HidFileHandle=INVALID_HANDLE_VALUE)  then exit(false);
+
   ret:=-1;
 
   BytesWritten:=0;
 
-  InitWithoutHint(writeBufferByte);
-
   if OpenFile then
   begin
-    FillChar(writeBufferByte, SizeOf(writeBufferByte), #0);
+    InitWithoutHint(writeBufferByte);
     Move(Report,writeBufferByte,ToWrite);
     ref_multi.uref.report_type := HID_REPORT_TYPE_OUTPUT;
     ref_multi.uref.report_id := writeBufferByte[0];
@@ -2125,7 +2161,7 @@ begin
       end;
     end;
   end;
-  Result :=(ret>=0);
+  result :=(ret>=0);
 end;
 
 procedure TJvHidDevice.DoUnplug;
