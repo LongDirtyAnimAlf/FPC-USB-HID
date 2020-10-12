@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <ProjectOptions>
-    <Version Value="10"/>
+    <Version Value="12"/>
     <PathDelim Value="\"/>
     <General>
+      <Flags>
+        <CompatibilityMode Value="True"/>
+      </Flags>
       <SessionStorage Value="InProjectDir"/>
-      <MainUnit Value="0"/>
       <Title Value="FpcUsbHid"/>
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
@@ -28,8 +30,8 @@
             <OtherUnitFiles Value="jvcl\jvcl\run;jcl\jcl\source\common;jcl\jcl\source\windows"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
-          <Conditionals Value="if TargetCPU='arm' then
-   LinkerOptions := ' =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF';"/>
+          <Conditionals Value="if TargetCPU=&apos;arm&apos; then
+   LinkerOptions := &apos; =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF&apos;;"/>
           <Parsing>
             <SyntaxOptions>
               <SyntaxMode Value="Delphi"/>
@@ -69,8 +71,8 @@
             <Libraries Value="C:\development\cross\lib\arm-linux-RPi2\"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
-          <Conditionals Value="if TargetCPU='arm' then
-   LinkerOptions := ' =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF';"/>
+          <Conditionals Value="if TargetCPU=&apos;arm&apos; then
+   LinkerOptions := &apos; =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF&apos;;"/>
           <Parsing>
             <SyntaxOptions>
               <SyntaxMode Value="Delphi"/>
@@ -112,8 +114,8 @@
             <Libraries Value="C:\development\cross\lib\i386-linux\"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
-          <Conditionals Value="if TargetCPU='arm' then
-   LinkerOptions := ' =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF';"/>
+          <Conditionals Value="if TargetCPU=&apos;arm&apos; then
+   LinkerOptions := &apos; =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF&apos;;"/>
           <Parsing>
             <SyntaxOptions>
               <SyntaxMode Value="Delphi"/>
@@ -155,8 +157,8 @@
             <OtherUnitFiles Value="jvcl\jvcl\run;jcl\jcl\source\common;jcl\jcl\source\windows"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
-          <Conditionals Value="if TargetCPU='arm' then
-   LinkerOptions := ' =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF';"/>
+          <Conditionals Value="if TargetCPU=&apos;arm&apos; then
+   LinkerOptions := &apos; =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF&apos;;"/>
           <Parsing>
             <SyntaxOptions>
               <SyntaxMode Value="Delphi"/>
@@ -167,7 +169,6 @@
             <SmartLinkUnit Value="True"/>
             <Checks>
               <IOChecks Value="True"/>
-              <RangeChecks Value="True"/>
               <OverflowChecks Value="True"/>
               <StackChecks Value="True"/>
             </Checks>
@@ -199,8 +200,8 @@
             <OtherUnitFiles Value="jvcl\jvcl\run;jcl\jcl\source\common;jcl\jcl\source\windows"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
-          <Conditionals Value="if TargetCPU='arm' then
-   LinkerOptions := ' =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF';"/>
+          <Conditionals Value="if TargetCPU=&apos;arm&apos; then
+   LinkerOptions := &apos; =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF&apos;;"/>
           <Parsing>
             <SyntaxOptions>
               <SyntaxMode Value="Delphi"/>
@@ -245,8 +246,8 @@
             <Libraries Value="C:\development\cross\lib\i386-linux\"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
-          <Conditionals Value="if TargetCPU='arm' then
-   LinkerOptions := ' =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF';"/>
+          <Conditionals Value="if TargetCPU=&apos;arm&apos; then
+   LinkerOptions := &apos; =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF&apos;;"/>
           <Parsing>
             <SyntaxOptions>
               <SyntaxMode Value="Delphi"/>
@@ -285,8 +286,8 @@
             <Libraries Value="C:\development\cross\lib\i386-linux\"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
-          <Conditionals Value="if TargetCPU='arm' then
-   LinkerOptions := ' =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF';"/>
+          <Conditionals Value="if TargetCPU=&apos;arm&apos; then
+   LinkerOptions := &apos; =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF&apos;;"/>
           <Parsing>
             <SyntaxOptions>
               <SyntaxMode Value="Delphi"/>
@@ -322,9 +323,10 @@
       <Version Value="2"/>
     </PublishOptions>
     <RunParams>
-      <local>
-        <FormatVersion Value="1"/>
-      </local>
+      <FormatVersion Value="2"/>
+      <Modes Count="1">
+        <Mode0 Name="default"/>
+      </Modes>
     </RunParams>
     <RequiredPackages Count="1">
       <Item1>
@@ -357,8 +359,8 @@
       <OtherUnitFiles Value="jvcl\jvcl\run;jcl\jcl\source\common;jcl\jcl\source\windows"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
-    <Conditionals Value="if TargetCPU='arm' then
-   LinkerOptions := ' =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF';"/>
+    <Conditionals Value="if TargetCPU=&apos;arm&apos; then
+   LinkerOptions := &apos; =&quot;-CpARMV7A -CfVFPV3 -OoFASTMATH -CaEABIHF&apos;;"/>
     <Parsing>
       <SyntaxOptions>
         <SyntaxMode Value="Delphi"/>

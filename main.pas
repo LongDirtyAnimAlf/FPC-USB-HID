@@ -18,7 +18,6 @@ type
     procedure btnHIDCreateClick(Sender: TObject);
     procedure btnHIDEnableClick(Sender: TObject);
     procedure btnInfoClick(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
   private
     { private declarations }
@@ -58,11 +57,7 @@ begin
     Memo1.Lines.Append('ERRORS:');
     Memo1.Lines.Append(S);
   end;
-  {$ifndef Windows}
-  // on Windows, HID is enabled by default !
   btnHIDEnable.Enabled:=True;
-  {$endif}
-  btnInfo.Enabled:=True;
 end;
 
 procedure TForm1.btnHIDEnableClick(Sender: TObject);
@@ -85,6 +80,7 @@ begin
     Memo1.Lines.Append('ERRORS:');
     Memo1.Lines.Append(S);
   end;
+  btnInfo.Enabled:=True;
 end;
 
 procedure TForm1.btnInfoClick(Sender: TObject);
@@ -97,14 +93,6 @@ begin
     Memo1.Lines.Append('INFO:');
     Memo1.Lines.Append(S);
   end else Memo1.Lines.Append('No new USB info.');
-end;
-
-procedure TForm1.FormCreate(Sender: TObject);
-begin
-  {$ifdef Windows}
-  // on Windows, HID is enabled by default !
-  btnHIDEnable.Enabled:=False;
-  {$endif}
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);

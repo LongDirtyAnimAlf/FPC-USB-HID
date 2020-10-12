@@ -65,6 +65,8 @@ type
 
     FIniFileFullPath:string;
 
+    function HidCtlEnumerate(HidDev: TJvHidDevice;const Idx: Integer): Boolean;
+
     procedure AddErrors(data:string);
     function  GetErrors:String;
     procedure AddInfo(data:string);
@@ -86,6 +88,8 @@ type
   public
     constructor Create;
     destructor Destroy;override;
+
+    function  Enumerate:integer;
 
     property  Emulation:boolean read FEmulation;
 
@@ -203,10 +207,7 @@ begin
   end;
 
   HidCtl:=TJvHidDeviceController.Create(nil);
-  // either enable this, or the other two, to detect USB device changes
-  HidCtl.OnDeviceChange:=DeviceChange;
-  //HidCtl.OnArrival:= DeviceArrival;
-  //HidCtl.OnRemoval:= DeviceRemoval;
+  HidCtl.OnEnumerate:=HidCtlEnumerate;
 end;
 
 destructor TUSB.Destroy;
@@ -218,6 +219,7 @@ begin
   HidCtl.OnArrival:= nil;
   HidCtl.OnRemoval:= nil;
   HidCtl.OnDeviceChange:=nil;
+  HidCtl.OnEnumerate:=nil;
 
   if AUSBList.Count>0 then
   begin
@@ -249,8 +251,46 @@ begin
   if Value <> FEnabled then
   begin
     FEnabled := Value;
+    if FEnabled then
+    begin
+      // either enable this, or the other two, to detect USB device changes
+      HidCtl.OnDeviceChange:=DeviceChange;
+      //HidCtl.OnArrival:= DeviceArrival;
+      //HidCtl.OnRemoval:= DeviceRemoval;
+    end
+    else
+    begin
+      HidCtl.OnArrival:= nil;
+      HidCtl.OnRemoval:= nil;
+      HidCtl.OnDeviceChange:=nil;
+    end;
     HidCtl.Enabled:=FEnabled;
   end;
+end;
+
+function TUSB.HidCtlEnumerate(HidDev: TJvHidDevice; const Idx: Integer): Boolean;
+begin
+  AddInfo('Device arrival. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
+  if ( (HidDev.Attributes.VendorID = Vendor) AND
+       (HidDev.Attributes.ProductID = Product) ) then
+  begin
+    if HidDev.IsCheckedOut then
+    begin
+      AddInfo('I1: '+HidDev.DeviceStrings[1]);
+      AddInfo('I2: '+HidDev.DeviceStrings[2]);
+      AddInfo('I3: '+HidDev.DeviceStrings[3]);
+      AddInfo('I4: '+HidDev.DeviceStrings[4]);
+
+      AddInfo('Input length: '+InttoStr(HidDev.Caps.InputReportByteLength));
+      AddInfo('Output length: '+InttoStr(HidDev.Caps.OutputReportByteLength));
+    end;
+  end;
+  result:=True;
+end;
+
+function TUSB.Enumerate:integer;
+begin
+  result:=HidCtl.Enumerate;
 end;
 
 function TUSB.HidReadWrite(Ctrl: TUSBController; ReadOnly:boolean):boolean;
