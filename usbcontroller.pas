@@ -1917,6 +1917,7 @@ begin
   // free the data which needs special handling
   CloseFile;
 
+  FDebugInfo.Free;
   FLanguageStrings.Free;
 
   if FMyController <> nil then
