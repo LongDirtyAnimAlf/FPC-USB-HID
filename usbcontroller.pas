@@ -211,20 +211,20 @@ const
 
 
 
-  HIDIOCSUSAGE          = cint32((_IOW shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0C);
-  HIDIOCSREPORT         = cint32((_IOW shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $08);
-  HIDIOCGUCODE          = cint32((_IOWR shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0D);
-  HIDIOCGUSAGE          = cint32((_IOWR shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0B);
-  HIDIOCGREPORTINFO     = cint32((_IOWR shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $09);
-  HIDIOCGFIELDINFO      = cint32((_IOWR shl 30) + (sizeof(hiddev_field_info) shl 16) + (Ord('H') shl 8) + $0A);
-  HIDIOCGDEVINFO        = cint32((_IOR shl 30) + (sizeof(hiddev_devinfo) shl 16) + (Ord('H') shl 8) + $03);
-  HIDIOCGSTRING         = cint32((_IOR shl 30) + (sizeof(hiddev_string_descriptor) shl 16) + (Ord('H') shl 8) + $04);
-  HIDIOCGREPORT         = cint32((_IOW shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $07);
-  HIDIOCGUSAGES         = cint32((_IOWR shl 30) + (sizeof(hiddev_usage_ref_multi) shl 16) + (Ord('H') shl 8) + $13);
-  HIDIOCSUSAGES         = cint32((_IOW shl 30) + (sizeof(hiddev_usage_ref_multi) shl 16) + (Ord('H') shl 8) + $14);
+  HIDIOCSUSAGE          = cuint32((_IOW shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0C);
+  HIDIOCSREPORT         = cuint32((_IOW shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $08);
+  HIDIOCGUCODE          = cuint32((_IOWR shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0D);
+  HIDIOCGUSAGE          = cuint32((_IOWR shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0B);
+  HIDIOCGREPORTINFO     = cuint32((_IOWR shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $09);
+  HIDIOCGFIELDINFO      = cuint32((_IOWR shl 30) + (sizeof(hiddev_field_info) shl 16) + (Ord('H') shl 8) + $0A);
+  HIDIOCGDEVINFO        = cuint32((_IOR shl 30) + (sizeof(hiddev_devinfo) shl 16) + (Ord('H') shl 8) + $03);
+  HIDIOCGSTRING         = cuint32((_IOR shl 30) + (sizeof(hiddev_string_descriptor) shl 16) + (Ord('H') shl 8) + $04);
+  HIDIOCGREPORT         = cuint32((_IOW shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $07);
+  HIDIOCGUSAGES         = cuint32((_IOWR shl 30) + (sizeof(hiddev_usage_ref_multi) shl 16) + (Ord('H') shl 8) + $13);
+  HIDIOCSUSAGES         = cuint32((_IOW shl 30) + (sizeof(hiddev_usage_ref_multi) shl 16) + (Ord('H') shl 8) + $14);
 
-  //HIDIOCSFEATURE(len)    = cint32((_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $06);
-  //HIDIOCGFEATURE(len)    = cint32((_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $07);
+  //HIDIOCSFEATURE(len)    = cuint32((_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $06);
+  //HIDIOCGFEATURE(len)    = cuint32((_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $07);
 
 type
   TJvHidDeviceController = class; // forward declaration
@@ -232,6 +232,9 @@ type
 
   TJvHidPlugEvent = procedure(HidDev: TJvHidDevice) of object;
   TJvHidUnplugEvent = TJvHidPlugEvent;
+
+  TJvHidEnumerateEvent = function(HidDev: TJvHidDevice;
+    const Idx: Integer): Boolean of object;
 
   TJvHidDataEvent = procedure(HidDev: TJvHidDevice; ReportID: Byte;
     const Data: Pointer; Size: Word) of object;
@@ -310,7 +313,7 @@ type
     FErr: DWORD;
     procedure DoData;
     procedure DoDataError;
-    constructor CtlCreate(const Dev: TJvHidDevice);
+    {%H-}constructor CtlCreate(const Dev: TJvHidDevice);
   protected
     procedure Execute; override;
   public
@@ -374,7 +377,7 @@ type
     procedure StopThread;
     function CanRead(Timeout: Integer): Boolean;
     function CanWrite(Timeout: Integer): Boolean;
-    constructor CtlCreate(const APnPInfo: TJvHidPnPInfo; const LocalController: TJvHidDeviceController);
+    {%H-}constructor CtlCreate(const APnPInfo: TJvHidPnPInfo; const LocalController: TJvHidDeviceController);
   protected
     // internal event implementor
     procedure DoUnplug;
@@ -432,6 +435,7 @@ type
   private
     FPriority: TThreadPriority;
     FArrivalEvent: TJvHidPlugEvent;
+    FEnumerateEvent: TJvHidEnumerateEvent;
     FDeviceChangeEvent: TNotifyEvent;
     FDeviceDataError: TJvHidDataErrorEvent;
     FDevUnplugEvent: TJvHidUnplugEvent;
@@ -455,6 +459,7 @@ type
     procedure   SetDevData(const DataEvent: TJvHidDataEvent);
     procedure   SetDeviceDataError(const DataErrorEvent: TJvHidDataErrorEvent);
     procedure   SetDeviceChangeEvent(const Notifier: TNotifyEvent);
+    procedure   SetEnumerateEvent(const EnumerateEvent: TJvHidEnumerateEvent);
     procedure   SetDevUnplug(const Unplugger: TJvHidUnplugEvent);
     function    GetDebugInfo: String;
     procedure   SetDebugInfo(value:String);
@@ -462,6 +467,7 @@ type
     procedure   DoArrival(HidDev: TJvHidDevice);
     procedure   DoRemoval(HidDev: TJvHidDevice);
     procedure   DoDeviceChange;
+    function    DoEnumerate(HidDev: TJvHidDevice; Idx: Integer): Boolean;
     procedure   StartControllerThread;
     procedure   StopControllerThread;
   public
@@ -479,7 +485,8 @@ type
     function    CountByProductName(const ProductName: String): Integer;
     function    CountByVendorName(const VendorName: String): Integer;
     function    CountByCallback(Check: TJvHidCheckCallback): Integer;
-
+    // iterate over the HID devices
+    function    Enumerate: Integer;
     property    DebugInfo: String read GetDebugInfo write SetDebugInfo;
     property    HidDevices:THidDevList read FList;
     property    NumCheckedInDevices: Integer read FNumCheckedInDevices;
@@ -493,6 +500,7 @@ type
     property    OnDeviceData: TJvHidDataEvent read FDevDataEvent write SetDevData;
     property    OnDeviceDataError: TJvHidDataErrorEvent read FDeviceDataError write SetDeviceDataError;
     property    OnArrival: TJvHidPlugEvent read FArrivalEvent write FArrivalEvent;
+    property    OnEnumerate: TJvHidEnumerateEvent read FEnumerateEvent write SetEnumerateEvent;
     property    OnDeviceChange: TNotifyEvent read FDeviceChangeEvent write SetDeviceChangeEvent;
     property    OnDeviceUnplug: TJvHidUnplugEvent read FDevUnplugEvent write SetDevUnplug;
     property    OnRemoval: TJvHidUnplugEvent read FRemovalEvent write FRemovalEvent;
@@ -681,7 +689,9 @@ var
   buf: PChar = nil;
   fd:cint;
   fd_monitor:cint;
+  {$IFDEF debug}
   Action:string;
+  {$endif}
   //selectTimeout: TTimeVal;
 begin
   localudev:=udev_new();
@@ -747,8 +757,8 @@ begin
       localudev_device := udev_monitor_receive_device(localudev_monitor);
       if(localudev_device<>nil) then
       begin
-        Action:=udev_device_get_action(localudev_device);
         {$IFDEF debug}
+        Action:=udev_device_get_action(localudev_device);
         FUSBController.DebugInfo:='Enum action: '+Action;
         {$ENDIF}
         fNode:=udev_device_get_devnode(localudev_device);
@@ -935,6 +945,18 @@ begin
   end;
 end;
 
+procedure TJvHidDeviceController.SetEnumerateEvent(const EnumerateEvent: TJvHidEnumerateEvent);
+begin
+  if @FEnumerateEvent <> @EnumerateEvent then
+  begin
+    FEnumerateEvent := EnumerateEvent;
+    {
+    if not (csLoading in ComponentState) then
+      DeviceChange;
+    }
+  end;
+end;
+
 procedure TJvHidDeviceController.SetDeviceChangeEvent(const Notifier: TNotifyEvent);
 begin
   if @FDeviceChangeEvent <> @Notifier then
@@ -944,6 +966,18 @@ begin
     if not (csLoading in ComponentState) then
       DeviceChange;
     }
+  end;
+end;
+
+function TJvHidDeviceController.DoEnumerate(HidDev: TJvHidDevice; Idx: Integer): Boolean;
+begin
+  Result := False;
+  if Assigned(FEnumerateEvent) then
+  begin
+    HidDev.FIsEnumerated := True;
+    Result := FEnumerateEvent(HidDev, Idx);
+    HidDev.FIsEnumerated := False;
+    if not HidDev.IsCheckedOut then HidDev.CloseFile;
   end;
 end;
 
@@ -1011,6 +1045,20 @@ begin
     end;
     FDevUnplugEvent := Unplugger;
   end;
+end;
+
+function TJvHidDeviceController.Enumerate: Integer;
+var
+  I: Integer;
+begin
+  Result := 0;
+  for I := 0 to FList.Count - 1 do
+    if TJvHidDevice(FList[I]).IsPluggedIn then
+    begin
+      Inc(Result);
+      if not DoEnumerate(TJvHidDevice(FList[I]), I) then
+        Break;
+    end;
 end;
 
 function TJvHidDeviceController.CheckThisOut(var HidDev: TJvHidDevice; Idx: Integer; Check: Boolean): Boolean;
@@ -1255,7 +1303,6 @@ var
     HidDev: TJvHidDevice;
     path:Pchar;
     LocalRawNode,LocalUSBNode:string;
-    LocalHidNode,LocalInterfaceNode:string;
     LocalDeviceId:DWORD;
     localudev:Pudev_handle;
     localudev_enumerate:Pudev_enumerate_handle;
@@ -1265,6 +1312,7 @@ var
     localudev_usbdevice:Pudev_device_handle;
     localudev_hiddevice:Pudev_device_handle;
     {$IFDEF debug}
+    LocalHidNode,LocalInterfaceNode:string;
     uevent:tstringlist;
     ueventcounter:integer;
     {$ENDIF}
@@ -1275,9 +1323,12 @@ var
     // Get a handle for the Plug and Play node and request currently active HID devices
 
     LocalRawNode:='Empty';
+    LocalUSBNode:='Empty';
+
+    {$IFDEF debug}
     LocalHidNode:='Empty';
     LocalInterfaceNode:='Empty';
-    LocalUSBNode:='Empty';
+    {$ENDIF}
 
     localudev:=udev_new();
     if (localudev = nil) then Exit;
@@ -1322,8 +1373,8 @@ var
         		       nil);
         if(localudev_hiddevice<>nil) then
         begin
-          LocalHidNode:=udev_device_get_devnode(localudev_hiddevice);
           {$IFDEF debug}
+          LocalHidNode:=udev_device_get_devnode(localudev_hiddevice);
           DebugInfo:='Found hid node: '+LocalHidNode;
           DebugInfo:='HID_PHYS_2: '+udev_device_get_property_value(localudev_hiddevice, 'HID_PHYS');
           DebugInfo:='HID_ID_2: '+udev_device_get_property_value(localudev_hiddevice, 'HID_ID');
@@ -1354,8 +1405,8 @@ var
 
         if(localudev_intfdevice<>nil) then
         begin
-          LocalInterfaceNode:=udev_device_get_devnode(localudev_intfdevice);
           {$IFDEF debug}
+          LocalInterfaceNode:=udev_device_get_devnode(localudev_intfdevice);
           DebugInfo:='Found interface node: '+LocalInterfaceNode;
           {$ENDIF}
         end
@@ -2178,10 +2229,11 @@ end;
 procedure TJvHidDevice.ShowReports(report_type:word);
 function controlName(usage_code:integer):string;
 var
-  hi,lo:integer;
+  hi:integer;
+  //lo:integer;
 begin
   hi := (usage_code SHR 16) AND $FFFF;
-  lo := usage_code AND $FFFF;
+  //lo := usage_code AND $FFFF;
   case (hi) of
     $80: Result:='(USB Monitor usage page)';
     $81: Result:='(USB Enumerated Values usage page)';
