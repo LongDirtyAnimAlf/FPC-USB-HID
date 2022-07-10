@@ -184,6 +184,46 @@ ALERT_jedi_inc_incompatible
  {$DEFINE JVCL_CONFIGURED}
 {$ENDIF DELPHI24}
 {-----------------------------------------------------------------------------}
+{$IFDEF DELPHI25}
+ {$IFDEF CPUX86}
+ {$I jvcld25.inc}
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld25_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF DELPHI25}
+{-----------------------------------------------------------------------------}
+{$IFDEF DELPHI26}
+ {$IFDEF CPUX86}
+ {$I jvcld26.inc}
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld26_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF DELPHI26}
+{-----------------------------------------------------------------------------}
+{$IFDEF DELPHI27}
+ {$IFDEF CPUX86}
+ {$I jvcld27.inc}
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld27_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF DELPHI27}
+{-----------------------------------------------------------------------------}
+{$IFDEF DELPHI28}
+ {$IFDEF CPUX86}
+ {$I jvcld28.inc}
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld28_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF DELPHI28}
+{-----------------------------------------------------------------------------}
 { C++Builder                                                                  }
 {-----------------------------------------------------------------------------}
 {$IFDEF BCB6}
@@ -306,6 +346,46 @@ ALERT_jedi_inc_incompatible
  {$DEFINE JVCL_CONFIGURED}
 {$ENDIF BCB24}
 {-----------------------------------------------------------------------------}
+{$IFDEF BCB25}
+ {$IFDEF CPUX86}
+ {$I jvcld25win32.inc} // same include file for BDS based C++
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld25_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF BCB25}
+{-----------------------------------------------------------------------------}
+{$IFDEF BCB26}
+ {$IFDEF CPUX86}
+ {$I jvcld26win32.inc} // same include file for BDS based C++
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld26_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF BCB26}
+{-----------------------------------------------------------------------------}
+{$IFDEF BCB27}
+ {$IFDEF CPUX86}
+ {$I jvcld27win32.inc} // same include file for BDS based C++
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld27_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF BCB27}
+{-----------------------------------------------------------------------------}
+{$IFDEF BCB28}
+ {$IFDEF CPUX86}
+ {$I jvcld28win32.inc} // same include file for BDS based C++
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld28_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF BCB28}
+{-----------------------------------------------------------------------------}
 {$ENDIF DEFAULT_JVCL_INC}
 {-----------------------------------------------------------------------------}
 
@@ -314,7 +394,7 @@ ALERT_jedi_inc_incompatible
  {$IFDEF SUPPORTS_COMPILETIME_MESSAGES}
   {$MESSAGE FATAL 'Your Delphi/BCB version is not supported by this JVCL version!'}
  {$ELSE}
-  //'Your Delphi/BCB version is not supported by this JVCL version!'
+  'Your Delphi/BCB version is not supported by this JVCL version!'
  {$ENDIF SUPPORTS_COMPILETIME_MESSAGES}
 {$ENDIF !JVCL_CONFIGURED}
 

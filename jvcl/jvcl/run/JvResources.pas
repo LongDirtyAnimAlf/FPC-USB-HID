@@ -587,6 +587,9 @@ resourcestring
   RsDBPosBackward = 'Backward';
   RsDBPosForward = 'Forward';
   RsDBPosPercental = 'Percental';
+  RsDBPosPositionNormal = ' %3d / %3d ';
+  RsDBPosPositionSelected = ' %3d / %3d (%d) ';
+  RsDBPosPositionInactive = ' - / - ';
   RsSRWPostButtonCaption = '&Post';
   RsSRWCancelButtonCaption = '&Cancel';
   RsSRWCloseButtonCaption = 'C&lose';
@@ -1476,6 +1479,7 @@ resourcestring
   RsEUpdateError = 'Unable to modify the record.';
   // 'No se pudo eliminar el registro.';
   RsEDeleteError = 'Unable to erase the record.';
+  RsEFieldOffsetOverflow = 'Field offset overflow. Index: %0:d';
 
 //=== JvMouseGesture.pas =====================================================
 resourcestring

@@ -1958,6 +1958,9 @@ resourcestring
   RsOSVersionWinServer2012R2    = 'Windows Server 2012 R2';
   RsOSVersionWin10              = 'Windows 10';
   RsOSVersionWinServer2016      = 'Windows Server 2016';
+  RsOSVersionWinServer2019      = 'Windows Server 2019';
+  RsOSVersionWinServer          = 'Windows Server';
+  RsOSVersionWin11              = 'Windows 11';
 
   RsEditionWinXPHome            = 'Home Edition';
   RsEditionWinXPPro             = 'Professional';
@@ -2004,8 +2007,8 @@ resourcestring
   RsProductTypeEnterprise       = 'Enterprise';
   RsProductTypeWebEdition       = 'Web Edition';
 
-  RsEOpenGLInfo = 'GetOpenGLVersion: %s failed';
-  RsENetWkstaGetInfo = 'NetWkstaGetInfo failed';
+  RsEOpenGLInfo                 = 'GetOpenGLVersion: %s failed';
+  RsENetWkstaGetInfo            = 'NetWkstaGetInfo failed';
 
   {$IFDEF MSWINDOWS}
   RsSPInfo = 'SP%u';

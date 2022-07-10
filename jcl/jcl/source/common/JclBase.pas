@@ -113,7 +113,7 @@ type
   UInt64 = Int64;
   {$ENDIF ~COMPILER7_UP}
   PWideChar = System.PWideChar;
-  PPWideChar = ^JclBase.PWideChar;
+  PPWideChar = ^PWideChar;
   PPAnsiChar = ^PAnsiChar;
   PInt64 = type System.PInt64;
   {$ENDIF ~FPC}
@@ -160,6 +160,11 @@ type
   {$ENDIF ~FPC}
   TJclULargeInteger = ULARGE_INTEGER;
   PJclULargeInteger = PULARGE_INTEGER;
+
+  {$IFNDEF COMPILER16_UP}
+  LONG = Longint;
+  {$EXTERNALSYM LONG}
+  {$ENDIF ~COMPILER16_UP}
 
 // Dynamic Array support
 type

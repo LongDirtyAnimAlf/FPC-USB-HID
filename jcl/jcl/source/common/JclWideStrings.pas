@@ -2103,11 +2103,8 @@ begin
 end;
 
 function TJclWideStringList.GetP(Index: Integer): PWideString;
-var
-  aWideString:WideString;
 begin
-  aWideString:=GetItem(Index).FString;
-  Result := @aWideString;
+  Result := Addr(GetItem(Index).FString);
 end;
 
 function TJclWideStringList.IndexOf(const S: WideString): Integer;

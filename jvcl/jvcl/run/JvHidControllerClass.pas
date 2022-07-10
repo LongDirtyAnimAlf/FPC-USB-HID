@@ -114,6 +114,8 @@ type
       const DevData: TSPDevInfoData; Prop: DWORD): TStringList;
     function GetRegistryPropertyDWord(PnPHandle: HDEVINFO;
       const DevData: TSPDevInfoData; Prop: DWORD): DWORD;
+    function GetRegistryPropertyGuid(PnPHandle: HDEVINFO;
+      const DevData: TSPDevInfoData; Prop: DWORD): TGuid;
     function GetCompatibleIDs: TStrings;
     function GetHardwareID: TStrings;
     function GetLowerFilters: TStrings;
@@ -643,7 +645,7 @@ begin
   // secondary information not all likely to exist for a HID device
   FAddress := GetRegistryPropertyString(APnPHandle, ADevData, SPDRP_ADDRESS);
   FBusNumber := GetRegistryPropertyDWord(APnPHandle, ADevData, SPDRP_BUSNUMBER);
-  FBusType := GetRegistryPropertyString(APnPHandle, ADevData, SPDRP_BUSTYPEGUID);
+  FBusType := GuidToString(GetRegistryPropertyGuid(APnPHandle, ADevData, SPDRP_BUSTYPEGUID));
   FCharacteristics := GetRegistryPropertyString(APnPHandle, ADevData, SPDRP_CHARACTERISTICS);
   FDevType := GetRegistryPropertyDWord(APnPHandle, ADevData, SPDRP_DEVTYPE);
   FEnumeratorName := GetRegistryPropertyString(APnPHandle, ADevData, SPDRP_ENUMERATOR_NAME);
@@ -780,6 +782,19 @@ begin
     RegDataType, PBYTE(@Result), SizeOf(Result), BytesReturned);
 end;
 
+function TJvHidPnPInfo.GetRegistryPropertyGuid(PnPHandle: HDEVINFO;
+  const DevData: TSPDevInfoData; Prop: DWORD): TGuid;
+var
+  BytesReturned: DWORD;
+  RegDataType: DWORD;
+begin
+  BytesReturned := 0;
+  RegDataType := 0;
+  Result := GUID_NULL;
+  SetupDiGetDeviceRegistryProperty(PnPHandle, DevData, Prop, RegDataType,
+                                   PByte(@Result), SizeOf(Result), BytesReturned);
+end;
+
 //=== { TJvHidDevice } =======================================================
 
 // dummy constructor to catch invalid Create calls
@@ -848,7 +863,10 @@ begin
       raise EControllerError.CreateRes(@RsEDeviceCannotBeIdentified);
   end
   else
-    raise EControllerError.CreateRes(@RsEDeviceCannotBeOpened);
+  begin
+    //raise EControllerError.CreateRes(@RsEDeviceCannotBeOpened);
+  end;
+  FPnPInfo := APnPInfo;
   // the file is closed to stop using up resources
   CloseFile;
 end;
@@ -1764,8 +1782,6 @@ begin
   inherited Destroy;
 end;
 
-
-
 procedure TJvHidDeviceController.DoArrival(HidDev: TJvHidDevice);
 begin
   if Assigned(FOnArrival) then
@@ -1916,6 +1932,7 @@ var
            then raise EHidClientError.Create('DeviceInterfaceData.cbSize member is not set correctly')
            else if FErr<>ERROR_NO_MORE_ITEMS then raise EHidClientError.Create('SetupDiEnumDeviceInterfaces error');
       end;
+
       Inc(Devn);
     until not Success;
     SetupDiDestroyDeviceInfoList(PnPHandle);

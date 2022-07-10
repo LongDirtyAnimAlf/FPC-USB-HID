@@ -53,7 +53,7 @@
 {                                                                                                  }
 {**************************************************************************************************}
 
-unit JclAnsiStrings; // former JclStrings
+unit JclAnsiStrings;
 
 {$I jcl.inc}
 
@@ -98,6 +98,7 @@ type
     FNameValueSeparator: AnsiChar;
     FStrictDelimiter: Boolean;
     FQuoteChar: AnsiChar;
+    FUpdateCount: Integer;
     function GetText: AnsiString;
     procedure SetText(const Value: AnsiString);
     function GetCommaText: AnsiString; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
@@ -127,6 +128,8 @@ type
     procedure SetCapacity(const Value: Integer); virtual;
     function GetCount: Integer; virtual; abstract;
     function CompareStrings(const S1, S2: AnsiString): Integer; virtual;
+    procedure SetUpdateState(Updating: Boolean); virtual;
+    property UpdateCount: Integer read FUpdateCount;
   public
     constructor Create;
 
@@ -181,6 +184,8 @@ type
     FDuplicates: TDuplicates;
     FSorted: Boolean;
     FCaseSensitive: Boolean;
+    FOnChange: TNotifyEvent;
+    FOnChanging: TNotifyEvent;
     procedure Grow;
     procedure QuickSort(L, R: Integer; SCompare: TJclAnsiStringListSortCompare);
     procedure SetSorted(Value: Boolean);
@@ -194,8 +199,13 @@ type
     procedure SetCapacity(const Value: Integer); override;
     function GetCount: Integer; override;
     function CompareStrings(const S1, S2: AnsiString): Integer; override;
+    procedure SetUpdateState(Updating: Boolean); override;
+
+    procedure Changed; virtual;
+    procedure Changing; virtual;
   public
     constructor Create;
+    destructor Destroy; override;
 
     function AddObject(const S: AnsiString; AObject: TObject): Integer; override;
     procedure Assign(Source: TPersistent); override;
@@ -209,6 +219,9 @@ type
     property CaseSensitive: Boolean read FCaseSensitive write FCaseSensitive;
     property Duplicates: TDuplicates read FDuplicates write FDuplicates;
     property Sorted: Boolean read FSorted write SetSorted;
+
+    property OnChange: TNotifyEvent read FOnChange write FOnChange;
+    property OnChanging: TNotifyEvent read FOnChanging write FOnChanging;
   end;
   {$ELSE ~SUPPORTS_UNICODE}
   TJclAnsiStrings = Classes.TStrings;
@@ -518,8 +531,8 @@ procedure StrNormIndex(const StrLen: SizeInt; var Index: SizeInt; var Count: Siz
 
 function ArrayOf(List: TJclAnsiStrings): TDynStringArray; overload;
 
-function AnsiCompareNaturalStr(const S1, S2: AnsiString): SizeInt; overload;
-function AnsiCompareNaturalText(const S1, S2: AnsiString): SizeInt; overload;
+function AnsiCompareNaturalStr(const S1, S2: AnsiString): SizeInt;
+function AnsiCompareNaturalText(const S1, S2: AnsiString): SizeInt;
 
 // Explicit ANSI version of former/deprecated SysUtils PAnsiChar functions
 {$IFNDEF DEPRECATED_SYSUTILS_ANSISTRINGS}
@@ -585,7 +598,13 @@ uses
   Libc,
   {$ENDIF HAS_UNIT_LIBC}
   {$IFDEF SUPPORTS_UNICODE}
+  {$IFDEF HAS_UNIT_RTLCONSTS}
+  {$IFDEF HAS_UNITSCOPE}
+  System.RTLConsts,
+  {$ELSE ~HAS_UNITSCOPE}
   RtlConsts,
+  {$ENDIF}
+  {$ENDIF HAS_UNIT_RTLCONSTS}
   {$ENDIF SUPPORTS_UNICODE}
   JclLogic, JclResources, JclStreams, JclSynch, JclSysUtils;
 
@@ -820,6 +839,10 @@ begin
   Result := CompareStr(S1, S2);
 end;
 
+procedure TJclAnsiStrings.SetUpdateState(Updating: Boolean);
+begin
+end;
+
 function TJclAnsiStrings.IndexOf(const S: AnsiString): Integer;
 begin
   for Result := 0 to Count - 1 do
@@ -948,7 +971,7 @@ begin
       QuoteCharCount := 0;
       LastStart := Index + 1;
     end;
-    if (Index = ValueLength) and (LastStart < ValueLength) then
+    if (Index = ValueLength) and (LastStart <= ValueLength) then
     begin
       if StrictDelimiter then
         Add(Copy(Value, LastStart, ValueLength - LastStart + 1))
@@ -1005,10 +1028,14 @@ end;
 
 procedure TJclAnsiStrings.BeginUpdate;
 begin
+  if FUpdateCount = 0 then SetUpdateState(True);
+  Inc(FUpdateCount);
 end;
 
 procedure TJclAnsiStrings.EndUpdate;
 begin
+  Dec(FUpdateCount);
+  if FUpdateCount = 0 then SetUpdateState(False);
 end;
 
 procedure TJclAnsiStrings.LoadFromFile(const FileName: TFileName);
@@ -1146,6 +1173,14 @@ begin
   FCaseSensitive := True;
 end;
 
+destructor TJclAnsiStringList.Destroy;
+begin
+  FOnChange := nil;
+  FOnChanging := nil;
+
+  inherited Destroy;
+end;
+
 procedure TJclAnsiStringList.Assign(Source: TPersistent);
 var
   StringListSource: TStringList;
@@ -1191,6 +1226,23 @@ begin
     Result := CompareStr(S1, S2)
   else
     Result := CompareText(S1, S2);
+end;
+
+procedure TJclAnsiStringList.SetUpdateState(Updating: Boolean);
+begin
+  if Updating then Changing else Changed;
+end;
+
+procedure TJclAnsiStringList.Changed;
+begin
+  if (FUpdateCount = 0) and Assigned(FOnChange) then
+    FOnChange(Self);
+end;
+
+procedure TJclAnsiStringList.Changing;
+begin
+  if (FUpdateCount = 0) and Assigned(FOnChanging) then
+    FOnChanging(Self);
 end;
 
 procedure TJclAnsiStringList.Grow;
@@ -1277,20 +1329,21 @@ begin
 end;
 
 function TJclAnsiStringList.AddObject(const S: AnsiString; AObject: TObject): Integer;
+var
+  Found: Boolean;
 begin
   if not Sorted then
-  begin
-    Result := Count;
-  end
+    Result := Count
   else
   begin
+    Found := Find(S, Result);
     case Duplicates of
       dupAccept: ;
       dupIgnore:
-        if Find(S, Result) then
+        if Found then
           Exit;
       dupError:
-        if Find(S, Result) then
+        if Found then
           Error(@SDuplicateString, 0);
     end;
   end;
@@ -1308,7 +1361,7 @@ begin
   for I := Index to Count - 2 do
     FStrings[I] := FStrings[I + 1];
     
-  SetLength(FStrings[FCount - 1].Str, 0);  // the last string is no longer useful
+  FStrings[FCount - 1].Str := '';  // the last string is no longer useful
     
   Dec(FCount);
 end;
@@ -2435,8 +2488,8 @@ procedure StrResetLength(var S: AnsiString);
 var
   I: SizeInt;
 begin
-  for I := 1 to Length(S) do
-    if S[I] = #0 then
+  for I := 0 to Length(S) - 1 do
+    if S[I + 1] = #0 then
     begin
       SetLength(S, I);
       Exit;
@@ -4088,12 +4141,12 @@ begin
   end;
 end;
 
-function AnsiCompareNaturalStr(const S1, S2: AnsiString): SizeInt;
+function AnsiCompareNaturalStr(const S1, S2: AnsiString): SizeInt;// overload;
 begin
   Result := AnsiCompareNatural(S1, S2, False);
 end;
 
-function AnsiCompareNaturalText(const S1, S2: AnsiString): SizeInt;
+function AnsiCompareNaturalText(const S1, S2: AnsiString): SizeInt;// overload;
 begin
   Result := AnsiCompareNatural(S1, S2, True);
 end;

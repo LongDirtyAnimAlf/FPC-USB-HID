@@ -561,14 +561,14 @@ const
 type
   PFilePathsA = ^TFilePathsA;
   PFilePathsW = ^TFilePathsW;
-  FILEPATHS_A = record
+  FILEPATHS_A = packed record
     Target: PAnsiChar;
     Source: PAnsiChar; // not used for delete operations
     Win32Error: UINT;
     Flags: DWORD; // such as SP_COPY_NOSKIP for copy errors
   end;
   {$EXTERNALSYM FILEPATHS_A}
-  FILEPATHS_W = record
+  FILEPATHS_W = packed record
     Target: PWideChar;
     Source: PWideChar; // not used for delete operations
     Win32Error: UINT;
@@ -588,7 +588,7 @@ type
   {$IFDEF WINXP_UP}
   PFilePathsSignerInfoA = ^TFilePathsSignerInfoA;
   PFilePathsSignerInfoW = ^TFilePathsSignerInfoW;
-  FILEPATHS_SIGNERINFO_A = record
+  FILEPATHS_SIGNERINFO_A = packed record
     Target: PAnsiChar;
     Source: PAnsiChar;  // not used for delete operations
     Win32Error: UINT;
@@ -598,7 +598,7 @@ type
     CatalogFile: PAnsiChar;
   end;
   {$EXTERNALSYM FILEPATHS_SIGNERINFO_A}
-  FILEPATHS_SIGNERINFO_W = record
+  FILEPATHS_SIGNERINFO_W = packed record
     Target: PWideChar;
     Source: PWideChar;  // not used for delete operations
     Win32Error: UINT;
@@ -624,7 +624,7 @@ type
 //
   PSourceMediaA = ^TSourceMediaA;
   PSourceMediaW = ^TSourceMediaW;
-  SOURCE_MEDIA_A = record
+  SOURCE_MEDIA_A = packed record
     Reserved: PAnsiChar;
     Tagfile: PAnsiChar; // may be NULL
     Description: PAnsiChar;
@@ -637,7 +637,7 @@ type
     Flags: DWORD; // subset of SP_COPY_xxx
   end;
   {$EXTERNALSYM SOURCE_MEDIA_A}
-  SOURCE_MEDIA_W = record
+  SOURCE_MEDIA_W = packed record
     Reserved: PWideChar;
     Tagfile: PWideChar; // may be NULL
     Description: PWideChar;
@@ -666,7 +666,7 @@ type
 //
   PCabinetInfoA = ^TCabinetInfoA;
   PCabinetInfoW = ^TCabinetInfoW;
-  CABINET_INFO_A = record
+  CABINET_INFO_A = packed record
     CabinetPath: PAnsiChar;
     CabinetFile: PAnsiChar;
     DiskName: PAnsiChar;
@@ -674,7 +674,7 @@ type
     CabinetNumber: Word;
   end;
   {$EXTERNALSYM CABINET_INFO_A}
-  CABINET_INFO_W = record
+  CABINET_INFO_W = packed record
     CabinetPath: PWideChar;
     CabinetFile: PWideChar;
     DiskName: PWideChar;
@@ -697,7 +697,7 @@ type
 //
   PFileInCabinetInfoA = ^TFileInCabinetInfoA;
   PFileInCabinetInfoW = ^TFileInCabinetInfoW;
-  FILE_IN_CABINET_INFO_A = record
+  FILE_IN_CABINET_INFO_A = packed record
     NameInCabinet: PAnsiChar;
     FileSize: DWORD;
     Win32Error: DWORD;
@@ -707,7 +707,7 @@ type
     FullTargetName: array [0..MAX_PATH - 1] of AnsiChar;
   end;
   {$EXTERNALSYM FILE_IN_CABINET_INFO_A}
-  FILE_IN_CABINET_INFO_W = record
+  FILE_IN_CABINET_INFO_W = packed record
     NameInCabinet: PWideChar;
     FileSize: DWORD;
     Win32Error: DWORD;
@@ -734,14 +734,14 @@ type
   {$IFDEF WINXP_UP}
   PSPRegisterControlStatusA = ^TSPRegisterControlStatusA;
   PSPRegisterControlStatusW = ^TSPRegisterControlStatusW;
-  SP_REGISTER_CONTROL_STATUSA = record
+  SP_REGISTER_CONTROL_STATUSA = packed record
     cbSize: DWORD;
     FileName: PAnsiChar;
     Win32Error: DWORD;
     FailureCode: DWORD;
   end;
   {$EXTERNALSYM SP_REGISTER_CONTROL_STATUSA}
-  SP_REGISTER_CONTROL_STATUSW = record
+  SP_REGISTER_CONTROL_STATUSW = packed record
     cbSize: DWORD;
     FileName: PWideChar;
     Win32Error: DWORD;
@@ -790,7 +790,7 @@ type
 //
   PSPFileCopyParamsA = ^TSPFileCopyParamsA;
   PSPFileCopyParamsW = ^TSPFileCopyParamsW;
-  SP_FILE_COPY_PARAMS_A = record
+  SP_FILE_COPY_PARAMS_A = packed record
     cbSize: DWORD;
     QueueHandle: HSPFILEQ;
     SourceRootPath: PAnsiChar;
@@ -805,7 +805,7 @@ type
     SecurityDescriptor: PAnsiChar;
   end;
   {$EXTERNALSYM SP_FILE_COPY_PARAMS_A}
-  SP_FILE_COPY_PARAMS_W = record
+  SP_FILE_COPY_PARAMS_W = packed record
     cbSize: DWORD;
     QueueHandle: HSPFILEQ;
     SourceRootPath: PWideChar;
@@ -846,9 +846,8 @@ type
 // Device information structure (references a device instance
 // that is a member of a device information set)
 //
-
   PSPDevInfoData = ^TSPDevInfoData;
-  SP_DEVINFO_DATA = record
+  SP_DEVINFO_DATA = packed record
     cbSize: DWORD;
     ClassGuid: TGUID;
     DevInst: DWORD; // DEVINST handle
@@ -863,7 +862,7 @@ type
 // element that owns it).
 //
   PSPDeviceInterfaceData = ^TSPDeviceInterfaceData;
-  SP_DEVICE_INTERFACE_DATA = record
+  SP_DEVICE_INTERFACE_DATA = packed record
     cbSize: DWORD;
     InterfaceClassGuid: TGUID;
     Flags: DWORD;
@@ -908,13 +907,13 @@ type
 
   PSPDeviceInterfaceDetailDataA = ^TSPDeviceInterfaceDetailDataA;
   PSPDeviceInterfaceDetailDataW = ^TSPDeviceInterfaceDetailDataW;
-  SP_DEVICE_INTERFACE_DETAIL_DATA_A = record
+  SP_DEVICE_INTERFACE_DETAIL_DATA_A = packed record
     cbSize: DWORD;
     DevicePath: array [0..ANYSIZE_ARRAY - 1] of AnsiChar;
     Filler: TFiller;
   end;
   {$EXTERNALSYM SP_DEVICE_INTERFACE_DETAIL_DATA_A}
-  SP_DEVICE_INTERFACE_DETAIL_DATA_W = record
+  SP_DEVICE_INTERFACE_DETAIL_DATA_W = packed record
     cbSize: DWORD;
     DevicePath: array [0..ANYSIZE_ARRAY - 1] of WideChar;
     Filler: TFiller;
@@ -956,14 +955,14 @@ type
 //
   PSPDevInfoListDetailDataA = ^TSPDevInfoListDetailDataA;
   PSPDevInfoListDetailDataW = ^TSPDevInfoListDetailDataW;
-  SP_DEVINFO_LIST_DETAIL_DATA_A = record
+  SP_DEVINFO_LIST_DETAIL_DATA_A = packed record
     cbSize: DWORD;
     ClassGuid: TGUID;
     RemoteMachineHandle: THandle;
     RemoteMachineName: array [0..SP_MAX_MACHINENAME_LENGTH - 1] of AnsiChar;
   end;
   {$EXTERNALSYM SP_DEVINFO_LIST_DETAIL_DATA_A}
-  SP_DEVINFO_LIST_DETAIL_DATA_W = record
+  SP_DEVINFO_LIST_DETAIL_DATA_W = packed record
     cbSize: DWORD;
     ClassGuid: TGUID;
     RemoteMachineHandle: THandle;
@@ -1080,7 +1079,7 @@ type
 //
   PSPDevInstallParamsA = ^TSPDevInstallParamsA;
   PSPDevInstallParamsW = ^TSPDevInstallParamsW;
-  SP_DEVINSTALL_PARAMS_A = record
+  SP_DEVINSTALL_PARAMS_A = packed record
     cbSize: DWORD;
     Flags: DWORD;
     FlagsEx: DWORD;
@@ -1093,7 +1092,7 @@ type
     DriverPath: array [0..MAX_PATH - 1] of AnsiChar;
   end;
   {$EXTERNALSYM SP_DEVINSTALL_PARAMS_A}
-  SP_DEVINSTALL_PARAMS_W = record
+  SP_DEVINSTALL_PARAMS_W = packed record
     cbSize: DWORD;
     Flags: DWORD;
     FlagsEx: DWORD;
@@ -1309,7 +1308,7 @@ const
 //
 type
   PSPClassInstallHeader = ^TSPClassInstallHeader;
-  SP_CLASSINSTALL_HEADER = record
+  SP_CLASSINSTALL_HEADER = packed record
     cbSize: DWORD;
     InstallFunction: DI_FUNCTION;
   end;
@@ -1320,7 +1319,7 @@ type
 // Structure corresponding to a DIF_ENABLECLASS install function.
 //
   PSPEnableClassParams = ^TSPEnableClassParams;
-  SP_ENABLECLASS_PARAMS = record
+  SP_ENABLECLASS_PARAMS = packed record
     ClassInstallHeader: TSPClassInstallHeader;
     ClassGuid: TGUID;
     EnableMessage: DWORD;
@@ -1341,7 +1340,7 @@ const
 //
 type
   PSPMoveDevParams = ^TSPMoveDevParams;
-  SP_MOVEDEV_PARAMS = record
+  SP_MOVEDEV_PARAMS = packed record
     ClassInstallHeader: TSPClassInstallHeader;
     SourceDeviceInfoData: TSPDevInfoData;
   end;
@@ -1382,7 +1381,7 @@ const
 //
 type
   PSPPropChangeParams = ^TSPPropChangeParams;
-  SP_PROPCHANGE_PARAMS = record
+  SP_PROPCHANGE_PARAMS = packed record
     ClassInstallHeader: TSPClassInstallHeader;
     StateChange: DWORD;
     Scope: DWORD;
@@ -1395,7 +1394,7 @@ type
 // Structure corresponding to a DIF_REMOVE install function.
 //
   PSPRemoveDeviceParams = ^TSPRemoveDeviceParams;
-  SP_REMOVEDEVICE_PARAMS = record
+  SP_REMOVEDEVICE_PARAMS = packed record
     ClassInstallHeader: TSPClassInstallHeader;
     Scope: DWORD;
     HwProfile: DWORD;
@@ -1414,7 +1413,7 @@ const
 //
 type
   PSPUnremoveDeviceParams = ^TSPUnremoveDeviceParams;
-  SP_UNREMOVEDEVICE_PARAMS = record
+  SP_UNREMOVEDEVICE_PARAMS = packed record
     ClassInstallHeader: TSPClassInstallHeader;
     Scope: DWORD;
     HwProfile: DWORD;
@@ -1432,7 +1431,7 @@ const
 type
   PSPSelectDeviceParamsA = ^TSPSelectDeviceParamsA;
   PSPSelectDeviceParamsW = ^TSPSelectDeviceParamsW;
-  SP_SELECTDEVICE_PARAMS_A = record
+  SP_SELECTDEVICE_PARAMS_A = packed record
     ClassInstallHeader: TSPClassInstallHeader;
     Title: array [0..MAX_TITLE_LEN - 1] of AnsiChar;
     Instructions: array [0..MAX_INSTRUCTION_LEN - 1] of AnsiChar;
@@ -1441,7 +1440,7 @@ type
     Reserved: array [0..1] of Byte; // DWORD size alignment
   end;
   {$EXTERNALSYM SP_SELECTDEVICE_PARAMS_A}
-  SP_SELECTDEVICE_PARAMS_W = record
+  SP_SELECTDEVICE_PARAMS_W = packed record
     ClassInstallHeader: TSPClassInstallHeader;
     Title: array [0..MAX_TITLE_LEN - 1] of WideChar;
     Instructions: array [0..MAX_INSTRUCTION_LEN - 1] of WideChar;
@@ -1478,7 +1477,7 @@ type
 // Structure corresponding to a DIF_DETECT install function.
 //
   PSPDetectDeviceParams = ^TSPDetectDeviceParams;
-  SP_DETECTDEVICE_PARAMS = record
+  SP_DETECTDEVICE_PARAMS = packed record
     ClassInstallHeader: TSPClassInstallHeader;
     DetectProgressNotify: PDetectProgressNotify;
     ProgressNotifyParam: Pointer;
@@ -1504,7 +1503,7 @@ const
 
 type
   PSPInstallWizardData = ^TSPInstallWizardData;
-  SP_INSTALLWIZARD_DATA = record
+  SP_INSTALLWIZARD_DATA = packed record
     ClassInstallHeader: TSPClassInstallHeader;
     Flags: DWORD;
     DynamicPages: array [0..MAX_INSTALLWIZARD_DYNAPAGES - 1] of HPROPSHEETPAGE;
@@ -1687,7 +1686,7 @@ const
 //
 type
   PSPNewDeviceWizardData = ^TSPNewDeviceWizardData;
-  SP_NEWDEVICEWIZARD_DATA = record
+  SP_NEWDEVICEWIZARD_DATA = packed record
     ClassInstallHeader: TSPClassInstallHeader;
     Flags: DWORD; // presently unused--must be zero.
     DynamicPages: array [0..MAX_INSTALLWIZARD_DYNAPAGES - 1] of HPROPSHEETPAGE;
@@ -1702,13 +1701,13 @@ type
 //
   PSPTroubleShooterParamsA = ^TSPTroubleShooterParamsA;
   PSPTroubleShooterParamsW = ^TSPTroubleShooterParamsW;
-  SP_TROUBLESHOOTER_PARAMS_A = record
+  SP_TROUBLESHOOTER_PARAMS_A = packed record
     ClassInstallHeader: TSPClassInstallHeader;
     ChmFile: array [0..MAX_PATH - 1] of AnsiChar;
     HtmlTroubleShooter: array [0..MAX_PATH - 1] of AnsiChar;
   end;
   {$EXTERNALSYM SP_TROUBLESHOOTER_PARAMS_A}
-  SP_TROUBLESHOOTER_PARAMS_W = record
+  SP_TROUBLESHOOTER_PARAMS_W = packed record
     ClassInstallHeader: TSPClassInstallHeader;
     ChmFile: array [0..MAX_PATH - 1] of WideChar;
     HtmlTroubleShooter: array [0..MAX_PATH - 1] of WideChar;
@@ -1729,12 +1728,12 @@ type
 //
   PSPPowerMessageWakeParamsA = ^TSPPowerMessageWakeParamsA;
   PSPPowerMessageWakeParamsW = ^TSPPowerMessageWakeParamsW;
-  SP_POWERMESSAGEWAKE_PARAMS_A = record
+  SP_POWERMESSAGEWAKE_PARAMS_A = packed record
     ClassInstallHeader: TSPClassInstallHeader;
     PowerMessageWake: array [0..(LINE_LEN * 2) - 1] of AnsiChar;
   end;
   {$EXTERNALSYM SP_POWERMESSAGEWAKE_PARAMS_A}
-  SP_POWERMESSAGEWAKE_PARAMS_W = record
+  SP_POWERMESSAGEWAKE_PARAMS_W = packed record
     ClassInstallHeader: TSPClassInstallHeader;
     PowerMessageWake: array [0..(LINE_LEN * 2) - 1] of WideChar;
   end;
@@ -1755,7 +1754,7 @@ type
 //
   PSPDrvInfoDataV2A = ^TSPDrvInfoDataV2A;
   PSPDrvInfoDataV2W = ^TSPDrvInfoDataV2W;
-  SP_DRVINFO_DATA_V2_A = record
+  SP_DRVINFO_DATA_V2_A = packed record
     cbSize: DWORD;
     DriverType: DWORD;
     Reserved: ULONG_PTR;
@@ -1766,7 +1765,7 @@ type
     DriverVersion: Int64;
   end;
   {$EXTERNALSYM SP_DRVINFO_DATA_V2_A}
-  SP_DRVINFO_DATA_V2_W = record
+  SP_DRVINFO_DATA_V2_W = packed record
     cbSize: DWORD;
     DriverType: DWORD;
     Reserved: ULONG_PTR;
@@ -1793,7 +1792,7 @@ type
 //
   PSPDrvInfoDataV1A = ^TSPDrvInfoDataV1A;
   PSPDrvInfoDataV1W = ^TSPDrvInfoDataV1W;
-  SP_DRVINFO_DATA_V1_A = record
+  SP_DRVINFO_DATA_V1_A = packed record
     cbSize: DWORD;
     DriverType: DWORD;
     Reserved: ULONG_PTR;
@@ -1802,7 +1801,7 @@ type
     ProviderName: array [0..LINE_LEN - 1] of AnsiChar;
   end;
   {$EXTERNALSYM SP_DRVINFO_DATA_V1_A}
-  SP_DRVINFO_DATA_V1_W = record
+  SP_DRVINFO_DATA_V1_W = packed record
     cbSize: DWORD;
     DriverType: DWORD;
     Reserved: ULONG_PTR;
@@ -1853,7 +1852,7 @@ type
 //
   PSPDrvInfoDetailDataA = ^TSPDrvInfoDetailDataA;
   PSPDrvInfoDetailDataW = ^TSPDrvInfoDetailDataW;
-  SP_DRVINFO_DETAIL_DATA_A = record
+  SP_DRVINFO_DETAIL_DATA_A = packed record
     cbSize: DWORD;
     InfDate: TFileTime;
     CompatIDsOffset: DWORD;
@@ -1865,7 +1864,7 @@ type
     HardwareID: array [0..ANYSIZE_ARRAY - 1] of AnsiChar;
   end;
   {$EXTERNALSYM SP_DRVINFO_DETAIL_DATA_A}
-  SP_DRVINFO_DETAIL_DATA_W = record
+  SP_DRVINFO_DETAIL_DATA_W = packed record
     cbSize: DWORD;
     InfDate: TFileTime;
     CompatIDsOffset: DWORD;
@@ -1892,7 +1891,7 @@ type
 // information element)
 //
   PSPDrvInstallParams = ^TSPDrvInstallParams;
-  SP_DRVINSTALL_PARAMS = record
+  SP_DRVINSTALL_PARAMS = packed record
     cbSize: DWORD;
     Rank: DWORD;
     Flags: DWORD;
@@ -2002,7 +2001,7 @@ type
 // Define context structure handed to co-installers
 //
   PCoInstallerContextData = ^TCoInstallerContextData;
-  COINSTALLER_CONTEXT_DATA = record
+  COINSTALLER_CONTEXT_DATA = packed record
     PostProcessing: BOOL;
     InstallResult: DWORD;
     PrivateData: Pointer;
@@ -2014,7 +2013,7 @@ type
 // Structure containing class image list information.
 //
   PSPClassImageListData = ^TSPClassImageListData;
-  SP_CLASSIMAGELIST_DATA = record
+  SP_CLASSIMAGELIST_DATA = packed record
     cbSize: DWORD;
     ImageList: HIMAGELIST;
     Reserved: ULONG_PTR;
@@ -2029,7 +2028,7 @@ type
 // (or, potentially, multiple handles) to property pages for a specified property page type.
 //
   PSPPropSheetPageRequest = ^TSPPropSheetPageRequest;
-  SP_PROPSHEETPAGE_REQUEST = record
+  SP_PROPSHEETPAGE_REQUEST = packed record
     cbSize: DWORD;
     PageRequested: DWORD;
     DeviceInfoSet: HDEVINFO;
@@ -2055,14 +2054,14 @@ const
 type
   PSPBackupQueueParamsV2A = ^TSPBackupQueueParamsV2A;
   PSPBackupQueueParamsV2W = ^TSPBackupQueueParamsV2W;
-  SP_BACKUP_QUEUE_PARAMS_V2_A = record
+  SP_BACKUP_QUEUE_PARAMS_V2_A = packed record
     cbSize: DWORD;
     FullInfPath: array [0..MAX_PATH - 1] of AnsiChar; // buffer to hold ANSI pathname of INF file
     FilenameOffset: Integer; // offset in CHAR's of filename part (after '\')
     ReinstallInstance: array [0..MAX_PATH - 1] of AnsiChar;  // Instance ID (if present)
   end;
   {$EXTERNALSYM SP_BACKUP_QUEUE_PARAMS_V2_A}
-  SP_BACKUP_QUEUE_PARAMS_V2_W = record
+  SP_BACKUP_QUEUE_PARAMS_V2_W = packed record
     cbSize: DWORD;
     FullInfPath: array [0..MAX_PATH - 1] of WideChar;  // buffer to hold ANSI pathname of INF file
     FilenameOffset: Integer; // offset in CHAR's of filename part (after '\')
@@ -2081,13 +2080,13 @@ type
 
   PSPBackupQueueParamsV1A = ^TSPBackupQueueParamsV1A;
   PSPBackupQueueParamsV1W = ^TSPBackupQueueParamsV1W;
-  SP_BACKUP_QUEUE_PARAMS_V1_A = record
+  SP_BACKUP_QUEUE_PARAMS_V1_A = packed record
     cbSize: DWORD;
     FullInfPath: array [0..MAX_PATH - 1] of AnsiChar; // buffer to hold ANSI pathname of INF file
     FilenameOffset: Integer; // offset in CHAR's of filename part (after '\')
   end;
   {$EXTERNALSYM SP_BACKUP_QUEUE_PARAMS_V1_A}
-  SP_BACKUP_QUEUE_PARAMS_V1_W = record
+  SP_BACKUP_QUEUE_PARAMS_V1_W = packed record
     cbSize: DWORD;
     FullInfPath: array [0..MAX_PATH - 1] of WideChar; // buffer to hold ANSI pathname of INF file
     FilenameOffset: Integer; // offset in CHAR's of filename part (after '\')
@@ -3157,7 +3156,7 @@ const
 type
   PSP_INF_SIGNER_INFO_A = ^SP_INF_SIGNER_INFO_A;
   {$EXTERNALSYM PSP_INF_SIGNER_INFO_A}
-  SP_INF_SIGNER_INFO_A = record
+  SP_INF_SIGNER_INFO_A = packed record
     cbSize: DWORD;
     CatalogFile: array [0..MAX_PATH - 1] of Char;
     DigitalSigner: array [0..MAX_PATH - 1] of Char;
@@ -3167,7 +3166,7 @@ type
 
   PSP_INF_SIGNER_INFO_W = ^SP_INF_SIGNER_INFO_W;
   {$EXTERNALSYM PSP_INF_SIGNER_INFO_A}
-  SP_INF_SIGNER_INFO_W = record
+  SP_INF_SIGNER_INFO_W = packed record
     cbSize: DWORD;
     CatalogFile: array [0..MAX_PATH - 1] of WideChar;
     DigitalSigner: array [0..MAX_PATH - 1] of WideChar;

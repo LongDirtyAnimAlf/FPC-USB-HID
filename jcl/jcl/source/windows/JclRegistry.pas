@@ -62,7 +62,7 @@ uses
   JclBase, JclStrings;
 
 type
-  DelphiHKEY = {$IFDEF CPUX64}type {$IFNDEF FPC}Winapi.{$ENDIF}Windows.HKEY{$ELSE}Longword{$ENDIF CPUX64};
+  DelphiHKEY = {$IFDEF CPUX64}type Winapi.Windows.HKEY{$ELSE}Longword{$ENDIF CPUX64};
   {$HPPEMIT '// BCB users must typecast the HKEY values to DelphiHKEY or use the HK-values below.'}
 
   TExecKind = (ekMachineRun, ekMachineRunOnce, ekUserRun, ekUserRunOnce,
@@ -339,7 +339,7 @@ type
   TRootKey = record
     Key: DelphiHKEY;
     AnsiName: AnsiString;
-    WideName: WideString;
+    WideName: TUTF16String;
   end;
 
 const
@@ -395,13 +395,14 @@ implementation
 uses
   {$IFDEF HAS_UNITSCOPE}
   System.SysUtils,
+  Winapi.AccCtrl,
   {$ELSE ~HAS_UNITSCOPE}
   SysUtils,
+  //AccCtrl,
   {$ENDIF ~HAS_UNITSCOPE}
   {$IFDEF FPC}
-//  JwaAccCtrl,
+  //  JwaAccCtrl,
   {$ELSE ~FPC}
-  AccCtrl,
   JclSysUtils,
   {$ENDIF ~FPC}
   JclResources, JclWin32, JclSysInfo,
@@ -624,7 +625,7 @@ begin
   end;
 end;
 
-function InternalGetData(const RootKey: DelphiHKEY; const Key, Name: WideString;
+function InternalGetData(const RootKey: DelphiHKEY; const Key, Name: TUTF16String;
   RegKinds: TRegKinds; ExpectedSize: DWORD;
   out DataType: DWORD; Data: Pointer; out DataSize: DWORD; RaiseException: Boolean): Boolean;
 var

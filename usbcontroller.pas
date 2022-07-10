@@ -1651,7 +1651,8 @@ end;
 procedure TJvHidDeviceReadThread.Execute;
 var
   readSet: TFDSet;
-  receiveBuffer: array[0..63] of hiddev_event;
+  receiveBuffer: packed array[0..63] of hiddev_event;
+  ev:hiddev_event;
   fd,ret:cint;
   i:word;
   selectTimeout: TTimeVal;
@@ -1660,14 +1661,14 @@ begin
 
   fd :=cint(Device.HidFileHandle);
 
-  selectTimeout.tv_sec:= (Device.ThreadSleepTime DIV 1000);
-  selectTimeout.tv_usec:= ((Device.ThreadSleepTime MOD 1000) * 1000);
-
   try
     while not Terminated do
     begin
       fpFD_ZERO(readSet);
       fpFD_SET(fd, readSet);
+
+      selectTimeout.tv_sec:= (Device.ThreadSleepTime DIV 1000);
+      selectTimeout.tv_usec:= ((Device.ThreadSleepTime MOD 1000) * 1000);
 
       IF fpSelect(fd+1, @readSet, NIL, NIL, @selectTimeout) > 0 THEN
       begin
@@ -1676,12 +1677,51 @@ begin
         InitWithoutHint(receiveBuffer);
         FillChar(Report[1], Device.Caps.InputReportByteLength-1, #0);
 
-        ret:= fpRead(cint(Device.HidFileHandle), receiveBuffer, sizeof(hiddev_event)*(Device.Caps.InputReportByteLength-1));
+        i:=0;
+        while true do
+        begin
+          ret:= fpRead(cint(Device.HidFileHandle), {%H-}ev, sizeof(hiddev_event));
+          //FErr := fpGetErrno;
+          //if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINTR) then
+          //begin
+          //end;
+          if ret=0 then break; // EOF
+          if ret<0 then break; // Error
+          if (ret=sizeof(hiddev_event)) then
+          begin
+            Report[i+1]:=ev.value;
+            if (i>=(Length(Report)-2)) then break;
+            Inc(i);
+          end;
+        end;
 
-        if ret>0 then
+        if (i>0) then
+        begin
+          DoData;
+          //Synchronize(@DoData);
+          //Queue(@DoData);
+        end
+        else
+        begin
+          if (Not Terminated) AND (ret<0) then
+          begin
+            FErr := fpGetErrno;
+            if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINPROGRESS) then
+            begin
+              DoDataError;
+              //Synchronize(@DoDataError);
+              //Queue(@DoDataError);
+              SysUtils.Sleep(Device.ThreadSleepTime);
+            end;
+          end;
+        end;
+
+        (*
+        ret:= fpRead(cint(Device.HidFileHandle), receiveBuffer, sizeof(hiddev_event)*(Device.Caps.InputReportByteLength-1));
+        if (ret>0) then
         begin
 
-          if not Terminated then
+          if (not Terminated) then
           begin
 
             NumBytesRead := (ret DIV sizeof(hiddev_event));
@@ -1718,6 +1758,12 @@ begin
             end;
           end;
         end;
+        *)
+
+        //to prevent CPU burning ... for compatibility with JvHidControllerClass
+        if ((Device.PollingDelayTime>0) AND (Not Terminated)) then  // Throttle device polling
+          SysUtils.Sleep(Device.PollingDelayTime);
+
       end;
     end;
   finally

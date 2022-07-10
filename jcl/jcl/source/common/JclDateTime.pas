@@ -87,7 +87,7 @@ const
 
 { Encode / Decode functions }
 
-function EncodeDate(const Year: Integer; Month, Day: Word): TDateTime; overload;
+function EncodeDate(const Year: Integer; Month, Day: Word): TDateTime;
 procedure DecodeDate(Date: TDateTime; out Year, Month, Day: Word); overload;
 procedure DecodeDate(Date: TDateTime; out Year: Integer; out Month, Day: Word); overload;
 procedure DecodeDate(Date: TDateTime; out Year, Month, Day: Integer); overload;
@@ -263,7 +263,7 @@ const
   //   7 : first full week
   //ISOFirstWeekMinDays = 4;
 
-function EncodeDate(const Year: Integer; Month, Day: Word): TDateTime;
+function EncodeDate(const Year: Integer; Month, Day: Word): TDateTime;// overload;
 begin
   if (Year > 0) and (Year < EncodeDateMaxYear + 1) then
     Result := {$IFDEF HAS_UNITSCOPE}System.{$ENDIF}SysUtils.EncodeDate(Year, Month, Day)
