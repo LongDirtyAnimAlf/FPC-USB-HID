@@ -257,7 +257,7 @@ type
     wvWin2003, wvWinXP64, wvWin2003R2, wvWinVista, wvWinServer2008,
     wvWin7, wvWinServer2008R2, wvWin8, wvWin8RT, wvWinServer2012,
     wvWin81, wvWin81RT, wvWinServer2012R2, wvWin10, wvWinServer2016,
-    wvWinServer2019, wvWinServer, wvWin11);
+    wvWinServer2019, wvWinServer, wvWin11, wvWinServer2022);
   TWindowsEdition =
    (weUnknown, weWinXPHome, weWinXPPro, weWinXPHomeN, weWinXPProN, weWinXPHomeK,
     weWinXPProK, weWinXPHomeKN, weWinXPProKN, weWinXPStarter, weWinXPMediaCenter,
@@ -308,6 +308,7 @@ var
   IsWin10: Boolean = False;
   IsWinServer2016: Boolean = False;
   IsWinServer2019: Boolean = False;
+  IsWinServer2022: Boolean = False;
   IsWinServer: Boolean = False;
   IsWin11: Boolean = False;
 
@@ -344,14 +345,14 @@ function GetWindowsReleaseName: String;
 function GetWindowsReleaseCode: String;
 function GetWindowsReleaseCodeName: String;
 function GetWindowsReleaseVersion: String;
-function GetWindows10DisplayVersion: string; deprecated 'Use GetWindowsDisplayVersion';
-function GetWindows10ReleaseId: Integer; deprecated 'Use GetWindowsReleaseId';
-function GetWindows10ReleaseName: String; deprecated 'Use GetWindowsReleaseName';
-function GetWindows10ReleaseCodeName: String; deprecated 'Use GetWindowsReleaseCodeName';
-function GetWindows10ReleaseVersion: String; deprecated 'Use GetWindowsReleaseVersion';
-function GetWindowsServerDisplayVersion: string; deprecated 'Use GetWindowsDisplayVersion';
-function GetWindowsServerReleaseId: Integer; deprecated 'Use GetWindowsReleaseId';
-function GetWindowsServerReleaseVersion: String; deprecated 'Use GetWindowsReleaseVersion';
+function GetWindows10DisplayVersion: string; {$IFDEF SUPPORTS_DEPRECATED}deprecated {$IFDEF SUPPORTS_DEPRECATED_DETAILS}'Use GetWindowsDisplayVersion'{$ENDIF};{$ENDIF}
+function GetWindows10ReleaseId: Integer; {$IFDEF SUPPORTS_DEPRECATED}deprecated {$IFDEF SUPPORTS_DEPRECATED_DETAILS}'Use GetWindowsReleaseId'{$ENDIF};{$ENDIF}
+function GetWindows10ReleaseName: String; {$IFDEF SUPPORTS_DEPRECATED}deprecated {$IFDEF SUPPORTS_DEPRECATED_DETAILS}'Use GetWindowsReleaseName'{$ENDIF};{$ENDIF}
+function GetWindows10ReleaseCodeName: String; {$IFDEF SUPPORTS_DEPRECATED}deprecated {$IFDEF SUPPORTS_DEPRECATED_DETAILS}'Use GetWindowsReleaseCodeName'{$ENDIF};{$ENDIF}
+function GetWindows10ReleaseVersion: String; {$IFDEF SUPPORTS_DEPRECATED}deprecated {$IFDEF SUPPORTS_DEPRECATED_DETAILS}'Use GetWindowsReleaseVersion'{$ENDIF};{$ENDIF}
+function GetWindowsServerDisplayVersion: string; {$IFDEF SUPPORTS_DEPRECATED}deprecated {$IFDEF SUPPORTS_DEPRECATED_DETAILS}'Use GetWindowsDisplayVersion'{$ENDIF};{$ENDIF}
+function GetWindowsServerReleaseId: Integer; {$IFDEF SUPPORTS_DEPRECATED}deprecated {$IFDEF SUPPORTS_DEPRECATED_DETAILS}'Use GetWindowsReleaseId'{$ENDIF};{$ENDIF}
+function GetWindowsServerReleaseVersion: String; {$IFDEF SUPPORTS_DEPRECATED}deprecated {$IFDEF SUPPORTS_DEPRECATED_DETAILS}'Use GetWindowsReleaseVersion'{$ENDIF};{$ENDIF}
 function GetOpenGLVersion(const Win: THandle; out Version, Vendor: AnsiString): Boolean;
 function GetNativeSystemInfo(var SystemInfo: TSystemInfo): Boolean;
 function GetProcessorArchitecture: TProcessorArchitecture;
@@ -1543,22 +1544,22 @@ begin
     Result := RegReadIntegerDef(HKEY_LOCAL_MACHINE, Key, Name, Def);
 end;
 
-function ReadWindowsCurrentVersionStringValue(const Name: string; Def: string; ForceNative: boolean = false): string; inline;
+function ReadWindowsCurrentVersionStringValue(const Name: string; Def: string; ForceNative: boolean = false): string; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF SUPPORTS_INLINE}
 begin
   Result := RegReadHklmKeyStringValue(HKLM_CURRENT_VERSION_WINDOWS, Name, Def, ForceNative);
 end;
 
-function ReadWindowsCurrentVersionIntegerValue(const Name: string; Def: Integer; ForceNative: boolean = false): Integer; inline;
+function ReadWindowsCurrentVersionIntegerValue(const Name: string; Def: Integer; ForceNative: boolean = false): Integer; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF SUPPORTS_INLINE}
 begin
   Result := RegReadHklmKeyIntegerValue(HKLM_CURRENT_VERSION_WINDOWS, Name, Def, ForceNative);
 end;
 
-function ReadWindowsNTCurrentVersionStringValue(const Name: string; Def: string; ForceNative: boolean = false): string; inline;
+function ReadWindowsNTCurrentVersionStringValue(const Name: string; Def: string; ForceNative: boolean = false): string; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF SUPPORTS_INLINE}
 begin
   Result := RegReadHklmKeyStringValue(HKLM_CURRENT_VERSION_NT, Name, Def, ForceNative);
 end;
 
-function ReadWindowsNTCurrentVersionIntegerValue(const Name: string; Def: Integer; ForceNative: boolean = false): Integer; inline;
+function ReadWindowsNTCurrentVersionIntegerValue(const Name: string; Def: Integer; ForceNative: boolean = false): Integer; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF SUPPORTS_INLINE}
 begin
   Result := RegReadHklmKeyIntegerValue(HKLM_CURRENT_VERSION_NT, Name, Def, ForceNative);
 end;
@@ -3588,7 +3589,7 @@ begin
                  Win32MinorVersionEx := 4 // Windows 10 (builds < 9926) and Windows Server 2016 (builds < 10074)
               else
               if Win32MajorVersionEx = 10 then
-                 Win32MinorVersionEx := -1 // Windows 10 (builds >= 9926) and Windows Server 2016/2019 (builds >= 10074), set to -1 to escape case block
+                 Win32MinorVersionEx := -1 // Windows 10 (builds >= 9926) and Windows Server 2016/2019/2022 (builds >= 10074), set to -1 to escape case block
               else
                  Win32MinorVersionEx := Win32MinorVersion;
             end;
@@ -3680,6 +3681,8 @@ begin
                     Result := wvWinServer2016;
                   1809:
                     Result := wvWinServer2019;
+                  2009:
+                    Result := wvWinServer2022;
                 else
                     Result := wvWinServer;
                 end;
@@ -4006,6 +4009,8 @@ begin
       Result := LoadResString(@RsOSVersionWinServer2016);
     wvWinServer2019:
       Result := LoadResString(@RsOSVersionWinServer2019);
+    wvWinServer2022:
+      Result := LoadResString(@RsOSVersionWinServer2022);
     wvWinServer:
       Result := LoadResString(@RsOSVersionWinServer);
     wvWin11:
@@ -4281,6 +4286,9 @@ begin
            else
            if WindowsDisplayVersion = '21H1' then
               Result := LoadResString(@RsOSVersionWin10) + ' May 2021 Update'
+           else
+           if WindowsDisplayVersion = '21H2' then
+              Result := LoadResString(@RsOSVersionWin10) + ' November 2021 Update'
            else
               Result := LoadResString(@RsOSVersionWin10) + ' ' + WindowsDisplayVersion + ' Update';
          end
@@ -6574,6 +6582,8 @@ begin
       IsWinServer2016 := True;
     wvWinServer2019:
       IsWinServer2019 := True;
+    wvWinServer2022:
+      IsWinServer2022 := True;
     wvWinServer:
       IsWinServer := True;
     wvWin11:

@@ -710,5 +710,6 @@ ALERT_jedi_inc_incompatible
 
 {$IFDEF FPC}
   {$DEFINE DEBUG_NO_TD32}
+  {$DEFINE RTL220_UP}
 {$ENDIF FPC}
 
