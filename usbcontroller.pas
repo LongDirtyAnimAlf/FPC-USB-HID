@@ -197,34 +197,38 @@ type
 
 const
 
-  _IO                   = 0;
-  _IOW                  = 1;
-  _IOR                  = 2;
-  _IOWR                 = 3;
+  _IO                   = TIOCtlRequest(0);
+  _IOW                  = TIOCtlRequest(1);
+  _IOR                  = TIOCtlRequest(2);
+  _IOWR                 = TIOCtlRequest(3);
 
-  IOCPARM_MASK = $7f;
-  IOC_VOID = $20000000;
-  IOC_OUT = $40000000;
-  IOC_IN = $80000000;
-  IOC_INOUT = IOC_IN or IOC_OUT;
-  FIONREAD =cardinal( IOC_OUT or ((4 and IOCPARM_MASK) shl 16) or (102 shl 8) or 127);
+  _IOC_NRBITS           = 8;
+  _IOC_TYPEBITS         = 8;
+  _IOC_SIZEBITS         = 14;
+  _IOC_DIRBITS          = 2;
+
+  _IOC_NRSHIFT          = 0;
+  _IOC_TYPESHIFT        = (_IOC_NRSHIFT+_IOC_NRBITS);
+  _IOC_SIZESHIFT        = (_IOC_TYPESHIFT+_IOC_TYPEBITS);
+  _IOC_DIRSHIFT         = (_IOC_SIZESHIFT+_IOC_SIZEBITS);
+
+  HIDIOCSUSAGE          = TIOCtlRequest((_IOW shl _IOC_DIRSHIFT) + (sizeof(hiddev_usage_ref) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($0C shl _IOC_NRSHIFT));
+  HIDIOCSREPORT         = TIOCtlRequest((_IOW shl _IOC_DIRSHIFT) + (sizeof(hiddev_report_info) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($08 shl _IOC_NRSHIFT));
+  HIDIOCGUCODE          = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (sizeof(hiddev_usage_ref) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($0D shl _IOC_NRSHIFT));
+  HIDIOCGUSAGE          = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (sizeof(hiddev_usage_ref) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($0B shl _IOC_NRSHIFT));
+  HIDIOCGREPORTINFO     = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (sizeof(hiddev_report_info) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($09 shl _IOC_NRSHIFT));
+  HIDIOCGFIELDINFO      = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (sizeof(hiddev_field_info) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($0A shl _IOC_NRSHIFT));
+  HIDIOCGDEVINFO        = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(hiddev_devinfo) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($03 shl _IOC_NRSHIFT));
+  HIDIOCGSTRING         = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(hiddev_string_descriptor) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($04 shl _IOC_NRSHIFT));
+  HIDIOCGREPORT         = TIOCtlRequest((_IOW shl _IOC_DIRSHIFT) + (sizeof(hiddev_report_info) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($07 shl _IOC_NRSHIFT));
+  HIDIOCGUSAGES         = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (sizeof(hiddev_usage_ref_multi) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($13 shl _IOC_NRSHIFT));
+  HIDIOCSUSAGES         = TIOCtlRequest((_IOW shl _IOC_DIRSHIFT) + (sizeof(hiddev_usage_ref_multi) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($14 shl _IOC_NRSHIFT));
+
+  FIONREAD              = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(integer) shl _IOC_SIZESHIFT) + (Ord('f') shl _IOC_TYPESHIFT) + (127 shl _IOC_NRSHIFT));
 
 
-
-  HIDIOCSUSAGE          = cuint32((_IOW shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0C);
-  HIDIOCSREPORT         = cuint32((_IOW shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $08);
-  HIDIOCGUCODE          = cuint32((_IOWR shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0D);
-  HIDIOCGUSAGE          = cuint32((_IOWR shl 30) + (sizeof(hiddev_usage_ref) shl 16) + (Ord('H') shl 8) + $0B);
-  HIDIOCGREPORTINFO     = cuint32((_IOWR shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $09);
-  HIDIOCGFIELDINFO      = cuint32((_IOWR shl 30) + (sizeof(hiddev_field_info) shl 16) + (Ord('H') shl 8) + $0A);
-  HIDIOCGDEVINFO        = cuint32((_IOR shl 30) + (sizeof(hiddev_devinfo) shl 16) + (Ord('H') shl 8) + $03);
-  HIDIOCGSTRING         = cuint32((_IOR shl 30) + (sizeof(hiddev_string_descriptor) shl 16) + (Ord('H') shl 8) + $04);
-  HIDIOCGREPORT         = cuint32((_IOW shl 30) + (sizeof(hiddev_report_info) shl 16) + (Ord('H') shl 8) + $07);
-  HIDIOCGUSAGES         = cuint32((_IOWR shl 30) + (sizeof(hiddev_usage_ref_multi) shl 16) + (Ord('H') shl 8) + $13);
-  HIDIOCSUSAGES         = cuint32((_IOW shl 30) + (sizeof(hiddev_usage_ref_multi) shl 16) + (Ord('H') shl 8) + $14);
-
-  //HIDIOCSFEATURE(len)    = cuint32((_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $06);
-  //HIDIOCGFEATURE(len)    = cuint32((_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $07);
+  //HIDIOCSFEATURE(len)    = TIOCtlRequest((_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $06);
+  //HIDIOCGFEATURE(len)    = TIOCtlRequest((_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $07);
 
 type
   TJvHidDeviceController = class; // forward declaration
@@ -389,7 +393,7 @@ type
     procedure CloseFile;
     function OpenFile: Boolean;
     function ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
-    function WriteFile(const Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
+    function WriteFile(const {%H-}Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
     function CheckOut: Boolean;
     procedure ShowReports(report_type:word);
     property HidFileHandle:THandle read FHidFileHandle;
@@ -911,7 +915,7 @@ end;
 
 procedure TJvHidDeviceController.StopControllerThread;
 var
-  buf: Char;
+  {%H-}buf: Char;
 begin
   if Assigned(FControllerMonitorThread) then FControllerMonitorThread.Terminate;
 
