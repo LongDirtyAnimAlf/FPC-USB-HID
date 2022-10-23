@@ -1623,15 +1623,15 @@ begin
   Finalize(Report);
   if (Device.Caps.InputReportByteLength>0) then
   begin
-  SetLength(Report, Device.Caps.InputReportByteLength);
-  {
-  //Empty readbuffer
-  while Device.CanRead(Device.ThreadSleepTime) do
-  begin
-    Device.ReadFile(Report,Device.Caps.InputReportByteLength,{%H-}BytesRead);
-  end;
-}
-  FillChar(Report[0], Device.Caps.InputReportByteLength, #0);
+    SetLength(Report, Device.Caps.InputReportByteLength);
+    {
+    //Empty readbuffer
+    while Device.CanRead(Device.ThreadSleepTime) do
+    begin
+      Device.ReadFile(Report,Device.Caps.InputReportByteLength,{%H-}BytesRead);
+    end;
+    }
+    FillChar(Report[0], Device.Caps.InputReportByteLength, #0);
   end else Terminate;
   Start;
 end;
@@ -1666,7 +1666,7 @@ begin
   fd :=cint(Device.HidFileHandle);
 
   try
-    while not Terminated do
+    while (not Terminated) do
     begin
       fpFD_ZERO(readSet);
       fpFD_SET(fd, readSet);
@@ -1678,96 +1678,99 @@ begin
       begin
         if fpFD_ISSET(fd, readSet) = 0 then continue; // we had a timeout : go on with wait for data !
 
-        InitWithoutHint(receiveBuffer);
-        FillChar(Report[1], Device.Caps.InputReportByteLength-1, #0);
-
-        i:=0;
-        while true do
+        if (Device.Caps.InputReportByteLength>0) then
         begin
-          ret:= fpRead(cint(Device.HidFileHandle), {%H-}ev, sizeof(hiddev_event));
-          //FErr := fpGetErrno;
-          //if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINTR) then
-          //begin
-          //end;
-          if ret=0 then break; // EOF
-          if ret<0 then break; // Error
-          if (ret=sizeof(hiddev_event)) then
+          InitWithoutHint(receiveBuffer);
+          FillChar(Report[1], Device.Caps.InputReportByteLength-1, #0);
+
+          i:=0;
+          while true do
           begin
-            Report[i+1]:=ev.value;
-            if (i>=(Length(Report)-2)) then break;
-            Inc(i);
+            ret:= fpRead(cint(Device.HidFileHandle), {%H-}ev, sizeof(hiddev_event));
+            //FErr := fpGetErrno;
+            //if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINTR) then
+            //begin
+            //end;
+            if ret=0 then break; // EOF
+            if ret<0 then break; // Error
+            if (ret=sizeof(hiddev_event)) then
+            begin
+              Report[i+1]:=ev.value;
+              if (i>=(Length(Report)-2)) then break;
+              Inc(i);
+            end;
           end;
-        end;
 
-        if (i>0) then
-        begin
-          DoData;
-          //Synchronize(@DoData);
-          //Queue(@DoData);
+          if (i>0) then
+          begin
+            DoData;
+            //Synchronize(@DoData);
+            //Queue(@DoData);
+          end
+          else
+          begin
+            if (Not Terminated) AND (ret<0) then
+            begin
+              FErr := fpGetErrno;
+              if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINPROGRESS) then
+              begin
+                DoDataError;
+                //Synchronize(@DoDataError);
+                //Queue(@DoDataError);
+                SysUtils.Sleep(Device.ThreadSleepTime);
+              end;
+            end;
+          end;
+
+          (*
+          ret:= fpRead(cint(Device.HidFileHandle), receiveBuffer, sizeof(hiddev_event)*(Device.Caps.InputReportByteLength-1));
+          if (ret>0) then
+          begin
+
+            if (not Terminated) then
+            begin
+
+              NumBytesRead := (ret DIV sizeof(hiddev_event));
+              // the below should not be necessary, but just to be absolutely sure !!
+              if (NumBytesRead>(Device.Caps.InputReportByteLength-1)) then NumBytesRead:=(Device.Caps.InputReportByteLength-1);
+
+              if (NumBytesRead > 0) then
+              begin
+                // copy data bytes
+                for i := 0 to (NumBytesRead-1) do Report[i+1]:=receiveBuffer[i].value;
+                // choose one of the below to signal the availability of data
+                DoData;
+                //Synchronize(@DoData);
+                //Queue(@DoData);
+              end;
+
+              //to prevent CPU burning ... for compatibility with JvHidControllerClass
+              if Device.PollingDelayTime > 0 then  // Throttle device polling
+                SysUtils.Sleep(Device.PollingDelayTime);
+
+            end;
+          end
+          else
+          begin
+            if (Not Terminated) AND (ret<0) then
+            begin
+              FErr := fpGetErrno;
+              if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINPROGRESS) then
+              begin
+                DoDataError;
+                //Synchronize(@DoDataError);
+                //Queue(@DoDataError);
+                SysUtils.Sleep(Device.ThreadSleepTime);
+              end;
+            end;
+          end;
+          *)
+
+          //to prevent CPU burning ... for compatibility with JvHidControllerClass
+          if ((Device.PollingDelayTime>0) AND (Not Terminated)) then  // Throttle device polling
+            SysUtils.Sleep(Device.PollingDelayTime);
         end
-        else
-        begin
-          if (Not Terminated) AND (ret<0) then
-          begin
-            FErr := fpGetErrno;
-            if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINPROGRESS) then
-            begin
-              DoDataError;
-              //Synchronize(@DoDataError);
-              //Queue(@DoDataError);
-              SysUtils.Sleep(Device.ThreadSleepTime);
-            end;
-          end;
-        end;
-
-        (*
-        ret:= fpRead(cint(Device.HidFileHandle), receiveBuffer, sizeof(hiddev_event)*(Device.Caps.InputReportByteLength-1));
-        if (ret>0) then
-        begin
-
-          if (not Terminated) then
-          begin
-
-            NumBytesRead := (ret DIV sizeof(hiddev_event));
-            // the below should not be necessary, but just to be absolutely sure !!
-            if (NumBytesRead>(Device.Caps.InputReportByteLength-1)) then NumBytesRead:=(Device.Caps.InputReportByteLength-1);
-
-            if (NumBytesRead > 0) then
-            begin
-              // copy data bytes
-              for i := 0 to (NumBytesRead-1) do Report[i+1]:=receiveBuffer[i].value;
-              // choose one of the below to signal the availability of data
-              DoData;
-              //Synchronize(@DoData);
-              //Queue(@DoData);
-            end;
-
-            //to prevent CPU burning ... for compatibility with JvHidControllerClass
-            if Device.PollingDelayTime > 0 then  // Throttle device polling
-              SysUtils.Sleep(Device.PollingDelayTime);
-
-          end;
-        end
-        else
-        begin
-          if (Not Terminated) AND (ret<0) then
-          begin
-            FErr := fpGetErrno;
-            if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINPROGRESS) then
-            begin
-              DoDataError;
-              //Synchronize(@DoDataError);
-              //Queue(@DoDataError);
-              SysUtils.Sleep(Device.ThreadSleepTime);
-            end;
-          end;
-        end;
-        *)
-
-        //to prevent CPU burning ... for compatibility with JvHidControllerClass
-        if ((Device.PollingDelayTime>0) AND (Not Terminated)) then  // Throttle device polling
-          SysUtils.Sleep(Device.PollingDelayTime);
-
+        else Terminate; // Device.Caps.InputReportByteLength=0
       end;
     end;
   finally

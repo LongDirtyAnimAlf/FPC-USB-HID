@@ -535,11 +535,19 @@ function WriteFileEx(hFile: THandle; var Buffer; nNumberOfBytesToWrite: DWORD;
 
 constructor TJvHidDeviceReadThread.CtlCreate(const Dev: TJvHidDevice);
 begin
-  inherited Create(False);
+  inherited Create(True);
   Device := Dev;
   NumBytesRead := 0;
-  SetLength(Report, Dev.Caps.InputReportByteLength);
+  FreeOnTerminate:=False;
+  Finalize(Report);
+  if (Device.Caps.InputReportByteLength>0) then
+  begin
+    SetLength(Report, Device.Caps.InputReportByteLength);
+    FillChar(Report[0], Device.Caps.InputReportByteLength, #0);
+  end else Terminate;
+  Start;
 end;
+
 
 constructor TJvHidDeviceReadThread.Create(CreateSuspended: Boolean);
 begin
@@ -570,51 +578,55 @@ begin
   {$endif}
   SleepRet := WAIT_IO_COMPLETION;
   try
-    while not Terminated do
+    while (not Terminated) do
     begin
-      // read data
-      SleepRet := WAIT_IO_COMPLETION;
-      FillChar(Report[0], Device.Caps.InputReportByteLength, #0);
-      if Device.ReadFileEx(Report[0], Device.Caps.InputReportByteLength, @DummyReadCompletion) then
+      if (Device.Caps.InputReportByteLength>0) then
       begin
-        // wait for read to complete
-        repeat
-          SleepRet := SleepEx(Device.ThreadSleepTime, True);
-        until Terminated or (SleepRet = WAIT_IO_COMPLETION);
-        // show data read
-        if (not Terminated) then
+        // read data
+        SleepRet := WAIT_IO_COMPLETION;
+        FillChar(Report[0], Device.Caps.InputReportByteLength, #0);
+        if Device.ReadFileEx(Report[0], Device.Caps.InputReportByteLength, @DummyReadCompletion) then
         begin
-          NumBytesRead := Device.HidOverlappedReadResult;
-          if NumBytesRead > 0 then
-            // synchronizing only works if the component is not instanciated in a DLL
-            if IsLibrary then
-              DoData
-            else
-              // choose one of the below to signal the availability of data
-              DoData;
-              //Synchronize(DoData);
-              //Queue(DoData);
-          if Device.PollingDelayTime > 0 then  // Throttle device polling
-            SleepEx(Device.PollingDelayTime, True);
+          // wait for read to complete
+          repeat
+            SleepRet := SleepEx(Device.ThreadSleepTime, True);
+          until Terminated or (SleepRet = WAIT_IO_COMPLETION);
+          // show data read
+          if (not Terminated) then
+          begin
+            NumBytesRead := Device.HidOverlappedReadResult;
+            if (NumBytesRead > 0) then
+              // synchronizing only works if the component is not instanciated in a DLL
+              if IsLibrary then
+                DoData
+              else
+                // choose one of the below to signal the availability of data
+                DoData;
+                //Synchronize(DoData);
+                //Queue(DoData);
+            if (Device.PollingDelayTime > 0) then  // Throttle device polling
+              SleepEx(Device.PollingDelayTime, True);
+          end;
+        end
+        else
+        begin
+          if (not Terminated) then
+          begin
+            FErr := GetLastError;
+            // choose one of the below to signal the error
+            DoDataError;
+            //Synchronize(DoDataError);
+            //Queue(DoDataError);
+            SleepEx(Device.ThreadSleepTime, True);  // avoid 100% CPU usage (Mantis 5749)
+          end;
         end;
       end
-      else
-      begin
-        if (not Terminated) then
-        begin
-          FErr := GetLastError;
-          // choose one of the below to signal the error
-          DoDataError;
-          //Synchronize(DoDataError);
-          //Queue(DoDataError);
-          SleepEx(Device.ThreadSleepTime, True);  // avoid 100% CPU usage (Mantis 5749)
-        end;
-      end;
+      else Terminate; // Device.Caps.InputReportByteLength=0
     end;
   finally
     // cancel ReadFileEx call or the callback will
     // crash your program
-    if SleepRet <> WAIT_IO_COMPLETION then
+    if (SleepRet <> WAIT_IO_COMPLETION) then
       Device.CancelIO(omhRead);
   end;
 end;
@@ -815,6 +827,8 @@ end;
 // internally
 
 constructor TJvHidDevice.CtlCreate(const APnPInfo: TJvHidPnPInfo; const Controller: TJvHidDeviceController);
+var
+  Buffer: array [0..253] of WideChar;
 begin
   inherited Create;
 
@@ -851,13 +865,19 @@ begin
 
   FHidFileHandle := CreateFile(PChar(PnPInfo.DevicePath), GENERIC_READ or GENERIC_WRITE,
     FILE_SHARE_READ or FILE_SHARE_WRITE, nil, OPEN_EXISTING, 0, 0);
-  FHasReadWriteAccess := HidFileHandle <> INVALID_HANDLE_VALUE;
+  FHasReadWriteAccess := (HidFileHandle <> INVALID_HANDLE_VALUE);
   // Win2000 hack
   if not HasReadWriteAccess then
     FHidFileHandle := CreateFile(PChar(PnPInfo.DevicePath), 0,
       FILE_SHARE_READ or FILE_SHARE_WRITE, nil, OPEN_EXISTING, 0, 0);
-  if HidFileHandle <> INVALID_HANDLE_VALUE then
+  if (HidFileHandle <> INVALID_HANDLE_VALUE) then
   begin
+    FillChar(Buffer, SizeOf(Buffer), #0);
+    if HidD_GetProductString(HidFileHandle, Buffer, SizeOf(Buffer)) then
+      FProductName := Buffer;
+    FillChar(Buffer, SizeOf(Buffer), #0);
+    if HidD_GetManufacturerString(HidFileHandle, Buffer, SizeOf(Buffer)) then
+      FVendorName := Buffer;
     FAttributes.Size := SizeOf(THIDDAttributes);
     if not HidD_GetAttributes(HidFileHandle, FAttributes) then
       raise EControllerError.CreateRes(@RsEDeviceCannotBeIdentified);
@@ -959,7 +979,7 @@ function TJvHidDevice.OpenFile: Boolean;
 begin
   // check if open allowed (propagates this state)
   if IsAccessible then
-    if HidFileHandle = INVALID_HANDLE_VALUE then // if not already opened
+    if (HidFileHandle = INVALID_HANDLE_VALUE) then // if not already opened
     begin
       FHidFileHandle := CreateFile(PChar(PnPInfo.DevicePath), GENERIC_READ or GENERIC_WRITE,
         FILE_SHARE_READ or FILE_SHARE_WRITE, nil, OPEN_EXISTING, 0, 0);
@@ -975,7 +995,7 @@ begin
         HidD_GetNumInputBuffers(HidFileHandle, FNumInputBuffers);
       end;
     end;
-  Result := HidFileHandle <> INVALID_HANDLE_VALUE;
+  Result := (HidFileHandle <> INVALID_HANDLE_VALUE);
 end;
 
 // open second device "file" for ReadFileEx and WriteFileEx

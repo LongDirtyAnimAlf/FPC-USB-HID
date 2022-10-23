@@ -4,13 +4,13 @@ interface
 
 uses
   SysUtils, Classes, SyncObjs
-  {$IFDEF usegenerics}
+  {$ifdef usegenerics}
   ,fgl
-  {$ENDIF}
-  {$ifdef Unix}
-  ,usbcontroller
-  {$else}
+  {$endif}
+  {$ifdef MSWINDOWS}
   ,JvHidControllerClass
+  {$else}
+  ,usbcontroller
   {$endif}
   ;
 
@@ -31,7 +31,7 @@ type
     LocalData     : TReport;
     procedure   SetDataEvent(const DataEvent: TJvHidDataEvent);
     function    GetDataEvent:TJvHidDataEvent;
-    procedure   ShowRead(HidDev: TJvHidDevice; ReportID: Byte;const Data: Pointer; Size: Word);
+    procedure   ShowRead({%H-}HidDev: TJvHidDevice; ReportID: Byte;const Data: Pointer; Size: Word);
   public
     constructor Create(HidDev: TJvHidDevice);
     destructor  Destroy;override;
@@ -82,7 +82,7 @@ type
     function  CheckAddressNewer(Ctrl: TUSBController):integer;
     function  CheckParameters(board:word):boolean;overload;
 
-    procedure HandleCRCError(HidCtrl: TJvHidDevice);overload;
+    procedure HandleCRCError({%H-}HidCtrl: TJvHidDevice);overload;
 
     function  FGetSerial(board:word):string;
   public
@@ -119,11 +119,26 @@ uses
   StrUtils;
 
 const
-  Vendor                        = $045E;
-  Product                       = $0916;
+  //Vendor                        = $045E;
+  //Product                       = $0916;
+  Vendor                        = $04D8;
+  Product                       = $003F;
 
   ErrorDelay                    = 100;
   USBTimeout                    = 200;
+
+function UTF16ToUTF8(const s: UnicodeString): string;
+begin
+  {$IFDEF UNICODE}
+  Result:=s;
+  {$ELSE}
+    if s='' then exit('');
+    Result:=UTF8Encode(s);
+    // prevent UTF8 codepage appear in the strings - we don't need codepage
+    // conversion magic
+    SetCodePage(RawByteString(Result), CP_ACP, False);
+  {$ENDIF}
+end;
 
 constructor TUSBController.Create(HidDev: TJvHidDevice);
 begin
@@ -270,7 +285,7 @@ end;
 
 function TUSB.HidCtlEnumerate(HidDev: TJvHidDevice; const Idx: Integer): Boolean;
 begin
-  AddInfo('Device arrival. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
+  AddInfo('Device #'+InttoStr(Idx)+' arrival. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
   if ( (HidDev.Attributes.VendorID = Vendor) AND
        (HidDev.Attributes.ProductID = Product) ) then
   begin
@@ -498,7 +513,7 @@ var
 begin
   AddInfo('Devices change !!');
   i:=0;
-  while i<HidCtl.HidDevices.Count do
+  while (i<HidCtl.HidDevices.Count) do
   begin
     HidDev:=TJvHidDevice(HidCtl.HidDevices[i]);
     s:='HID';
@@ -506,8 +521,14 @@ begin
     if Pos('hidraw',HidDev.PhysicalDescriptor)>0 then s:='HIDraw';
     if Pos('hiddev',HidDev.PhysicalDescriptor)>0 then s:='HIDdev';
     {$endif}
-    AddInfo(s+'-device#'+InttoStr(i)+'. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
-    AddInfo('Name: '+HidDev.ProductName+'. Vendor: '+HidDev.VendorName+'.');
+
+    AddInfo(s+'-device #'+InttoStr(i)+'. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
+    {$ifdef MSWINDOWS}
+    AddInfo('Mfg: '+HidDev.PnPInfo.Mfg+'. Name UTF8: '+UTF16ToUTF8(HidDev.ProductName)+'. Vendor: '+UTF16ToUTF8(HidDev.VendorName)+'.');
+    {$else}
+    AddInfo('Mfg: '+HidDev.PnPInfo.Mfg+'. Name: '+HidDev.ProductName+'. Vendor: '+HidDev.VendorName+'.');
+    {$endif}
+
     if ( (HidDev.Attributes.VendorID = Vendor) AND
        (HidDev.Attributes.ProductID = Product) ) then
     begin
