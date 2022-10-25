@@ -1,6 +1,6 @@
 program FpcUsbHidConsole;
 
-uses Windows, Objects, SysUtils, usb2;
+uses Windows, SysUtils, usb2;
 
 var
   active          : boolean;
@@ -27,8 +27,13 @@ begin
     Msg.msg:=Message;
     Msg.wParam:=WParam;
     Msg.lParam:=LParam;
-    if Assigned(NewUSB) then NewUSB.Controller.EventPipeExternal(Msg,HWindow);
-    Result:=Msg.Result;
+    if Assigned(NewUSB) then
+    begin
+      NewUSB.Controller.EventPipeExternal(Msg,HWindow);
+      Result:=Msg.Result;
+    end
+    else
+      Result:=DefWindowProc(HWindow,Message,WParam,LParam);
   end;
 end;
 

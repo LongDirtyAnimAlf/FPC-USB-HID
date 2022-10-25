@@ -19,6 +19,7 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="Main"/>
+        <IsVisibleTab Value="True"/>
         <CursorPos X="7" Y="7"/>
         <UsageCount Value="72"/>
         <Loaded Value="True"/>
@@ -237,9 +238,8 @@
       </Unit28>
       <Unit29>
         <Filename Value="jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="1865"/>
+        <TopLine Value="1852"/>
         <CursorPos X="12" Y="1877"/>
         <UsageCount Value="15"/>
         <Loaded Value="True"/>

@@ -9,23 +9,24 @@
         <Filename Value="FpcUsbHidConsole.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
+        <TopLine Value="23"/>
+        <CursorPos X="33" Y="32"/>
         <UsageCount Value="24"/>
         <Loaded Value="True"/>
-        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
         <Filename Value="usb2.pas"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="2"/>
         <UsageCount Value="12"/>
         <Loaded Value="True"/>
-        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
         <Filename Value="jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="2147"/>
-        <CursorPos X="20" Y="2166"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="1861"/>
+        <CursorPos X="3" Y="1865"/>
         <UsageCount Value="11"/>
+        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
@@ -311,10 +312,18 @@
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
     </Units>
-    <JumpHistory>
+    <JumpHistory HistoryIndex="2">
       <Position>
         <Filename Value="FpcUsbHidConsole.lpr"/>
         <Caret Line="59" TopLine="44"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="32" Column="33" TopLine="29"/>
+      </Position>
+      <Position>
+        <Filename Value="jvcl\jvcl\run\JvHidControllerClass.pas"/>
+        <Caret Line="433" Column="20" TopLine="421"/>
       </Position>
     </JumpHistory>
     <RunParams>
