@@ -37,9 +37,9 @@ uses
   JclUnitVersioning,
   {$ENDIF UNITVERSIONING}
   Windows,
-  Classes, Forms, Messages, Sysutils, SyncObjs,
+  Classes, Messages, Sysutils, SyncObjs,
   JvComponentBase,
-  DBT, JvSetupApi, Hid, JvTypes;
+  DBT, JvSetupApi, Hid{, JvTypes};
 
 const
   // a version string for the component
@@ -49,6 +49,25 @@ const
   cHidNoClass = 'HIDClass';
 
 type
+  // base JVCL Exception class to derive from
+  EJVCLException = class(Exception);
+
+  TJvCustomThread = class(TThread)
+  private
+    FThreadName: String;
+    function GetThreadName: String; virtual;
+    procedure SetThreadName(const Value: String); virtual;
+  public
+    {$IFNDEF DELPHI2010_UP}
+    procedure NameThreadForDebugging(AThreadName: AnsiString; AThreadID: LongWord = $FFFFFFFF);
+    {$ENDIF}
+    procedure NameThread(AThreadName: AnsiString; AThreadID: LongWord = $FFFFFFFF); {$IFDEF SUPPORTS_UNICODE_STRING} overload; {$ENDIF} virtual;
+    {$IFDEF SUPPORTS_UNICODE_STRING}
+    procedure NameThread(AThreadName: String; AThreadID: LongWord = $FFFFFFFF); overload;
+    {$ENDIF}
+    property ThreadName: String read GetThreadName write SetThreadName;
+  end;
+
   {$ifdef FPC}
   TPROverlappedCompletionRoutine=Windows.LPOVERLAPPED_COMPLETION_ROUTINE;
   {$endif}
@@ -446,6 +465,7 @@ type
     constructor Create(AOwner: TComponent; AOnHidCtlDeviceCreateError: TJvHidDeviceCreateError;
       AOnDeviceChange: TNotifyEvent = nil); reintroduce; overload;
     destructor Destroy; override;
+    procedure EventPipeExternal(var Msg: TMessage; const aHWnd:HWND);
     // methods to hand out HID device objects
     procedure CheckIn(var HidDev: TJvHidDevice);
     function CheckOut(var HidDev: TJvHidDevice): Boolean;
@@ -511,13 +531,18 @@ implementation
 
 uses
   {$ifdef FPC}
+  {$ifdef LCL}
   LCLIntf,
+  {$endif}
   {$endif}
   JvResources;
 
 type
   EControllerError = class(EJVCLException);
   EHidClientError = class(EJVCLException);
+
+var
+  {%H-}JvCustomThreadNamingProc: procedure (AThreadName: AnsiString; AThreadID: LongWord);
 
 //=== these are declared inconsistent in Windows.pas =========================
 
@@ -1747,6 +1772,9 @@ const
   cHidGuid: TGUID = '{4d1e55b2-f16f-11cf-88cb-001111000030}';
 begin
   inherited Create(AOwner);
+
+  FHWnd:=0;
+
   FDevThreadSleepTime := 100;
   FVersion := cHidControllerClassVersion;
 
@@ -1846,7 +1874,18 @@ begin
       DeviceChange;
       FInDeviceChange := False;
     end;
-  Msg.Result := DefWindowProc(FHWnd, Msg.Msg, Msg.wParam, Msg.lParam);
+  if (FHWnd<>0) then
+    Msg.Result := DefWindowProc(FHWnd, Msg.Msg, Msg.wParam, Msg.lParam)
+  else
+    raise EControllerError.CreateRes(@RsENoMessageLoopHandle);
+end;
+
+procedure TJvHidDeviceController.EventPipeExternal(var Msg: TMessage; const aHWnd:HWND);
+begin
+  if (aHWnd=0) then
+    raise EControllerError.CreateRes(@RsENoMessageLoopHandle);
+  FHWnd:=aHWnd;
+  EventPipe(Msg);
 end;
 
 // implements OnDeviceChange event
@@ -2090,12 +2129,17 @@ begin
     begin
       if IsHidLoaded then
       begin
-        // hook event pipe
-        {$ifdef FPC}
-        FHWnd := LCLIntf.AllocateHWnd(EventPipe);
-        {$else}
-        FHWnd := AllocateHWnd(EventPipe);
-        {$endif}
+        if (FHWnd=0) then
+        begin
+          // hook event pipe
+          {$ifdef FPC}
+          {$ifdef LCL}
+          FHWnd := LCLIntf.AllocateHWnd(EventPipe);
+          {$endif}
+          {$else}
+          FHWnd := AllocateHWnd(EventPipe);
+          {$endif}
+        end;
         // send change message to enumerate devices
         if not FInDeviceChange then
         begin
@@ -2109,11 +2153,19 @@ begin
     begin
       // unhook event pipe
       if IsHidLoaded then
-      {$ifdef FPC}
-      LCLIntf.DeallocateHWnd(FHWnd);
-      {$else}
-      DeallocateHWnd(FHWnd);
-      {$endif}
+      begin
+        if (FHWnd<>0) then
+        begin
+          {$ifdef FPC}
+          {$ifdef LCL}
+          LCLIntf.DeallocateHWnd(FHWnd);
+          {$endif}
+          {$else}
+          DeallocateHWnd(FHWnd);
+          {$endif}
+          FHWnd:=0;
+        end;
+      end;
     end;
   end;
 end;
@@ -2565,6 +2617,62 @@ begin
     end;
     Result := RsHIDErrorPrefix + Result;
   end;
+end;
+
+{$IFNDEF DELPHI2010_UP}
+procedure TJvCustomThread.NameThreadForDebugging(AThreadName: AnsiString; AThreadID: LongWord = $FFFFFFFF);
+type
+  TThreadNameInfo = record
+    FType: LongWord;     // must be 0x1000
+    FName: PAnsiChar;    // pointer to name (in user address space)
+    FThreadID: LongWord; // thread ID (-1 indicates caller thread)
+    FFlags: LongWord;    // reserved for future use, must be zero
+  end;
+var
+  ThreadNameInfo: TThreadNameInfo;
+begin
+  //if IsDebuggerPresent then
+  begin
+    ThreadNameInfo.FType := $1000;
+    ThreadNameInfo.FName := PAnsiChar(AThreadName);
+    ThreadNameInfo.FThreadID := AThreadID;
+    ThreadNameInfo.FFlags := 0;
+
+    try
+      RaiseException($406D1388, 0, SizeOf(ThreadNameInfo) div SizeOf(LongWord), @ThreadNameInfo);
+    except
+    end;
+  end;
+end;
+{$ENDIF DELPHI2010_UP}
+
+function TJvCustomThread.GetThreadName: String;
+begin
+  if FThreadName = '' then
+    Result := ClassName
+  else
+    Result := FThreadName+' {'+ClassName+'}';
+end;
+
+procedure TJvCustomThread.NameThread(AThreadName: AnsiString; AThreadID: LongWord = $FFFFFFFF);
+begin
+  if AThreadID = $FFFFFFFF then
+    AThreadID := ThreadID;
+  NameThreadForDebugging(aThreadName, AThreadID);
+  if Assigned(JvCustomThreadNamingProc) then
+    JvCustomThreadNamingProc(aThreadName, AThreadID);
+end;
+
+{$IFDEF SUPPORTS_UNICODE_STRING}
+procedure TJvCustomThread.NameThread(AThreadName: String; AThreadID: LongWord = $FFFFFFFF);
+begin
+  NameThread(AnsiString(AThreadName), AThreadId);
+end;
+{$ENDIF}
+
+procedure TJvCustomThread.SetThreadName(const Value: String);
+begin
+  FThreadName := Value;
 end;
 
 {$IFDEF UNITVERSIONING}

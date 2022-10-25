@@ -1114,6 +1114,8 @@ resourcestring
   RsEDeviceCannotBeOpened = 'Device cannot be opened';
   RsEOnlyOneControllerPerProgram = 'Only one TJvHidDeviceController allowed per program';
   RsEHIDBooleanError = 'HID Error: a boolean function failed';
+  RsENoMessageLoopHandle = 'No message window handle (loop) available to hook into';
+
 
 //=== JvHint.pas =============================================================
 resourcestring
