@@ -1940,7 +1940,12 @@ var
         begin
           FunctionClassDeviceData := AllocMem(BytesReturned);
           try
-            FunctionClassDeviceData^.cbSize := SizeOf(TSPDeviceInterfaceDetailData);
+            //FunctionClassDeviceData^.cbSize := SizeOf(TSPDeviceInterfaceDetailData);
+            {$IFDEF CPU32}
+            FunctionClassDeviceData^.cbSize := 5;
+            {$ELSE}
+            FunctionClassDeviceData^.cbSize := 8;
+            {$ENDIF}
             if SetupDiGetDeviceInterfaceDetail(PnPHandle, @DeviceInterfaceData,
               FunctionClassDeviceData, BytesReturned, BytesReturned, @DevData) then
             begin
