@@ -2832,7 +2832,7 @@ begin
     LineLen := Length(PipeInfo.Line);
     // Convert directly into the PipeInfo.Line string
     SetLength(PipeInfo.Line, LineLen + Len);
-    MultiByteToWideChar(CP_OEMCP, 0, PipeInfo.Buffer, PipeBytesRead, PChar(PipeInfo.Line) + LineLen, Len);
+    MultiByteToWideChar(CP_OEMCP, 0, PipeInfo.Buffer, PipeBytesRead, PWideChar(PChar(PipeInfo.Line) + LineLen), Len);
     {$ELSE}
     Len := PipeBytesRead;
     LineLen := Length(PipeInfo.Line);

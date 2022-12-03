@@ -907,16 +907,16 @@ type
 
   PSPDeviceInterfaceDetailDataA = ^TSPDeviceInterfaceDetailDataA;
   PSPDeviceInterfaceDetailDataW = ^TSPDeviceInterfaceDetailDataW;
-  SP_DEVICE_INTERFACE_DETAIL_DATA_A = packed record
+  SP_DEVICE_INTERFACE_DETAIL_DATA_A = {packed} record
     cbSize: DWORD;
     DevicePath: array [0..ANYSIZE_ARRAY - 1] of AnsiChar;
-    Filler: TFiller;
+    //Filler: TFiller;
   end;
   {$EXTERNALSYM SP_DEVICE_INTERFACE_DETAIL_DATA_A}
-  SP_DEVICE_INTERFACE_DETAIL_DATA_W = packed record
+  SP_DEVICE_INTERFACE_DETAIL_DATA_W = {packed} record
     cbSize: DWORD;
     DevicePath: array [0..ANYSIZE_ARRAY - 1] of WideChar;
-    Filler: TFiller;
+    //Filler: TFiller;
   end;
   {$EXTERNALSYM SP_DEVICE_INTERFACE_DETAIL_DATA_W}
   TSPDeviceInterfaceDetailDataA = SP_DEVICE_INTERFACE_DETAIL_DATA_A;

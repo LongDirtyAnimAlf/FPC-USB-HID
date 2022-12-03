@@ -731,23 +731,34 @@ function TJvHidPnPInfo.GetRegistryPropertyString(PnPHandle: HDEVINFO;
 var
   BytesReturned: DWORD;
   RegDataType: DWORD;
+  CharSize: byte;
+  {$IFDEF UNICODE}
+  Buffer: PWideChar;
+  StackBuffer: array[0..1023] of WideChar;
+  {$ELSE}
   Buffer: PChar;
   StackBuffer: array[0..1023] of Char;
+  {$ENDIF}
 begin
+  {$IFDEF UNICODE}
+  CharSize:=SizeOf(WideChar);
+  {$ELSE}
+  CharSize:=SizeOf(Char);
+  {$ENDIF}
   BytesReturned := 0;
   RegDataType := 0;
   Result := '';
   SetupDiGetDeviceRegistryProperty(PnPHandle, DevData, Prop, RegDataType, nil, 0, BytesReturned);
-  if BytesReturned > 0 then
+  if (BytesReturned > 0) then
   begin
-    if BytesReturned + SizeOf(Char) <= SizeOf(StackBuffer) then
+    if BytesReturned + CharSize <= SizeOf(StackBuffer) then
     begin
       Buffer := @StackBuffer;
       // enforce terminator
       Buffer[BytesReturned] := #0;
     end
     else
-      Buffer := AllocMem((BytesReturned + 1) * SizeOf(Char));
+      Buffer := AllocMem((BytesReturned + 1) * CharSize);
 
     try
       Buffer[0] := #0;
@@ -766,10 +777,22 @@ function TJvHidPnPInfo.GetRegistryPropertyStringList(PnPHandle: HDEVINFO;
 var
   BytesReturned: DWORD;
   RegDataType: DWORD;
+  CharSize: byte;
+  {$IFDEF UNICODE}
+  Buffer: PWideChar;
+  P: PWideChar;
+  StackBuffer: array[0..16383] of Char;
+  {$ELSE}
   Buffer: PChar;
   P: PChar;
   StackBuffer: array[0..16383] of Char;
+  {$ENDIF}
 begin
+  {$IFDEF UNICODE}
+  CharSize:=SizeOf(WideChar);
+  {$ELSE}
+  CharSize:=SizeOf(Char);
+  {$ENDIF}
   BytesReturned := 0;
   RegDataType := 0;
   Result := TStringList.Create;
@@ -777,7 +800,7 @@ begin
     SetupDiGetDeviceRegistryProperty(PnPHandle, DevData, Prop, RegDataType, nil, 0, BytesReturned);
     if BytesReturned > 0 then
     begin
-      if BytesReturned + 2 * SizeOf(Char) <= SizeOf(StackBuffer) then
+      if BytesReturned + 2 * CharSize <= SizeOf(StackBuffer) then
       begin
         Buffer := @StackBuffer;
         // enforce terminators
@@ -785,7 +808,7 @@ begin
         Buffer[BytesReturned + 1] := #0;
       end
       else
-        Buffer := AllocMem((BytesReturned + 2) * SizeOf(Char));
+        Buffer := AllocMem((BytesReturned + 2) * CharSize);
       try
         SetupDiGetDeviceRegistryProperty(PnPHandle, DevData, Prop, RegDataType, PByte(@Buffer[0]),
           BytesReturned, BytesReturned);
@@ -1940,17 +1963,16 @@ var
         begin
           FunctionClassDeviceData := AllocMem(BytesReturned);
           try
-            //FunctionClassDeviceData^.cbSize := SizeOf(TSPDeviceInterfaceDetailData);
-            {$IFDEF CPU32}
-            FunctionClassDeviceData^.cbSize := 5;
-            {$ELSE}
-            FunctionClassDeviceData^.cbSize := 8;
-            {$ENDIF}
+            FunctionClassDeviceData^.cbSize := SizeOf(TSPDeviceInterfaceDetailData);
             if SetupDiGetDeviceInterfaceDetail(PnPHandle, @DeviceInterfaceData,
               FunctionClassDeviceData, BytesReturned, BytesReturned, @DevData) then
             begin
               // Win64: Don't include the padding bytes into the string length calculation
+              {$IFDEF UNICODE}
+              SetString(DevicePath, PWideChar(@FunctionClassDeviceData.DevicePath), (BytesReturned - (SizeOf(FunctionClassDeviceData.cbSize) + SizeOf(FunctionClassDeviceData.DevicePath))) div SizeOf(WideChar));
+              {$ELSE}
               SetString(DevicePath, PChar(@FunctionClassDeviceData.DevicePath), (BytesReturned - (SizeOf(FunctionClassDeviceData.cbSize) + SizeOf(FunctionClassDeviceData.DevicePath))) div SizeOf(Char));
+              {$ENDIF}
               // fill in PnPInfo of device
               PnPInfo := TJvHidPnPInfo.Create(PnPHandle, DevData, DevicePath);
               // create HID device object and add it to the device list
