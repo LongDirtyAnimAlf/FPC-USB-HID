@@ -10,6 +10,11 @@ type
 
   { TForm1 }
 
+  TMyUSB = class(TUSB)
+  public
+    function CheckVendorProduct(const VID,PID:word):boolean;override;
+  end;
+
   TForm1 = class(TForm)
     btnHIDCreate: TButton;
     btnHIDEnable: TButton;
@@ -34,6 +39,12 @@ implementation
 
 {$R *.lfm}
 
+
+function TMyUSB.CheckVendorProduct(const VID,PID:word):boolean;
+begin
+  result:=true;
+end;
+
 { TForm1 }
 
 procedure TForm1.btnHIDCreateClick(Sender: TObject);
@@ -42,7 +53,7 @@ var
 begin
   TButton(Sender).Enabled:=False;
   Memo1.Lines.Append('HID Created.');
-  NewUSB:=TUSB.Create;
+  NewUSB:=TMyUSB.Create;
   NewUSB.OnUSBDeviceChange:=UpdateUSBDevice;
   Memo1.Lines.Append('Ready.');
   S:=NewUSB.Info;

@@ -2,12 +2,23 @@ program FpcUsbHidConsole;
 
 uses Windows, SysUtils, usb2;
 
+type
+  TMyUSB = class(TUSB)
+  public
+    function CheckVendorProduct(const VID,PID:word):boolean;override;
+  end;
+
+function TMyUSB.CheckVendorProduct(const VID,PID:word):boolean;
+begin
+  result:=true;
+end;
+
 var
   active          : boolean;
   Msg             : TMsg;
   ServiceWnd      : HWND;
   ServiceWndClass : Windows.TWndClass;
-  NewUSB          : TUSB;
+  NewUSB          : TMyUSB;
   M               : TMethod;
 
 function ServiceWndProc(HWindow: HWnd; Message: UINT; WParam: WPARAM; LParam: LPARAM): Longint;stdcall;
@@ -66,7 +77,7 @@ begin
       'HID', WS_POPUP {!0}, 0, 0, 0, 0, 0, 0, HInstance, nil);
   if (ServiceWnd=0) then Exit;
 
-  NewUSB:=TUSB.Create;
+  NewUSB:=TMyUSB.Create;
 
   M.Code:=@UpdateUSBDevice;
   M.Data:=@NewUSB;
