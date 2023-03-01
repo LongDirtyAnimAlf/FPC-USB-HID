@@ -8,9 +8,9 @@
       <Unit0>
         <Filename Value="FpcUsbHid.lpr"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="-1"/>
-        <CursorPos Y="20"/>
-        <UsageCount Value="75"/>
+        <CursorPos Y="19"/>
+        <UsageCount Value="77"/>
+        <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="main.pas"/>
@@ -20,21 +20,28 @@
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="Main"/>
         <IsVisibleTab Value="True"/>
-        <UsageCount Value="75"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="8"/>
+        <CursorPos Y="26"/>
+        <UsageCount Value="77"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="usb2.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="507"/>
-        <CursorPos X="37" Y="527"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="331"/>
+        <CursorPos X="25" Y="354"/>
         <UsageCount Value="37"/>
+        <Loaded Value="True"/>
       </Unit2>
       <Unit3>
         <Filename Value="usbcontroller.pas"/>
-        <EditorIndex Value="-1"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="507"/>
+        <CursorPos X="28" Y="480"/>
         <UsageCount Value="36"/>
+        <Loaded Value="True"/>
       </Unit3>
       <Unit4>
         <Filename Value="..\..\superdad\development\fpc\rtl\inc\exeinfo.pp"/>
@@ -42,6 +49,7 @@
         <TopLine Value="1011"/>
         <CursorPos X="5" Y="1020"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit4>
       <Unit5>
         <Filename Value="..\..\superdad\development\fpc\rtl\linux\arm\syscall.inc"/>
@@ -49,6 +57,7 @@
         <TopLine Value="285"/>
         <CursorPos Y="302"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit5>
       <Unit6>
         <Filename Value="..\..\superdad\development\fpc\rtl\inc\system.inc"/>
@@ -56,6 +65,7 @@
         <TopLine Value="1029"/>
         <CursorPos Y="1040"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit6>
       <Unit7>
         <Filename Value="..\..\superdad\development\fpc\rtl\unix\tthread.inc"/>
@@ -63,6 +73,7 @@
         <TopLine Value="244"/>
         <CursorPos Y="255"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit7>
       <Unit8>
         <Filename Value="..\..\superdad\development\fpc\rtl\inc\objpas.inc"/>
@@ -70,6 +81,7 @@
         <TopLine Value="278"/>
         <CursorPos Y="287"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit8>
       <Unit9>
         <Filename Value="..\..\superdad\development\lazarus\lcl\include\customform.inc"/>
@@ -77,6 +89,7 @@
         <TopLine Value="185"/>
         <CursorPos Y="196"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit9>
       <Unit10>
         <Filename Value="..\..\superdad\development\lazarus\lcl\include\application.inc"/>
@@ -84,6 +97,7 @@
         <TopLine Value="1075"/>
         <CursorPos Y="1086"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit10>
       <Unit11>
         <Filename Value="..\..\superdad\development\lazarus\lcl\forms.pp"/>
@@ -91,6 +105,7 @@
         <TopLine Value="1831"/>
         <CursorPos Y="1842"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit11>
       <Unit12>
         <Filename Value="..\..\superdad\development\fpc\rtl\inc\objpash.inc"/>
@@ -98,6 +113,7 @@
         <TopLine Value="193"/>
         <CursorPos X="21" Y="202"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit12>
       <Unit13>
         <Filename Value="C:\development\fpc\rtl\inc\dynlibh.inc"/>
@@ -105,6 +121,7 @@
         <TopLine Value="35"/>
         <CursorPos X="14" Y="54"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit13>
       <Unit14>
         <Filename Value="C:\development\fpc\rtl\inc\dynlibs.pas"/>
@@ -112,12 +129,14 @@
         <TopLine Value="12"/>
         <CursorPos X="3" Y="27"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit14>
       <Unit15>
         <Filename Value="C:\development\fpc\rtl\unix\sysdlh.inc"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="12" Y="21"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit15>
       <Unit16>
         <Filename Value="C:\development\fpc\rtl\objpas\classes\classesh.inc"/>
@@ -125,6 +144,7 @@
         <TopLine Value="10"/>
         <CursorPos X="24" Y="25"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit16>
       <Unit17>
         <Filename Value="C:\development\fpc\rtl\win32\windows.pp"/>
@@ -132,6 +152,7 @@
         <TopLine Value="22"/>
         <CursorPos X="31" Y="26"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit17>
       <Unit18>
         <Filename Value="C:\development\fpc\packages\winunits-jedi\src\jwawinsock.pas"/>
@@ -140,17 +161,20 @@
         <TopLine Value="1458"/>
         <CursorPos X="19" Y="1475"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit18>
       <Unit19>
         <Filename Value="C:\development\fpc\packages\libc\src\kernelioctl.pp"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="21" Y="132"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit19>
       <Unit20>
         <Filename Value="C:\development\fpc\packages\libc\src\nif_ppp.inc"/>
         <EditorIndex Value="-1"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit20>
       <Unit21>
         <Filename Value="C:\development\fpc\packages\libogcfpc\src\network.pp"/>
@@ -158,6 +182,7 @@
         <TopLine Value="274"/>
         <CursorPos X="11" Y="286"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit21>
       <Unit22>
         <Filename Value="C:\development\fpc\packages\rtl-extra\src\win\winsock2.pp"/>
@@ -166,6 +191,7 @@
         <TopLine Value="385"/>
         <CursorPos X="23" Y="346"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit22>
       <Unit23>
         <Filename Value="C:\development\fpc\packages\rtl-extra\src\wince\winsock2.pp"/>
@@ -174,6 +200,7 @@
         <TopLine Value="308"/>
         <CursorPos X="23" Y="323"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit23>
       <Unit24>
         <Filename Value="C:\development\fpc\rtl\unix\bunxh.inc"/>
@@ -181,6 +208,7 @@
         <TopLine Value="83"/>
         <CursorPos X="53" Y="98"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit24>
       <Unit25>
         <Filename Value="C:\development\fpc\rtl\unix\aliasptp.inc"/>
@@ -188,6 +216,7 @@
         <TopLine Value="11"/>
         <CursorPos X="36" Y="26"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit25>
       <Unit26>
         <Filename Value="C:\development\fpc\rtl\linux\ptypes.inc"/>
@@ -195,6 +224,7 @@
         <TopLine Value="135"/>
         <CursorPos X="23" Y="150"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit26>
       <Unit27>
         <Filename Value="C:\development\fpc\rtl\unix\ctypes.inc"/>
@@ -202,6 +232,7 @@
         <TopLine Value="21"/>
         <CursorPos X="31" Y="36"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit27>
       <Unit28>
         <Filename Value="jvcl\jvcl\run\Hid.pas"/>
@@ -209,6 +240,7 @@
         <TopLine Value="144"/>
         <CursorPos X="21" Y="160"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit28>
       <Unit29>
         <Filename Value="jvcl\jvcl\run\JvHidControllerClass.pas"/>
@@ -216,11 +248,13 @@
         <TopLine Value="647"/>
         <CursorPos Y="670"/>
         <UsageCount Value="17"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit29>
       <Unit30>
         <Filename Value="C:\Development4\fpc\packages\fcl-base\src\syncobjs.pp"/>
         <EditorIndex Value="-1"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit30>
       <Unit31>
         <Filename Value="C:\Development4\fpc\rtl\objpas\classes\classesh.inc"/>
@@ -228,6 +262,7 @@
         <TopLine Value="328"/>
         <CursorPos X="14" Y="343"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit31>
       <Unit32>
         <Filename Value="C:\Development4\fpc\utils\debugsvr\debugserverintf.pp"/>
@@ -235,6 +270,7 @@
         <TopLine Value="153"/>
         <CursorPos X="19" Y="170"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit32>
       <Unit33>
         <Filename Value="C:\Development4\lazarus\components\fpdebug\app\fpdserver\debugtcpserver.pas"/>
@@ -243,6 +279,7 @@
         <TopLine Value="318"/>
         <CursorPos X="18" Y="346"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit33>
       <Unit34>
         <Filename Value="C:\Development4\fpc\rtl\unix\baseunix.pp"/>
@@ -251,6 +288,7 @@
         <TopLine Value="5"/>
         <CursorPos X="5" Y="22"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit34>
       <Unit35>
         <Filename Value="C:\Development4\lazarus\components\lazdebuggers\lazdebuggerfpdserver\fpdserverdebugger.pas"/>
@@ -259,6 +297,7 @@
         <TopLine Value="863"/>
         <CursorPos X="9" Y="1012"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit35>
       <Unit36>
         <Filename Value="C:\Development4\fpc\packages\fcl-async\src\unix\libasync.pp"/>
@@ -266,6 +305,7 @@
         <TopLine Value="138"/>
         <CursorPos X="3" Y="156"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit36>
       <Unit37>
         <Filename Value="C:\Development4\fpc\rtl\unix\unix.pp"/>
@@ -274,11 +314,13 @@
         <TopLine Value="10"/>
         <CursorPos X="5" Y="27"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit37>
       <Unit38>
         <Filename Value="C:\Development4\fpc\rtl\unix\aliasptp.inc"/>
         <EditorIndex Value="-1"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit38>
       <Unit39>
         <Filename Value="C:\Development4\fpc\packages\fcl-net\src\ssockets.pp"/>
@@ -286,6 +328,7 @@
         <TopLine Value="740"/>
         <CursorPos X="19" Y="757"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit39>
       <Unit40>
         <Filename Value="C:\Development4\fpc\utils\fppkg\lnet\lcommon.pp"/>
@@ -294,12 +337,14 @@
         <TopLine Value="423"/>
         <CursorPos X="23" Y="440"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit40>
       <Unit41>
         <Filename Value="C:\Development4\fpc\rtl\linux\unxfunc.inc"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="20" Y="15"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit41>
       <Unit42>
         <Filename Value="C:\Development4\fpc\rtl\unix\cthreads.pp"/>
@@ -307,6 +352,7 @@
         <TopLine Value="653"/>
         <CursorPos X="7" Y="682"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit42>
       <Unit43>
         <Filename Value="C:\Development4\fpc\tests\test\tpoll.pp"/>
@@ -314,6 +360,7 @@
         <TopLine Value="10"/>
         <CursorPos X="3" Y="17"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit43>
       <Unit44>
         <Filename Value="C:\Development4\fpc\rtl\objpas\sysutils\sysinth.inc"/>
@@ -321,6 +368,7 @@
         <TopLine Value="22"/>
         <CursorPos X="5" Y="39"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit44>
       <Unit45>
         <Filename Value="C:\Development4\fpc\rtl\win\sysutils.pp"/>
@@ -328,6 +376,7 @@
         <TopLine Value="882"/>
         <CursorPos X="7" Y="895"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit45>
       <Unit46>
         <Filename Value="C:\Development4\fpc\packages\fcl-base\src\maskutils.pp"/>
@@ -335,6 +384,7 @@
         <TopLine Value="382"/>
         <CursorPos X="29" Y="399"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit46>
       <Unit47>
         <Filename Value="C:\Development4\fpc\packages\rtl-objpas\src\inc\dateutil.inc"/>
@@ -342,6 +392,7 @@
         <TopLine Value="2010"/>
         <CursorPos X="34" Y="2036"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit47>
       <Unit48>
         <Filename Value="C:\Development4\lazarus\components\codetools\directivestree.pas"/>
@@ -350,6 +401,7 @@
         <TopLine Value="40"/>
         <CursorPos X="6" Y="26"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit48>
       <Unit49>
         <Filename Value="jcl\jcl\source\common\Jcl8087.pas"/>
@@ -357,6 +409,7 @@
         <TopLine Value="161"/>
         <CursorPos X="33" Y="174"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit49>
       <Unit50>
         <Filename Value="C:\Development4\fpc\rtl\win\wininc\func.inc"/>
@@ -364,6 +417,7 @@
         <TopLine Value="122"/>
         <CursorPos X="10" Y="138"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit50>
       <Unit51>
         <Filename Value="C:\NewPascal\fpcsrc\rtl\unix\unix.pp"/>
@@ -372,6 +426,7 @@
         <TopLine Value="17"/>
         <CursorPos X="5" Y="31"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit51>
       <Unit52>
         <Filename Value="jcl\jcl\source\common\JclFileUtils.pas"/>
@@ -379,6 +434,7 @@
         <TopLine Value="49"/>
         <CursorPos X="8" Y="62"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit52>
       <Unit53>
         <Filename Value="jcl\jcl\source\common\JclSysUtils.pas"/>
@@ -386,6 +442,7 @@
         <TopLine Value="2815"/>
         <CursorPos Y="2831"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit53>
       <Unit54>
         <Filename Value="C:\fpcupsystems\stable\fpcsrc\rtl\inc\systemh.inc"/>
@@ -400,6 +457,7 @@
         <TopLine Value="5380"/>
         <CursorPos X="62" Y="5398"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit55>
       <Unit56>
         <Filename Value="jcl\jcl\source\windows\JclRegistry.pas"/>
@@ -407,6 +465,7 @@
         <TopLine Value="45"/>
         <CursorPos X="36" Y="65"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit56>
       <Unit57>
         <Filename Value="jcl\jcl\source\common\JclDateTime.pas"/>
@@ -414,6 +473,7 @@
         <TopLine Value="253"/>
         <CursorPos X="73" Y="266"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit57>
       <Unit58>
         <Filename Value="jcl\jcl\source\common\JclAnsiStrings.pas"/>
@@ -421,6 +481,7 @@
         <TopLine Value="4131"/>
         <CursorPos X="70" Y="4149"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit58>
       <Unit59>
         <Filename Value="..\AAAAAAAAAAAAAAAAAAAAA\jedi\jvcl\jvcl\run\JvHidControllerClass.pas"/>
@@ -428,11 +489,13 @@
         <TopLine Value="763"/>
         <CursorPos Y="777"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit59>
       <Unit60>
         <Filename Value="jvcl\jvcl\common\crossplatform.inc"/>
         <EditorIndex Value="-1"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit60>
       <Unit61>
         <Filename Value="jcl\jcl\source\include\jcl.inc"/>
@@ -440,6 +503,7 @@
         <TopLine Value="468"/>
         <CursorPos X="7" Y="632"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit61>
       <Unit62>
         <Filename Value="C:\fpcupsystems\trunk\fpcsrc\rtl\inc\systemh.inc"/>
@@ -447,6 +511,7 @@
         <TopLine Value="512"/>
         <CursorPos X="3" Y="532"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit62>
       <Unit63>
         <Filename Value="C:\fpcupsystems\trunk\fpcsrc\rtl\inc\system.inc"/>
@@ -454,6 +519,7 @@
         <TopLine Value="334"/>
         <CursorPos X="16" Y="361"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit63>
       <Unit64>
         <Filename Value="C:\fpcupsystems\trunk\fpcsrc\rtl\unix\unix.pp"/>
@@ -462,6 +528,7 @@
         <TopLine Value="12"/>
         <CursorPos X="5" Y="29"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit64>
       <Unit65>
         <Filename Value="C:\fpcupsystems\trunk\fpcsrc\packages\fcl-js\src\jswriter.pp"/>
@@ -469,6 +536,7 @@
         <TopLine Value="254"/>
         <CursorPos X="33" Y="271"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit65>
       <Unit66>
         <Filename Value="C:\fpcupsystems\trunk\fpcsrc\packages\pastojs\src\pas2jsfileutilswin.inc"/>
@@ -476,6 +544,7 @@
         <TopLine Value="40"/>
         <CursorPos X="23" Y="57"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit66>
       <Unit67>
         <Filename Value="C:\fpcupsystems\trunk\fpcsrc\packages\pastojs\src\pas2jsutils.pp"/>
@@ -484,6 +553,7 @@
         <TopLine Value="250"/>
         <CursorPos Y="266"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit67>
       <Unit68>
         <Filename Value="C:\fpcupsystems\trunk\fpcsrc\utils\unicode\helper.pas"/>
@@ -491,6 +561,7 @@
         <TopLine Value="3199"/>
         <CursorPos X="17" Y="3249"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit68>
       <Unit69>
         <Filename Value="C:\fpcupsystems\stable\lazarus\lcl\lclintf.pas"/>
@@ -520,6 +591,7 @@
         <TopLine Value="1102"/>
         <CursorPos X="25" Y="1117"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit72>
       <Unit73>
         <Filename Value="jcl\jcl\source\common\JclSysInfo.pas"/>
@@ -527,6 +599,7 @@
         <TopLine Value="3206"/>
         <CursorPos X="9" Y="3223"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit73>
       <Unit74>
         <Filename Value="C:\fpcupsystems\trunk\fpcsrc\rtl\win\wininc\redef.inc"/>
@@ -534,6 +607,7 @@
         <TopLine Value="812"/>
         <CursorPos X="134" Y="832"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit74>
       <Unit75>
         <Filename Value="C:\fpcupsystems\trunk\fpcsrc\rtl\win\wininc\base.inc"/>
@@ -541,6 +615,7 @@
         <TopLine Value="75"/>
         <CursorPos X="29" Y="87"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit75>
       <Unit76>
         <Filename Value="jvcl\jvcl\run\JvSetupApi.pas"/>
@@ -548,6 +623,7 @@
         <TopLine Value="533"/>
         <CursorPos X="20" Y="555"/>
         <UsageCount Value="12"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit76>
       <Unit77>
         <Filename Value="jcl\jcl\source\windows\JclShell.pas"/>
@@ -555,6 +631,7 @@
         <TopLine Value="1423"/>
         <CursorPos X="14" Y="1438"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit77>
       <Unit78>
         <Filename Value="C:\fpcupsystems\trunk\fpcsrc\packages\winunits-base\src\shellapi.pp"/>
@@ -563,6 +640,7 @@
         <TopLine Value="1385"/>
         <CursorPos X="8" Y="1420"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit78>
       <Unit79>
         <Filename Value="jvcl\jvcl\common\windowsversion.inc"/>
@@ -570,6 +648,7 @@
         <TopLine Value="10"/>
         <CursorPos X="7" Y="35"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit79>
       <Unit80>
         <Filename Value="C:\fpcupsystems\trunk\fpcsrc\rtl\win\wininc\func.inc"/>
@@ -577,9 +656,131 @@
         <TopLine Value="945"/>
         <CursorPos Y="966"/>
         <UsageCount Value="11"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit80>
     </Units>
-    <JumpHistory HistoryIndex="-1"/>
+    <JumpHistory Count="30" HistoryIndex="29">
+      <Position1>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="337" Column="51" TopLine="309"/>
+      </Position1>
+      <Position2>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="339" Column="54" TopLine="311"/>
+      </Position2>
+      <Position3>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="354" Column="26" TopLine="326"/>
+      </Position3>
+      <Position4>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="358" Column="60" TopLine="330"/>
+      </Position4>
+      <Position5>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="364" Column="57" TopLine="336"/>
+      </Position5>
+      <Position6>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="367" Column="57" TopLine="339"/>
+      </Position6>
+      <Position7>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="32" Column="14" TopLine="15"/>
+      </Position7>
+      <Position8>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="33" Column="14" TopLine="15"/>
+      </Position8>
+      <Position9>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="170" Column="12" TopLine="142"/>
+      </Position9>
+      <Position10>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="177" Column="9" TopLine="149"/>
+      </Position10>
+      <Position11>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="32" Column="10" TopLine="15"/>
+      </Position11>
+      <Position12>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="177" Column="17" TopLine="149"/>
+      </Position12>
+      <Position13>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="187" Column="21" TopLine="159"/>
+      </Position13>
+      <Position14>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="172" Column="19" TopLine="153"/>
+      </Position14>
+      <Position15>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="33" Column="9" TopLine="16"/>
+      </Position15>
+      <Position16>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="170" Column="12" TopLine="142"/>
+      </Position16>
+      <Position17>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="172" Column="49" TopLine="144"/>
+      </Position17>
+      <Position18>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="174" Column="14" TopLine="146"/>
+      </Position18>
+      <Position19>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="177" Column="45" TopLine="149"/>
+      </Position19>
+      <Position20>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="187" Column="16" TopLine="159"/>
+      </Position20>
+      <Position21>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="188" Column="16" TopLine="160"/>
+      </Position21>
+      <Position22>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="192" Column="49" TopLine="164"/>
+      </Position22>
+      <Position23>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="195" Column="50" TopLine="167"/>
+      </Position23>
+      <Position24>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="337" Column="51" TopLine="309"/>
+      </Position24>
+      <Position25>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="339" Column="54" TopLine="311"/>
+      </Position25>
+      <Position26>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="354" Column="26" TopLine="326"/>
+      </Position26>
+      <Position27>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="358" Column="60" TopLine="330"/>
+      </Position27>
+      <Position28>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="364" Column="57" TopLine="336"/>
+      </Position28>
+      <Position29>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="367" Column="57" TopLine="339"/>
+      </Position29>
+      <Position30>
+        <Filename Value="main.pas"/>
+        <Caret Line="106" Column="21" TopLine="89"/>
+      </Position30>
+    </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
       <Modes ActiveMode="default"/>

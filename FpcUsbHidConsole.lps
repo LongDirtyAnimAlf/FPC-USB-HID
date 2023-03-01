@@ -8,26 +8,27 @@
       <Unit>
         <Filename Value="FpcUsbHidConsole.lpr"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
-        <TopLine Value="23"/>
-        <CursorPos X="33" Y="32"/>
+        <TopLine Value="10"/>
+        <CursorPos X="28" Y="36"/>
         <UsageCount Value="24"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="usb2.pas"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
+        <TopLine Value="423"/>
+        <CursorPos X="7" Y="451"/>
         <UsageCount Value="12"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="jvcl\jvcl\run\JvHidControllerClass.pas"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="1861"/>
-        <CursorPos X="3" Y="1865"/>
+        <TopLine Value="617"/>
+        <CursorPos X="17" Y="633"/>
         <UsageCount Value="11"/>
         <Loaded Value="True"/>
-        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
         <Filename Value="jvcl\jvcl\run\Hid.pas"/>
@@ -311,8 +312,33 @@
         <UsageCount Value="10"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
+      <Unit>
+        <Filename Value="jcl\jcl\source\common\JclSynch.pas"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="1543"/>
+        <CursorPos X="50" Y="1544"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="usbcontroller.pas"/>
+        <EditorIndex Value="4"/>
+        <TopLine Value="341"/>
+        <CursorPos X="12" Y="359"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="C:\fpcupsystems\trunk\fpcsrc\rtl\win\wininc\func.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="274"/>
+        <CursorPos X="10" Y="291"/>
+        <UsageCount Value="10"/>
+      </Unit>
     </Units>
-    <JumpHistory HistoryIndex="2">
+    <JumpHistory HistoryIndex="14">
       <Position>
         <Filename Value="FpcUsbHidConsole.lpr"/>
         <Caret Line="59" TopLine="44"/>
@@ -324,6 +350,54 @@
       <Position>
         <Filename Value="jvcl\jvcl\run\JvHidControllerClass.pas"/>
         <Caret Line="433" Column="20" TopLine="421"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="36" Column="28" TopLine="10"/>
+      </Position>
+      <Position>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="439" Column="7" TopLine="423"/>
+      </Position>
+      <Position>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="451" Column="7" TopLine="423"/>
+      </Position>
+      <Position>
+        <Filename Value="jcl\jcl\source\common\JclSynch.pas"/>
+        <Caret Line="1544" Column="50" TopLine="1543"/>
+      </Position>
+      <Position>
+        <Filename Value="usbcontroller.pas"/>
+        <Caret Line="1717" Column="31" TopLine="1701"/>
+      </Position>
+      <Position>
+        <Filename Value="usbcontroller.pas"/>
+        <Caret Line="1749" Column="26" TopLine="1687"/>
+      </Position>
+      <Position>
+        <Filename Value="usbcontroller.pas"/>
+        <Caret Line="1763" Column="26" TopLine="1746"/>
+      </Position>
+      <Position>
+        <Filename Value="usbcontroller.pas"/>
+        <Caret Line="1771" Column="22" TopLine="1746"/>
+      </Position>
+      <Position>
+        <Filename Value="usbcontroller.pas"/>
+        <Caret Line="359" Column="12" TopLine="341"/>
+      </Position>
+      <Position>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="439" Column="7" TopLine="423"/>
+      </Position>
+      <Position>
+        <Filename Value="usb2.pas"/>
+        <Caret Line="451" Column="7" TopLine="423"/>
+      </Position>
+      <Position>
+        <Filename Value="jvcl\jvcl\run\JvHidControllerClass.pas"/>
+        <Caret Line="633" Column="17" TopLine="617"/>
       </Position>
     </JumpHistory>
     <RunParams>

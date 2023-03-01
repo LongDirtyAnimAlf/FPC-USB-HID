@@ -921,7 +921,7 @@ begin
 
   // signal thread !!
   buf := #0;
-  FpWrite(FEventPipe[1], buf, 1);
+  {%H-}FpWrite(FEventPipe[1], buf, 1);
 
   if Assigned(FControllerMonitorThread) then
   begin
@@ -1686,7 +1686,7 @@ begin
           i:=0;
           while true do
           begin
-            ret:= fpRead(cint(Device.HidFileHandle), {%H-}ev, sizeof(hiddev_event));
+            ret:= {%H-}fpRead(cint(Device.HidFileHandle), {%H-}ev, sizeof(hiddev_event));
             //FErr := fpGetErrno;
             //if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINTR) then
             //begin
@@ -2093,7 +2093,8 @@ end;
 
 
 function TJvHidDevice.OpenFile: Boolean;
-//var
+var
+  fOpenHandle:cint;
 //  device_info:hiddev_devinfo;
 begin
   if PnPInfo.HidPath='' then
@@ -2110,9 +2111,13 @@ begin
   if IsAccessible then
     if HidFileHandle = INVALID_HANDLE_VALUE then // if not already opened
     begin
-      fHidFileHandle := THandle(fpOpen(PnPInfo.HidPath, O_RDWR)); //O_NONBLOCK
+      fOpenHandle:={%H-}fpOpen(PnPInfo.HidPath, O_RDWR); //O_NONBLOCK
+      fHidFileHandle := THandle(fOpenHandle);
       if HidFileHandle = INVALID_HANDLE_VALUE then
-         fHidFileHandle := THandle(fpOpen(PnPInfo.HidPath, O_RDONLY));
+      begin
+        fOpenHandle:={%H-}fpOpen(PnPInfo.HidPath, O_RDONLY);
+        fHidFileHandle := THandle(fOpenHandle);
+      end;
       if HidFileHandle <> INVALID_HANDLE_VALUE then
       begin
         //fpioctl(cint(HidFileHandle), HIDIOCGDEVINFO, @device_info);
@@ -2193,19 +2198,22 @@ begin
   end;
 end;
 
-function TJvHidDevice.ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
+function TJvHidDevice.ReadFile(var Report; ToRead: DWORD;
+  var BytesRead: DWORD): Boolean;
 var
-  ret:cint;
-  readBuffer: array[0..64] of hiddev_event;
-  readBufferByte: array[0..64] of byte;
-  i:integer;
+  rinfo_in: hiddev_report_info;
+  ref_multi: hiddev_usage_ref_multi;
+  ret: cint;
+  readBuffer: array [0 .. 64] of hiddev_event;
+  readBufferByte: array [0 .. 64] of Byte;
+  I: integer;
 begin
-  if (HidFileHandle=INVALID_HANDLE_VALUE)  then exit(false);
 
-  ret:=-1;
+  ret := -1;
 
-  BytesRead:=0;
+  BytesRead := 0;
 
+  {
   if OpenFile then
   begin
     if CanRead(ThreadSleepTime) then
@@ -2222,10 +2230,40 @@ begin
       end;
     end;
   end;
+  }
 
-  Result :=(ret>=0);
+  InitWithoutHint(readBuffer);
+  InitWithoutHint(readBufferByte);
+
+  if OpenFile then
+  begin
+    rinfo_in.report_type := HID_REPORT_TYPE_INPUT;
+    // rinfo_in.report_id   := readBufferByte[0];
+    rinfo_in.report_id := HID_REPORT_ID_FIRST;
+    rinfo_in.num_fields := 1;
+    ret := fpioctl(cint(HidFileHandle), HIDIOCGREPORT, @rinfo_in);
+    if ret >= 0 then
+    begin
+      Move(Report, readBufferByte, 1);
+      ref_multi.uref.report_type := HID_REPORT_TYPE_INPUT;
+      // ref_multi.uref.report_id := readBufferByte[0];
+      ref_multi.uref.report_id := HID_REPORT_ID_FIRST;
+      ref_multi.uref.field_index := 0;
+      ref_multi.uref.usage_index := 0;
+      ref_multi.num_values := ToRead - 1;
+      ret := fpioctl(cint(HidFileHandle), HIDIOCGUSAGES, @ref_multi);
+      if ret >= 0 then
+      begin
+        for I := 0 to (ToRead - 1) do
+          readBufferByte[I + 1] := ref_multi.values[I];
+        Move(Report, readBufferByte, 1);
+        Move(readBufferByte, Report, ToRead);
+        BytesRead := ToRead;
+      end;
+    end;
+  end;
+  Result := (ret >= 0);
 end;
-
 
 function TJvHidDevice.WriteFile(const Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
 var
