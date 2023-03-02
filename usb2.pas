@@ -37,6 +37,7 @@ type
   public
     LocalData      : TReport;
     Serial         : string;
+    BoardNumber    : word;
     constructor Create(HidDev: TJvHidDevice);
     destructor  Destroy;override;
     property  OnData  : TJvHidDataEvent read GetDataEvent write SetDataEvent;
@@ -53,7 +54,7 @@ type
 
   TUSB=class
   private
-    HidCtl:TJvHidDeviceController;
+    HidCtl     : TJvHidDeviceController;
 
     FUSBList   : TUSBList;
 
@@ -79,15 +80,14 @@ type
     procedure DeviceRemoval(HidDev: TJvHidDevice);
     procedure DeviceChange(Sender:TObject);
 
-    function  CheckAddressNewer(Ctrl: TUSBController):integer;
     function  CheckParameters(board:word):boolean;overload;
-
-    function  FGetSerial(board:word):string;
   public
     constructor Create;
     destructor Destroy;override;
 
-    function  CheckVendorProduct(const VID,PID:word):boolean;virtual;
+    function  CheckVendorProduct(const {%H-}VID,{%H-}PID:word):boolean;virtual;
+    function  CheckHIDDevice(const {%H-}HidDev: TJvHidDevice):boolean;virtual;
+    function  CheckUSBController(const {%H-}Ctrl: TUSBController):boolean;virtual;
 
     function  Enumerate:integer;
 
@@ -101,8 +101,6 @@ type
     property  Enabled: Boolean read FEnabled write SetEnabled;
 
     property  OnUSBDeviceChange: TUSBEvent read FOnUSBDeviceChange write FOnUSBDeviceChange;
-
-    property  GetSerial[board: word]: string read FGetSerial;
 
     property  Controller:TJvHidDeviceController read HidCtl;
 
@@ -150,9 +148,9 @@ begin
   FHidCtrl:=HidDev;
   if HidCtrl<>nil then
   begin
-    OnData:=nil;
+    //OnData:=nil;
     // enable this for non-blocking read of USB !!!
-    //OnData:=ShowRead;
+    OnData:=ShowRead;
   end;
 end;
 
@@ -289,7 +287,7 @@ end;
 function TUSB.HidCtlEnumerate(HidDev: TJvHidDevice; const Idx: Integer): Boolean;
 begin
   AddInfo('Device #'+InttoStr(Idx)+' arrival. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
-  if CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) then
+  if (CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) AND CheckHIDDevice(HidDev)) then
   begin
     if HidDev.IsCheckedOut then
     begin
@@ -389,7 +387,7 @@ var
   aHidCtrl:TJvHidDevice;
 begin
   AddInfo('Device removal. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
-  if CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) then
+  if (CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) AND CheckHIDDevice(HidDev)) then
   begin
     for board:=Pred(USBList.Count) downto 0 do
     begin
@@ -417,92 +415,99 @@ end;
 
 procedure TUSB.DeviceArrival(HidDev: TJvHidDevice);
 var
-  newboard:integer;
   NewUSBController : TUSBController;
-  aHidCtrl:TJvHidDevice;
+  aHidCtrl         : TJvHidDevice;
 begin
 
   AddInfo('Device arrival. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
 
-  if CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) then
+  if (CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) AND CheckHIDDevice(HidDev)) then
   begin
-
+    // Devices need to be checked out to be able to read the serial device string[4]
+    // This might be changed when needed
     if HidDev.CheckOut then
     begin
+     FEmulation:=False;
 
-      FEmulation:=False;
+     AddInfo('I1: '+HidDev.DeviceStrings[1]);
+     AddInfo('I2: '+HidDev.DeviceStrings[2]);
+     AddInfo('I3: '+HidDev.DeviceStrings[3]);
+     AddInfo('I4: '+HidDev.DeviceStrings[4]);
 
-      AddInfo('I1: '+HidDev.DeviceStrings[1]);
-      AddInfo('I2: '+HidDev.DeviceStrings[2]);
-      AddInfo('I3: '+HidDev.DeviceStrings[3]);
-      AddInfo('I4: '+HidDev.DeviceStrings[4]);
+     AddInfo('Input length: '+InttoStr(HidDev.Caps.InputReportByteLength));
+     AddInfo('Output length: '+InttoStr(HidDev.Caps.OutputReportByteLength));
 
-      AddInfo('Input length: '+InttoStr(HidDev.Caps.InputReportByteLength));
-      AddInfo('Output length: '+InttoStr(HidDev.Caps.OutputReportByteLength));
+     NewUSBController := TUSBController.Create(HidDev);
 
-      NewUSBController := TUSBController.Create(HidDev);
+     Sleep(DeviceDelay);
 
-      Sleep(DeviceDelay);
+     with NewUSBController do
+     begin
+       Serial:=HidDev.DeviceStrings[4];
+       if Serial='' then Serial:=HidDev.SerialNumber;
+       if Serial='' then
+       begin
+         Serial:=InttoStr(HidDev.Attributes.VendorID)+'_'+InttoStr(HidDev.Attributes.ProductID)+'_'+InttoStr(HidDev.PnPInfo.DeviceID);
+       end;
+       FaultCounter:=0;
+     end;
 
-      with NewUSBController do
-      begin
-        Serial:=HidDev.DeviceStrings[4];
-        if Serial='' then Serial:=HidDev.SerialNumber;
-        if Serial='' then
-        begin
-          Serial:=InttoStr(HidDev.Attributes.VendorID)+'_'+InttoStr(HidDev.Attributes.ProductID)+'_'+InttoStr(HidDev.PnPInfo.DeviceID);
-        end;
-        FaultCounter:=0;
-      end;
+     Sleep(DeviceDelay);
 
-      Sleep(DeviceDelay);
+     if NewUSBController.Serial='' then
+     begin
+       AddInfo('Severe error while receiving serial number of controller !!!!');
+       AddInfo('Therefor: destroying the USB controller !!');
+       NewUSBController.Destroy;
+       HidCtl.CheckIn(HidDev);
+       exit;
+     end;
 
-      if NewUSBController.Serial='' then
-      begin
-        AddInfo('Severe error while receiving serial number of controller !!!!');
-        AddInfo('Therefor: destroying the USB controller !!');
-        NewUSBController.Destroy;
-        HidCtl.CheckIn(HidDev);
-        exit;
-      end;
+     if CheckUSBController(NewUSBController) then
+     begin
+       if HidDev.IsCheckedOut then
+       begin
+         AddInfo('S/N of board #'+InttoStr(NewUSBController.BoardNumber)+' : '+NewUSBController.Serial);
 
-      newboard:=CheckAddressNewer(NewUSBController);
+         if USBList.Count<(NewUSBController.BoardNumber+1) then
+         begin
+           USBList.Count:=NewUSBController.BoardNumber+1;
+         end;
 
-      AddInfo('S/N of board '+InttoStr(newboard)+': '+NewUSBController.Serial);
+         if USBList.Items[NewUSBController.BoardNumber]<>nil then
+         begin
+           AddInfo('Strange error: list-position of board already taken !!');
+           AddInfo('Therefor: destroying the old USB controller !!');
 
+           // there are two possibilities to handle this: destroy new arrival or destroy previous contents of list
+           // both are here just to prevent any memory leaks, because this should never happen !!
 
-      if USBList.Count<(newboard+1) then
-      begin
-        USBList.Count:=newboard+1;
-      end;
+           // destroy new arrival
+           //NewUSBController.Destroy;
+           //HidCtl.CheckIn(HidDev);
+           //exit;
 
-      if USBList.Items[newboard]<>nil then
-      begin
-        AddInfo('Strange error: list-position of board already taken !!');
-        AddInfo('Therefor: destroying the USB controller !!');
+           // destroy previous contents of list at position of board
+           aHidCtrl:={$ifndef usegenerics}TUSBController{$endif}(USBList.Items[NewUSBController.BoardNumber]).HidCtrl;
+           {$ifndef usegenerics}TUSBController{$endif}(USBList.Items[NewUSBController.BoardNumber]).Destroy;
+           if Assigned(aHidCtrl) then HidCtl.CheckIn(aHidCtrl);
+           USBList.Items[NewUSBController.BoardNumber]:=nil;
+         end;
 
-        // there are two possibilities to handle this: destroy new arrival or destroy previous contents of list
-        // both are here just to prevent any memory leaks, because this should never happen !!
+         USBList.Items[NewUSBController.BoardNumber]:=NewUSBController;
 
-        // destroy new arrival
-        //NewUSBController.Destroy;
-        //HidCtl.CheckIn(HidDev);
-        //exit;
-
-        // destroy previous contents of list at position of board
-        aHidCtrl:={$ifndef usegenerics}TUSBController{$endif}(USBList.Items[newboard]).HidCtrl;
-        {$ifndef usegenerics}TUSBController{$endif}(USBList.Items[newboard]).Destroy;
-        if Assigned(aHidCtrl) then HidCtl.CheckIn(aHidCtrl);
-        USBList.Items[newboard]:=nil;
-      end;
-
-      USBList.Items[newboard]:=NewUSBController;
-
-      if Assigned(FOnUSBDeviceChange) then
-      begin
-        FOnUSBDeviceChange(Self,newboard);
-      end;
-
+         if Assigned(FOnUSBDeviceChange) then
+         begin
+           FOnUSBDeviceChange(Self,NewUSBController.BoardNumber);
+         end;
+       end;
+     end
+     else
+     begin
+       AddInfo('Device not accepted by user');
+       NewUSBController.Destroy;
+       HidCtl.CheckIn(HidDev);
+     end;
     end;
   end
   else
@@ -517,112 +522,63 @@ end;
 procedure TUSB.DeviceChange(Sender:TObject);
 var
   i:integer;
-  HidDev:TJvHidDevice;
+  Device:TJvHidDevice;
+  Controller:TJvHidDeviceController;
   s:string;
 begin
+  Controller:=(Sender AS TJvHidDeviceController);
+
   AddInfo('Devices change !!');
   i:=0;
   while (i<HidCtl.HidDevices.Count) do
   begin
-    HidDev:=TJvHidDevice(HidCtl.HidDevices[i]);
+    Device:=TJvHidDevice(HidCtl.HidDevices[i]);
     s:='HID';
     {$ifdef Unix}
-    if Pos('hidraw',HidDev.PhysicalDescriptor)>0 then s:='HIDraw';
-    if Pos('hiddev',HidDev.PhysicalDescriptor)>0 then s:='HIDdev';
+    if Pos('hidraw',Device.PhysicalDescriptor)>0 then s:='HIDraw';
+    if Pos('hiddev',Device.PhysicalDescriptor)>0 then s:='HIDdev';
     {$endif}
 
     {$ifdef debug}
-    AddInfo(s+'-device #'+InttoStr(i)+'. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
+    AddInfo(s+'-device #'+InttoStr(i)+'. VID: '+InttoStr(Device.Attributes.VendorID)+'. PID: '+InttoStr(Device.Attributes.ProductID)+'.');
     {$ifdef MSWINDOWS}
-    AddInfo('Mfg: '+HidDev.PnPInfo.Mfg+'. Name UTF8: '+UTF16ToUTF8(HidDev.ProductName)+'. Vendor: '+UTF16ToUTF8(HidDev.VendorName)+'.');
+    AddInfo('Mfg: '+Device.PnPInfo.Mfg+'. Name UTF8: '+UTF16ToUTF8(Device.ProductName)+'. Vendor: '+UTF16ToUTF8(Device.VendorName)+'.');
     {$else}
     AddInfo('Mfg: '+HidDev.PnPInfo.Mfg+'. Name: '+HidDev.ProductName+'. Vendor: '+HidDev.VendorName+'.');
     {$endif}
     {$endif debug}
 
-    if CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) then
+    if (CheckVendorProduct(Device.Attributes.VendorID,Device.Attributes.ProductID) AND CheckHIDDevice(Device)) then
     begin
-      if HidDev.IsPluggedIn AND NOT HidDev.IsCheckedOut then
+      if Device.IsPluggedIn AND NOT Device.IsCheckedOut then
       begin
         AddInfo('New device that has not been checked out.');
-        DeviceArrival(HidDev);
+        DeviceArrival(Device);
       end;
-      if NOT HidDev.IsPluggedIn AND HidDev.IsCheckedOut then
+      if NOT Device.IsPluggedIn AND Device.IsCheckedOut then
       begin
         AddInfo('Checkedout device that has been unplugged.');
-        DeviceRemoval(HidDev);
+        DeviceRemoval(Device);
       end;
     end;
     Inc(i);
   end;
 end;
 
-function TUSB.CheckAddressNewer(Ctrl: TUSBController):integer;
-var
-  x,y: integer;
-  newboardnumber:word;
-  found:boolean;
-  RegValueNames: TStringList;
-  dataline:string;
-  error:boolean;
-  Ini: TIniFile;
-begin
-
-  result:=0;
-
-  error:=False;
-
-  if (NOT error)  then
-  begin
-    found:=false;
-
-    newboardnumber:=0;
-
-    Ini := TIniFile.Create(FIniFileFullPath);
-
-    RegValueNames:=TStringList.Create;
-    try
-      ini.ReadSection('USBLocations',RegValueNames);
-      if RegValueNames.Count>0 then
-      begin
-        for x:=1 to RegValueNames.Count do
-        begin
-          If Pos('Controller',RegValueNames.Strings[x-1])>-1 then
-          begin
-            y:=StrToIntDef(RightStr(RegValueNames.Strings[x-1],2),0);
-            dataline:=ini.ReadString('USBLocations',RegValueNames.Strings[x-1],'');
-            if (dataline=Ctrl.Serial) AND (y>0) then
-            begin
-              found:=true;
-              newboardnumber:=y;
-              break;
-            end;
-          end;
-        end;
-      end;
-      if (NOT found) then
-      begin
-        y:=1;
-        while ini.ValueExists('USBLocations','Controller '+InttoStr(y)) do Inc(y);
-        ini.WriteString('USBLocations','Controller '+InttoStr(y),Ctrl.Serial);
-        newboardnumber:=y;
-      end;
-    finally
-      RegValueNames.Free;
-      Ini.UpdateFile;
-      Ini.Free;
-    end;
-
-    result:=newboardnumber;
-  end;
-
-end;
-
 function TUSB.CheckParameters(board:word):boolean;
 begin
   result:=true;
-  if  FEmulation then exit;
-  result:=NOT ( (board<USBList.Count) AND (Assigned({$ifndef usegenerics}TUSBController{$endif}(USBList.Items[board]).HidCtrl)) );
+  if FEmulation then exit;
+  result:=NOT ((board<USBList.Count) AND (Assigned({$ifndef usegenerics}TUSBController{$endif}(USBList.Items[board]).HidCtrl)));
+end;
+
+procedure TUSB.AddErrors(data:string);
+begin
+  if length(data)>0 then
+  begin
+   while FErrors.Count>1000 do FErrors.Delete(0);
+   FErrors.Append(DateTimeToStr(Now)+': '+data);
+  end;
 end;
 
 function TUSB.GetErrors:String;
@@ -655,32 +611,20 @@ begin
   end else result:='';
 end;
 
-procedure TUSB.AddErrors(data:string);
-begin
-  if length(data)>0 then
-  begin
-   while FErrors.Count>1000 do FErrors.Delete(0);
-   FErrors.Append(DateTimeToStr(Now)+': '+data);
-  end;
-end;
-
-function TUSB.FGetSerial(board:word):string;
-begin
-  result:='';
-  if FEmulation then exit;
-  if USBList.Count=0 then exit;
-  if board>USBList.Count then exit;
-  result:={$ifndef usegenerics}TUSBController{$endif}(USBList.Items[board]).Serial;
-end;
-
 function TUSB.CheckVendorProduct(const VID,PID:word):boolean;
 begin
-  result:=
-  (
-  ( (VENDORID_BASE=VID) AND (PRODUCTID_BASE=PID) )
-  OR
-  ( (VENDORID_ALT=VID) AND (PRODUCTID_ALT=PID) )
-  );
+  result:=true;
+end;
+
+function TUSB.CheckHIDDevice(const HidDev: TJvHidDevice):boolean;
+begin
+  result:=true;
+end;
+
+function TUSB.CheckUSBController(const Ctrl: TUSBController):boolean;
+begin
+  Ctrl.BoardNumber:=Controller.NumCheckedOutDevices;
+  result:=true;
 end;
 
 end.
