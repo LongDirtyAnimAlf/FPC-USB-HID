@@ -63,10 +63,12 @@ type
     FEmulation : boolean;
 
     FEnabled   : Boolean;
+    FWaitEx    : Boolean;
 
     FOnUSBDeviceChange: TUSBEvent;
 
     FIniFileFullPath:string;
+
 
     function HidCtlEnumerate(HidDev: TJvHidDevice;const Idx: Integer): Boolean;
 
@@ -99,6 +101,7 @@ type
     property  Info:String read GetInfo write AddInfo;
 
     property  Enabled: Boolean read FEnabled write SetEnabled;
+    property  WaitEx: Boolean read FWaitEx write FWaitEx;
 
     property  OnUSBDeviceChange: TUSBEvent read FOnUSBDeviceChange write FOnUSBDeviceChange;
 
@@ -211,12 +214,13 @@ begin
 
   FIniFileFullPath:=INIFILENAME;
 
-  FErrors:=TStringList.Create;
-  FInfo:=TStringList.Create;
+  FErrors       := TStringList.Create;
+  FInfo         := TStringList.Create;
+  FEmulation    := True;
+  FEnabled      := False;
+  FWaitEx       := False;
 
   FUSBList := TUSBList.Create;
-
-  FEmulation    := True;
 
   HidCtl:=TJvHidDeviceController.Create(nil);
   HidCtl.OnArrival:= nil;
@@ -240,9 +244,9 @@ begin
   begin
     for board:=Pred(USBList.Count) downto 0  do
     begin
-      if Assigned(USBList.Items[board]) then
+      aController:=USBList.Items[board];
+      if Assigned(aController) then
       begin
-        aController:={$ifndef usegenerics}TUSBController{$endif}(USBList.Items[board]);
         aHidCtrl:=aController.HidCtrl;
         //DeviceRemoval(aHidCtrl);
         aController.Destroy;
@@ -352,13 +356,25 @@ begin
       error:=True;
       if Assigned(Ctrl.OnData) then
       begin
-        if Ctrl.LocalDataTimer.WaitFor(USBTimeout) = wrSignaled
-           then error:=False
-           else
-           begin
-             FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
-             AddErrors('USB thread read timeout !!');
-           end;
+       if FWaitEx then
+       begin
+         Err:=0;
+         repeat
+           if (Err>0) then if (MainThreadID=GetCurrentThreadID) then CheckSynchronize(1);
+           error:=(Ctrl.LocalDataTimer.WaitFor(USBTimeout DIV 10)<>wrSignaled);
+           if (NOT error) then break;
+           Inc(Err);
+         until (Err>10);
+       end
+       else
+       begin
+         error:=(Ctrl.LocalDataTimer.WaitFor(USBTimeout)<>wrSignaled);
+       end;
+       if error then
+       begin
+         FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
+         AddErrors('USB thread read timeout !!');
+       end;
       end
       else
       begin
@@ -387,13 +403,15 @@ var
   aHidCtrl:TJvHidDevice;
 begin
   AddInfo('Device removal. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
+
   if (CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) AND CheckHIDDevice(HidDev)) then
   begin
+    // Find device in our list of devices
     for board:=Pred(USBList.Count) downto 0 do
     begin
-      if Assigned(USBList.Items[board]) then
+      aController:=USBList.Items[board];
+      if Assigned(aController) then
       begin
-        aController:={$ifndef usegenerics}TUSBController{$endif}(USBList.Items[board]);
         aHidCtrl:=aController.HidCtrl;
         //if ((Assigned(aHidCtrl)) and (NOT aHidCtrl.IsPluggedIn)) then
         if ((Assigned(aHidCtrl)) and (aHidCtrl=HidDev)) then
@@ -415,10 +433,10 @@ end;
 
 procedure TUSB.DeviceArrival(HidDev: TJvHidDevice);
 var
+  aController      : TUSBController;
   NewUSBController : TUSBController;
   aHidCtrl         : TJvHidDevice;
 begin
-
   AddInfo('Device arrival. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
 
   if (CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) AND CheckHIDDevice(HidDev)) then
@@ -488,8 +506,9 @@ begin
            //exit;
 
            // destroy previous contents of list at position of board
-           aHidCtrl:={$ifndef usegenerics}TUSBController{$endif}(USBList.Items[NewUSBController.BoardNumber]).HidCtrl;
-           {$ifndef usegenerics}TUSBController{$endif}(USBList.Items[NewUSBController.BoardNumber]).Destroy;
+           aController:=USBList.Items[NewUSBController.BoardNumber];
+           aHidCtrl:=aController.HidCtrl;
+           aController.Destroy;
            if Assigned(aHidCtrl) then HidCtl.CheckIn(aHidCtrl);
            USBList.Items[NewUSBController.BoardNumber]:=nil;
          end;
@@ -566,10 +585,14 @@ begin
 end;
 
 function TUSB.CheckParameters(board:word):boolean;
+var
+  aController : TUSBController;
 begin
   result:=true;
   if FEmulation then exit;
-  result:=NOT ((board<USBList.Count) AND (Assigned({$ifndef usegenerics}TUSBController{$endif}(USBList.Items[board]).HidCtrl)));
+  if (board>=USBList.Count) then exit;
+  aController:=USBList.Items[board];
+  result:=(NOT Assigned(aController.HidCtrl));
 end;
 
 procedure TUSB.AddErrors(data:string);
