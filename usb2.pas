@@ -37,6 +37,7 @@ type
   public
     LocalData      : TReport;
     Serial         : string;
+    Firmware       : word;
     BoardNumber    : word;
     constructor Create(HidDev: TJvHidDevice);
     destructor  Destroy;override;
@@ -66,9 +67,6 @@ type
     FWaitEx    : Boolean;
 
     FOnUSBDeviceChange: TUSBEvent;
-
-    FIniFileFullPath:string;
-
 
     function HidCtlEnumerate(HidDev: TJvHidDevice;const Idx: Integer): Boolean;
 
@@ -115,21 +113,14 @@ implementation
 
 uses
   {$ifdef MSWINDOWS}
-  Windows,
+  Windows;
   {$else}
   Unix,
-  BaseUnix,
+  BaseUnix;
   {$endif}
-  IniFiles,
-  StrUtils;
 
 const
-  VENDORID_BASE                 = $04D8;
-  PRODUCTID_BASE                = $003F;
-  VENDORID_ALT                  = $ABCD;
-  PRODUCTID_ALT                 = $1234;
-
-  DeviceDelay                   = 200;
+  DeviceDelay                   = 20;
   USBTimeout                    = 200;
 
 function UTF16ToUTF8(const s: UnicodeString): string;
@@ -211,8 +202,6 @@ end;
 constructor TUSB.Create;
 begin
   inherited Create;
-
-  FIniFileFullPath:=INIFILENAME;
 
   FErrors       := TStringList.Create;
   FInfo         := TStringList.Create;
@@ -334,6 +323,7 @@ begin
       if Assigned(Ctrl.OnData) then Ctrl.LocalDataTimer.ResetEvent;
     end;
     TotalWritten:=0;
+    Written:=0;
     while true do
     begin
       error:=(NOT Ctrl.HidCtrl.WriteFile(Ctrl.LocalData, Ctrl.HidCtrl.Caps.OutputReportByteLength, Written));
@@ -378,6 +368,7 @@ begin
       end
       else
       begin
+        Written:=0;
         error:=(NOT Ctrl.HidCtrl.ReadFile(Ctrl.LocalData, Ctrl.HidCtrl.Caps.InputReportByteLength, Written));
         if error then
         begin
