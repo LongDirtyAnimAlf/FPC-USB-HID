@@ -101,7 +101,7 @@ const
   HID_STRING_SIZE         = 256;
   HID_MAX_MULTI_USAGES    = 1024;
 
-
+  HID_MAX_DESCRIPTOR_SIZE = 4096;
 
 type
   Pudev_handle = ^udev_handle;
@@ -127,6 +127,19 @@ type
   Pudev_list_entry_handle = ^udev_list_entry_handle;
   udev_list_entry_handle = record
     {undefined structure}
+  end;
+
+  Phidraw_report_descriptor = ^hidraw_report_descriptor;
+  hidraw_report_descriptor = record
+   	size     : cuint32;
+    value    : packed array[0..HID_MAX_DESCRIPTOR_SIZE-1] of char;
+  end;
+
+  Phidraw_devinfo = ^hidraw_devinfo;
+  hidraw_devinfo = record
+    bustype  : cuint32;
+    vendor   : cint16;
+    product  : cint16;
   end;
 
   Phiddev_string_descriptor = ^hiddev_string_descriptor;
@@ -226,6 +239,8 @@ const
 
   FIONREAD              = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(integer) shl _IOC_SIZESHIFT) + (Ord('f') shl _IOC_TYPESHIFT) + (127 shl _IOC_NRSHIFT));
 
+  HIDIOCGRDESC          = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(hidraw_report_descriptor) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($02 shl _IOC_NRSHIFT));
+  HIDIOCGRAWINFO        = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(hidraw_devinfo) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($03 shl _IOC_NRSHIFT));
 
   //HIDIOCSFEATURE(len)    = TIOCtlRequest((_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $06);
   //HIDIOCGFEATURE(len)    = TIOCtlRequest((_IOW shl 30) + ((len) shl 16) + (Ord('H') shl 8) + $07);
@@ -1658,6 +1673,7 @@ var
   receiveBuffer: packed array[0..63] of hiddev_event;
   ev:hiddev_event;
   fd,ret:cint;
+  res:longint;
   i:word;
   selectTimeout: TTimeVal;
 begin
@@ -1668,15 +1684,25 @@ begin
   try
     while (not Terminated) do
     begin
+      //to prevent CPU burning ... for compatibility with JvHidControllerClass
+      if ((Device.PollingDelayTime>0) AND (Not Terminated)) then  // Throttle device polling
+        SysUtils.Sleep(Device.PollingDelayTime);
+
       fpFD_ZERO(readSet);
       fpFD_SET(fd, readSet);
 
       selectTimeout.tv_sec:= (Device.ThreadSleepTime DIV 1000);
       selectTimeout.tv_usec:= ((Device.ThreadSleepTime MOD 1000) * 1000);
 
-      IF fpSelect(fd+1, @readSet, NIL, NIL, @selectTimeout) > 0 THEN
+      res:=fpSelect(fd+1, @readSet, nil, nil, @selectTimeout);
+
+      if (res=0) then continue; // we had a timeout : go on with wait for data !
+
+      if (res>0) then
       begin
-        if fpFD_ISSET(fd, readSet) = 0 then continue; // we had a timeout : go on with wait for data !
+        // this is a trivial test, but do it anyhow
+        // we had a timeout : go on with wait for data !
+        if fpFD_ISSET(fd, readSet) = 0 then continue;
 
         if (Device.Caps.InputReportByteLength>0) then
         begin
@@ -1684,7 +1710,7 @@ begin
           FillChar(Report[1], Device.Caps.InputReportByteLength-1, #0);
 
           i:=0;
-          while true do
+          while (not Terminated) do
           begin
             ret:= {%H-}fpRead(cint(Device.HidFileHandle), {%H-}ev, sizeof(hiddev_event));
             //FErr := fpGetErrno;
@@ -1701,23 +1727,28 @@ begin
             end;
           end;
 
-          if (i>0) then
+          NumBytesRead:=i;
+
+          if (NOT Terminated) then
           begin
-            DoData;
-            //Synchronize(@DoData);
-            //Queue(@DoData);
-          end
-          else
-          begin
-            if (Not Terminated) AND (ret<0) then
+            if (i>0) then
             begin
-              FErr := fpGetErrno;
-              if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINPROGRESS) then
+              DoData;
+              //Synchronize(@DoData);
+              //Queue(@DoData);
+            end
+            else
+            begin
+              if (ret<0) then
               begin
-                DoDataError;
-                //Synchronize(@DoDataError);
-                //Queue(@DoDataError);
-                SysUtils.Sleep(Device.ThreadSleepTime);
+                FErr := fpGetErrno;
+                if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINPROGRESS) then
+                begin
+                  DoDataError;
+                  //Synchronize(@DoDataError);
+                  //Queue(@DoDataError);
+                  SysUtils.Sleep(Device.ThreadSleepTime);
+                end;
               end;
             end;
           end;
@@ -1766,9 +1797,6 @@ begin
           end;
           *)
 
-          //to prevent CPU burning ... for compatibility with JvHidControllerClass
-          if ((Device.PollingDelayTime>0) AND (Not Terminated)) then  // Throttle device polling
-            SysUtils.Sleep(Device.PollingDelayTime);
         end
         else Terminate; // Device.Caps.InputReportByteLength=0
       end;
@@ -2198,80 +2226,75 @@ begin
   end;
 end;
 
-function TJvHidDevice.ReadFile(var Report; ToRead: DWORD;
-  var BytesRead: DWORD): Boolean;
+function TJvHidDevice.ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
 var
-  rinfo_in: hiddev_report_info;
-  ref_multi: hiddev_usage_ref_multi;
-  ret: cint;
-  readBuffer: array [0 .. 64] of hiddev_event;
-  readBufferByte: array [0 .. 64] of Byte;
-  I: integer;
+  ref_multi_in                 : hiddev_usage_ref_multi;
+  rinfo_in                     : hiddev_report_info;
+  readBufferByte               : array[0..64] of byte;
+  i                            : integer;
+  ret                          : cint;
 begin
+  if (HidFileHandle=INVALID_HANDLE_VALUE)  then exit(false);
 
-  ret := -1;
+  ret:=-1;
 
-  BytesRead := 0;
+  BytesRead:=0;
 
-  {
   if OpenFile then
   begin
-    if CanRead(ThreadSleepTime) then
+
+    {
+    if OpenFile then
     begin
-      InitWithoutHint(readBuffer);
-      InitWithoutHint(readBufferByte);
-      ret := FpRead( cint(HidFileHandle), readBuffer, sizeof(readBuffer[0])*(ToRead));
-      if ret>=0 then
+      if CanRead(ThreadSleepTime) then
       begin
-        BytesRead := ret DIV sizeof(readBuffer[0]);
-        for i:=0 to BytesRead-1 do readBufferByte[i+1]:=readBuffer[i].value;
-        Move(Report,readBufferByte,1);
-        Move(readBufferByte,Report,BytesRead);
+        InitWithoutHint(readBuffer);
+        InitWithoutHint(readBufferByte);
+        ret := FpRead( cint(HidFileHandle), readBuffer, sizeof(readBuffer[0])*(ToRead));
+        if ret>=0 then
+        begin
+          BytesRead := ret DIV sizeof(readBuffer[0]);
+          for i:=0 to BytesRead-1 do readBufferByte[i+1]:=readBuffer[i].value;
+          Move(Report,readBufferByte,1);
+          Move(readBufferByte,Report,BytesRead);
+        end;
       end;
     end;
-  end;
-  }
+    }
 
-  InitWithoutHint(readBuffer);
-  InitWithoutHint(readBufferByte);
 
-  if OpenFile then
-  begin
-    rinfo_in.report_type := HID_REPORT_TYPE_INPUT;
-    // rinfo_in.report_id   := readBufferByte[0];
-    rinfo_in.report_id := HID_REPORT_ID_FIRST;
-    rinfo_in.num_fields := 1;
-    ret := fpioctl(cint(HidFileHandle), HIDIOCGREPORT, @rinfo_in);
-    if ret >= 0 then
+    ref_multi_in.uref.report_type := HID_REPORT_TYPE_INPUT;
+    ref_multi_in.uref.report_id := HID_REPORT_ID_FIRST;
+    ref_multi_in.uref.field_index := 0;
+    ref_multi_in.uref.usage_index := 0;
+    ref_multi_in.num_values := (ToRead-1);
+    ret:=fpioctl(cint(HidFileHandle), HIDIOCGUSAGES, @ref_multi_in);
+    if (ret>=0) then
     begin
-      Move(Report, readBufferByte, 1);
-      ref_multi.uref.report_type := HID_REPORT_TYPE_INPUT;
-      // ref_multi.uref.report_id := readBufferByte[0];
-      ref_multi.uref.report_id := HID_REPORT_ID_FIRST;
-      ref_multi.uref.field_index := 0;
-      ref_multi.uref.usage_index := 0;
-      ref_multi.num_values := ToRead - 1;
-      ret := fpioctl(cint(HidFileHandle), HIDIOCGUSAGES, @ref_multi);
-      if ret >= 0 then
+      rinfo_in.report_type := HID_REPORT_TYPE_INPUT;
+      rinfo_in.report_id   := HID_REPORT_ID_FIRST;
+      rinfo_in.num_fields  := 1;
+      ret:=fpioctl(cint(HidFileHandle),HIDIOCGREPORT,@rinfo_in);
+      if (ret>=0) then
       begin
-        for I := 0 to (ToRead - 1) do
-          readBufferByte[I + 1] := ref_multi.values[I];
+        InitWithoutHint(readBufferByte);
+        for i:=1 to (ToRead) do readBufferByte[i] := ref_multi_in.values[i-1];
         Move(Report, readBufferByte, 1);
         Move(readBufferByte, Report, ToRead);
         BytesRead := ToRead;
       end;
     end;
   end;
-  Result := (ret >= 0);
+  result :=(ret>=0);
 end;
 
 function TJvHidDevice.WriteFile(const Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
 var
-  ref_multi:hiddev_usage_ref_multi;
-  rinfo_out:hiddev_report_info;
-  writeBufferByte: array[0..64] of byte;
-  i:integer;
-  ret:cint;
+  ref_multi_out                : hiddev_usage_ref_multi;
+  rinfo_out                    : hiddev_report_info;
+  writeBufferByte              : array[0..64] of byte;
+  i                            : integer;
+  ret                          : cint;
 begin
   if (HidFileHandle=INVALID_HANDLE_VALUE)  then exit(false);
 
@@ -2283,19 +2306,17 @@ begin
   begin
     InitWithoutHint(writeBufferByte);
     Move(Report,writeBufferByte,ToWrite);
-    ref_multi.uref.report_type := HID_REPORT_TYPE_OUTPUT;
-    ref_multi.uref.report_id := writeBufferByte[0];
-    //ref_multi.uref.report_id := HID_REPORT_ID_FIRST;
-    ref_multi.uref.field_index := 0;
-    ref_multi.uref.usage_index := 0;
-    ref_multi.num_values := ToWrite-1;
-    for i := 0 to ToWrite-1 do ref_multi.values[i]:=writeBufferByte[i+1];
-    ret:=fpioctl(cint(HidFileHandle), HIDIOCSUSAGES, @ref_multi);
+    ref_multi_out.uref.report_type := HID_REPORT_TYPE_OUTPUT;
+    ref_multi_out.uref.report_id := HID_REPORT_ID_FIRST;
+    ref_multi_out.uref.field_index := 0;
+    ref_multi_out.uref.usage_index := 0;
+    ref_multi_out.num_values := ToWrite-1;
+    for i := 0 to ToWrite-1 do ref_multi_out.values[i]:=writeBufferByte[i+1];
+    ret:=fpioctl(cint(HidFileHandle), HIDIOCSUSAGES, @ref_multi_out);
     if (ret>=0) then
     begin
       rinfo_out.report_type := HID_REPORT_TYPE_OUTPUT;
-      rinfo_out.report_id   := writeBufferByte[0];
-      //rinfo_out.report_id   := HID_REPORT_ID_FIRST;
+      rinfo_out.report_id   := HID_REPORT_ID_FIRST;
       rinfo_out.num_fields  := 1;
       ret:=fpioctl(cint(HidFileHandle),HIDIOCSREPORT,@rinfo_out);
       if (ret>=0) then
