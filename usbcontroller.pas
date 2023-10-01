@@ -77,8 +77,10 @@ uses
   ;
 
 const
-  sOK = 0;
-  sErr = integer(-1);
+  ERROR_SUCCESS           = 0;
+
+  sOK                     = 0;
+  sErr                    = integer(-1);
 
   INVALID_HANDLE_VALUE    = THandle(-1);
 
@@ -376,6 +378,7 @@ type
     FDataError: TJvHidDataErrorEvent;
     FUnplug: TJvHidUnplugEvent;
     FDataThread: TJvHidDeviceReadThread;
+    FErr:DWORD;
     FTag: Integer;
     FDebugInfo: TStringList;
     function IsAccessible: Boolean;
@@ -408,6 +411,7 @@ type
     procedure CloseFile;
     function OpenFile: Boolean;
     function ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
+    function ReadFileTimeOut(var Report; ToRead: DWORD; var BytesRead: DWORD; TimeOut:DWORD): Boolean;
     function WriteFile(const {%H-}Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
     function CheckOut: Boolean;
     procedure ShowReports(report_type:word);
@@ -424,6 +428,7 @@ type
     property VendorName: String read GetVendorName;
     property ProductName: String read GetProductName;
     property SerialNumber: String read GetSerialNumber;
+    property Err:DWORD read FErr;
     property Tag: Integer read FTag write FTag;
     property PollingDelayTime: Integer read FPollingDelayTime write SetPollingDelayTime;
     property ThreadSleepTime: Integer read FThreadSleepTime write SetThreadSleepTime;
@@ -2286,6 +2291,62 @@ begin
     end;
   end;
   result :=(ret>=0);
+end;
+
+function TJvHidDevice.ReadFileTimeOut(var Report; ToRead: DWORD; var BytesRead: DWORD; TimeOut:DWORD): Boolean;
+var
+  //readBufferByte               : array[0..64] of byte;
+  //readBuffer                   : packed array[0..64] of hiddev_event;
+  ev                           : hiddev_event;
+  i                            : dword;
+  ret                          : cint;
+begin
+  result:=false;
+
+  if (HidFileHandle=INVALID_HANDLE_VALUE)  then exit;
+
+  BytesRead:=0;
+  ret:=-1;
+
+  if OpenFile then
+  begin
+    if CanRead(TimeOut) then
+    begin
+      (*
+
+      InitWithoutHint(readBuffer);
+      InitWithoutHint(readBufferByte);
+
+      ret:=FpRead( cint(HidFileHandle), readBuffer, sizeof(readBuffer[0])*(ToRead));
+      if (ret>=0) then
+      begin
+        BytesRead:=(ret DIV sizeof(readBuffer[0]));
+        for i:=0 to BytesRead-1 do readBufferByte[i+1]:=readBuffer[i].value;
+        Move(Report,readBufferByte,1);
+        Move(readBufferByte,Report,BytesRead);
+      end;
+      *)
+      i:=1;
+      while true do
+      begin
+        ret:= {%H-}fpRead(cint(HidFileHandle), {%H-}ev, sizeof(hiddev_event));
+        //FErr := fpGetErrno;
+        //if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINTR) then
+        //begin
+        //end;
+        if ret=0 then break; // EOF
+        if ret<0 then break; // Error
+        if (ret=sizeof(hiddev_event)) then
+        begin
+          PByte(@Report+i)^:=byte(ev.value);
+          Inc(i);
+          if (i>=ToRead) then break;
+        end;
+      end;
+      if (i>1) then BytesRead:=i;
+    end;
+  end;
+  result:=(ret>=0);
 end;
 
 function TJvHidDevice.WriteFile(const Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;

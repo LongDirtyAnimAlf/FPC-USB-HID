@@ -45,6 +45,8 @@ const
   // a version string for the component
   cHidControllerClassVersion = '1.0.35';
 
+  GUID_NULL: TGUID = '{00000000-0000-0000-0000-000000000000}';
+
   // strings from the registry for CheckOutByClass
   cHidNoClass = 'HIDClass';
 
@@ -218,6 +220,7 @@ type
     {$ENDIF UNICODE}
     FPhysicalDescriptor: TJvPhysicalDescriptor;
     FPreparsedData: PHIDPPreparsedData;
+    FCaps: THIDPCaps;
     FLanguageStrings: TStringList;
     FNumInputBuffers: Integer;
     FNumOverlappedBuffers: Integer;
@@ -236,6 +239,7 @@ type
     FOnUnplug: TJvHidUnplugEvent;
     FHasReadWriteAccess: Boolean;
     FDataThread: TJvHidDeviceReadThread;
+    FErr:DWORD;
     FTag: Integer;
     // tells if access to device is allowed
     function IsAccessible: Boolean;
@@ -255,7 +259,9 @@ type
     function GetPhysicalDescriptor: TJvPhysicalDescriptor;
     function GetLanguageStrings: TStrings;
     function GetOverlappedReadResult: DWORD;
+    function GetHasOverlappedReadCompleted: boolean;
     function GetOverlappedWriteResult: DWORD;
+    function GetHasOverlappedWriteCompleted: boolean;
     procedure SetConfiguration(const Config: THIDDConfiguration);
     procedure SetOnData(const DataEvent: TJvHidDataEvent);
     procedure SetNumInputBuffers(const Num: Integer);
@@ -281,6 +287,7 @@ type
     destructor Destroy; override;
     // methods
     function CancelIO(const Mode: TJvHidOpenExMode): Boolean;
+    function CancelIOEx(const Mode: TJvHidOpenExMode): Boolean;
     procedure CloseFile;
     procedure CloseFileEx(const Mode: TJvHidOpenExMode);
     function DeviceIoControl(IoControlCode: DWORD; InBuffer: Pointer; InSize: DWORD;
@@ -328,6 +335,7 @@ type
     function UnsetUsages(UsageList: PUsage; var UsageLength: ULONG;
       var Report; ReportLength: ULONG): NTSTATUS;
     function ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
+    function ReadFileTimeOut(var Report; ToRead: DWORD; var BytesRead: DWORD; TimeOut:DWORD): Boolean;
     function ReadFileEx(var Report; ToRead: DWORD;
       CallBack: TPROverlappedCompletionRoutine): Boolean;
     function WriteFile(var Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
@@ -351,7 +359,9 @@ type
     property HidOverlappedRead: THandle read FHidOverlappedRead;
     property HidOverlappedWrite: THandle read FHidOverlappedWrite;
     property HidOverlappedReadResult: DWORD read GetOverlappedReadResult;
+    property HidOverlappedReadCompleted: boolean read GetHasOverlappedReadCompleted;
     property HidOverlappedWriteResult: DWORD read GetOverlappedWriteResult;
+    property HidOverlappedWriteCompleted: boolean read GetHasOverlappedWriteCompleted;
     property IsCheckedOut: Boolean read FIsCheckedOut;
     property IsPluggedIn: Boolean read FIsPluggedIn;
     property LanguageStrings: TStrings read GetLanguageStrings;
@@ -370,6 +380,7 @@ type
     property SerialNumber: WideString read GetSerialNumber;
     property VendorName: WideString read GetVendorName;
     {$ENDIF UNICODE}
+    property Err:DWORD read FErr;
     // read write properties
     property Configuration: THIDDConfiguration read GetConfiguration write SetConfiguration;
     property LinkCollectionParam: WORD read FLinkCollectionParam write FLinkCollectionParam;
@@ -556,6 +567,10 @@ function WriteFileEx(hFile: THandle; var Buffer; nNumberOfBytesToWrite: DWORD;
   external kernel32 name 'WriteFileEx';
 {$endif}
 
+procedure DummyReadCompletion(ErrorCode: DWORD; Count: DWORD; Ovl: POverlapped); stdcall;
+begin
+end;
+
 //=== { TJvHidDeviceReadThread } =============================================
 
 constructor TJvHidDeviceReadThread.CtlCreate(const Dev: TJvHidDevice);
@@ -588,10 +603,6 @@ procedure TJvHidDeviceReadThread.DoDataError;
 begin
   if Assigned(Device.FOnDataError) then
     Device.FOnDataError(Device, FErr);
-end;
-
-procedure DummyReadCompletion(ErrorCode: DWORD; Count: DWORD; Ovl: POverlapped); stdcall;
-begin
 end;
 
 procedure TJvHidDeviceReadThread.Execute;
@@ -781,7 +792,7 @@ var
   {$IFDEF UNICODE}
   Buffer: PWideChar;
   P: PWideChar;
-  StackBuffer: array[0..16383] of Char;
+  StackBuffer: array[0..16383] of WideChar;
   {$ELSE}
   Buffer: PChar;
   P: PChar;
@@ -907,6 +918,7 @@ begin
   FLinkCollectionParam := 0;
   FUsageParam := 0;
   FDataThread := nil;
+  FillChar(FCaps, SizeOf(THIDPCaps), #0);
   OnData := Controller.OnDeviceData;
   OnUnplug := Controller.OnDeviceUnplug;
   OnDataError := Controller.OnDeviceDataError;
@@ -1213,8 +1225,8 @@ end;
 
 function TJvHidDevice.GetCaps: THIDPCaps;
 begin
-  FillChar(Result, SizeOf(THIDPCaps), #0);
-  HidP_GetCaps(PreparsedData, Result);
+  if FCaps.Usage=0 then HidP_GetCaps(PreparsedData, FCaps);
+  Result:=FCaps;
 end;
 
 function TJvHidDevice.GetVendorName: {$IFDEF UNICODE}string{$ELSE}WideString{$ENDIF};
@@ -1355,12 +1367,22 @@ begin
       Result := 0;
 end;
 
+function TJvHidDevice.GetHasOverlappedReadCompleted: boolean;
+begin
+  result := (FOvlRead.Internal<>STATUS_PENDING);
+end;
+
 function TJvHidDevice.GetOverlappedWriteResult: DWORD;
 begin
   Result := 0;
   if HidOverlappedWrite <> INVALID_HANDLE_VALUE then
     if not GetOverlappedResult(HidOverlappedWrite, FOvlWrite, Result, False) then
       Result := 0;
+end;
+
+function TJvHidDevice.GetHasOverlappedWriteCompleted: boolean;
+begin
+  result := (FOvlWrite.Internal<>STATUS_PENDING);
 end;
 
 procedure TJvHidDevice.SetConfiguration(const Config: THIDDConfiguration);
@@ -1441,6 +1463,58 @@ begin
     Result := CallCancelIO(HidOverlappedWrite);
 end;
 
+function TJvHidDevice.CancelIOEx(const Mode: TJvHidOpenExMode): Boolean;
+
+  function CallCancelIO(Handle: THandle; const lpOverlapped: TOverlapped): Boolean;
+  type
+    TCancelIOFunc = function(hFile: THandle; const lpOverlapped: TOverlapped): BOOL; stdcall;
+  var
+    hKernel: HMODULE;
+    CancelIOFunc: TCancelIOFunc;
+  begin
+    hKernel := GetModuleHandle(kernel32);
+    Result := hKernel <> INVALID_HANDLE_VALUE;
+    if Result then
+    begin
+      @CancelIOFunc := GetProcAddress(hKernel, 'CancelIoEx');
+      if Assigned(CancelIOFunc) then
+        Result := CancelIOFunc(Handle,lpOverlapped)
+      else
+        Result := False;
+    end;
+  end;
+const
+  ERROR_NOT_FOUND = $490;
+var
+  Res :DWORD;
+  HidHandle:PHandle;
+  Ovl: POverlapped;
+begin
+  Result := False;
+
+  if (Mode=omhRead) then
+  begin
+    HidHandle:=@HidOverlappedRead;
+    Ovl:=@FOvlRead;
+  end;
+  if (Mode=omhWrite) then
+  begin
+    HidHandle:=@HidOverlappedWrite;
+    Ovl:=@FOvlWrite;
+  end;
+
+  if (HidHandle^<>INVALID_HANDLE_VALUE) then CallCancelIO(HidHandle^,Ovl^);
+
+  if Result OR (GetLastError<>ERROR_NOT_FOUND) then
+  begin
+    Res := WaitForSingleObjectEx(HidHandle^,ThreadSleepTime,True);
+    Result:=((Res=WAIT_IO_COMPLETION) OR (Res=WAIT_OBJECT_0));
+    // Close the canceled handle
+    //CloseFile;
+    CloseFileEx(Mode);
+  end;
+end;
+
 // close the device "file"
 // if you want to open the file directly close this
 // to get undisturbed access
@@ -1448,7 +1522,7 @@ end;
 procedure TJvHidDevice.CloseFile;
 begin
   if HidFileHandle <> INVALID_HANDLE_VALUE then
-    FileClose(HidFileHandle); { *Converted from CloseHandle* }
+    CloseHandle(HidFileHandle);
   FNumInputBuffers := 0;
   FHidFileHandle := INVALID_HANDLE_VALUE;
 end;
@@ -1460,14 +1534,14 @@ begin
   if Mode = omhRead then
   begin
     if HidOverlappedRead <> INVALID_HANDLE_VALUE then
-      FileClose(HidOverlappedRead); { *Converted from CloseHandle* }
+      CloseHandle(HidOverlappedRead);
     FNumOverlappedBuffers := 0;
     FHidOverlappedRead := INVALID_HANDLE_VALUE;
-  end
-  else
+  end;
+  if Mode = omhWrite then
   begin
     if HidOverlappedWrite <> INVALID_HANDLE_VALUE then
-      FileClose(HidOverlappedWrite); { *Converted from CloseHandle* }
+      CloseHandle(HidOverlappedWrite);
     FHidOverlappedWrite := INVALID_HANDLE_VALUE;
   end;
 end;
@@ -1702,7 +1776,8 @@ begin
   if OpenFileEx(omhRead) then
   begin
     FillChar(FOvlRead, SizeOf(TOverlapped), #0);
-    FOvlRead.hEvent := DWORD(Self);
+    FOvlRead.Internal := STATUS_PENDING;
+    FOvlRead.hEvent   := THandle(Self);
     Result :=
         {$ifdef FPC}
         Windows.ReadFileEx(HidOverlappedRead, @Report, ToRead, @FOvlRead, CallBack);
@@ -1719,7 +1794,8 @@ begin
   if OpenFileEx(omhWrite) then
   begin
     FillChar(FOvlWrite, SizeOf(TOverlapped), #0);
-    FOvlWrite.hEvent := DWORD(Self);
+    FOvlWrite.Internal := STATUS_PENDING;
+    FOvlWrite.hEvent   := THandle(Self);
     Result :=
     {$ifdef FPC}
     Windows.WriteFileEx(HidOverlappedWrite, @Report, ToWrite, @FOvlWrite, CallBack);
@@ -1728,6 +1804,71 @@ begin
     {$endif}
 
   end;
+end;
+
+function TJvHidDevice.ReadFileTimeOut(var Report; ToRead: DWORD; var BytesRead: DWORD; TimeOut:DWORD): Boolean;
+var
+  Success    : boolean;
+  Err_read   : DWORD;
+  Err_ovl    : DWORD;
+  Res        : DWORD;
+begin
+  Result:=False;
+
+  Success:=OpenFileEx(omhRead);
+
+  if Success then
+  begin
+    FillChar(FOvlRead, SizeOf(TOverlapped), #0);
+    FOvlRead.hEvent:=CreateEvent(Nil, True, False, Nil);
+    Success := Windows.ReadFile(HidOverlappedRead, Report, ToRead, BytesRead, @FOvlRead);
+
+    Err_read := GetLastError;
+
+    if (NOT Success) then
+    begin
+      case Err_read of
+        ERROR_HANDLE_EOF:
+          begin
+            Success:=True;
+          end;
+        ERROR_IO_PENDING:
+          begin
+            Res:=WaitForSingleObject(FOvlRead.hEvent, TimeOut);
+            Success:=(Res=WAIT_OBJECT_0);
+            if Success then
+            begin
+              Success:=GetOverlappedResult(HidOverlappedRead, FOvlRead, BytesRead, False);
+              if (NOT Success) then
+              begin
+                Err_ovl := GetLastError;
+                case Err_ovl of
+                  ERROR_HANDLE_EOF:
+                    begin
+                      Success:=True;
+                    end;
+                  else
+                  begin
+                    FErr:=Err_ovl;
+                    CancelIOEx(omhRead);
+                  end;
+                end;
+              end;
+            end
+            else
+            begin
+              FErr:=WAIT_TIMEOUT;
+              CancelIOEx(omhRead);
+            end;
+          end;
+        else
+        begin
+          FErr:=Err_read;
+        end;
+      end;
+    end;
+  end;
+  Result:=Success;
 end;
 
 function TJvHidDevice.CheckOut: Boolean;
@@ -1812,6 +1953,15 @@ begin
   if IsHidLoaded then
   begin
     HidD_GetHidGuid(FHidGuid);
+
+    if false then
+    begin
+      // only hook messages if there is a HID DLL
+      FHWnd := AllocateHWnd(EventPipe);
+      // this one executes after Create completed which ensures
+      // that all global elements like Application.MainForm are initialized
+      PostMessage(FHWnd, WM_DEVICECHANGE, DBT_DEVNODES_CHANGED, -1);
+    end;
   end
   else
     FHidGuid := cHidGuid;
@@ -1830,6 +1980,13 @@ begin
   FOnEnumerate := nil;
 
   Enabled:=False;
+
+  if false then
+  begin
+    // unhook event pipe
+    if IsHidLoaded then
+      DeallocateHWnd(FHWnd);
+  end;
 
   for I := 0 to FList.Count - 1 do
   begin
@@ -1852,6 +2009,8 @@ begin
 
   inherited Destroy;
 end;
+
+
 
 procedure TJvHidDeviceController.DoArrival(HidDev: TJvHidDevice);
 begin
