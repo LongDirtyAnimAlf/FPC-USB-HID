@@ -411,7 +411,7 @@ type
     procedure CloseFile;
     function OpenFile: Boolean;
     function ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
-    function ReadFileTimeOut(var Report; ToRead: DWORD; var BytesRead: DWORD; TimeOut:DWORD): Boolean;
+    function ReadFileTimeOut(var Report; const ToRead: DWORD; var BytesRead: DWORD; const TimeOut:DWORD): Boolean;
     function WriteFile(const {%H-}Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
     function CheckOut: Boolean;
     procedure ShowReports(report_type:word);
@@ -1675,13 +1675,15 @@ end;
 procedure TJvHidDeviceReadThread.Execute;
 var
   readSet: TFDSet;
-  receiveBuffer: packed array[0..63] of hiddev_event;
+  //receiveBuffer: packed array[0..63] of hiddev_event;
   ev:hiddev_event;
   fd,ret:cint;
   res:longint;
-  i:word;
+  //i:word;
   selectTimeout: TTimeVal;
 begin
+  NumBytesRead:=0;
+
   if (Device.HidFileHandle=INVALID_HANDLE_VALUE)  then exit;
 
   fd :=cint(Device.HidFileHandle);
@@ -1711,10 +1713,10 @@ begin
 
         if (Device.Caps.InputReportByteLength>0) then
         begin
-          InitWithoutHint(receiveBuffer);
+          //InitWithoutHint(receiveBuffer);
           FillChar(Report[1], Device.Caps.InputReportByteLength-1, #0);
+          NumBytesRead:=0;
 
-          i:=0;
           while (not Terminated) do
           begin
             ret:= {%H-}fpRead(cint(Device.HidFileHandle), {%H-}ev, sizeof(hiddev_event));
@@ -1726,82 +1728,49 @@ begin
             if ret<0 then break; // Error
             if (ret=sizeof(hiddev_event)) then
             begin
-              Report[i+1]:=ev.value;
-              if (i>=(Length(Report)-2)) then break;
-              Inc(i);
+              // The ReportID is not included in this read !!
+              // So skip it and get only (InputReportByteLength-1) data values
+              // Due to: InputReportByteLength = DataLength + ReportID
+              Inc(NumBytesRead);
+              Report[NumBytesRead]:=byte(ev.value);
+              if (NumBytesRead>=(Device.Caps.InputReportByteLength-1)) then
+              begin
+                // Include the ReportID again in the count
+                Inc(NumBytesRead);
+                break;
+              end;
             end;
           end;
-
-          NumBytesRead:=i;
 
           if (NOT Terminated) then
           begin
-            if (i>0) then
+            if (ret>=0) then
             begin
-              DoData;
-              //Synchronize(@DoData);
-              //Queue(@DoData);
+              if IsLibrary then
+                DoData
+              else
+                // choose one of the below to signal the availability of data
+                //DoData;
+                //Synchronize(@DoData);
+                Queue(@DoData);
+              if (Device.PollingDelayTime > 0) then  // Throttle device polling
+                Sleep(Device.PollingDelayTime);
             end
             else
             begin
-              if (ret<0) then
-              begin
-                FErr := fpGetErrno;
-                if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINPROGRESS) then
-                begin
-                  DoDataError;
-                  //Synchronize(@DoDataError);
-                  //Queue(@DoDataError);
-                  SysUtils.Sleep(Device.ThreadSleepTime);
-                end;
-              end;
-            end;
-          end;
-
-          (*
-          ret:= fpRead(cint(Device.HidFileHandle), receiveBuffer, sizeof(hiddev_event)*(Device.Caps.InputReportByteLength-1));
-          if (ret>0) then
-          begin
-
-            if (not Terminated) then
-            begin
-
-              NumBytesRead := (ret DIV sizeof(hiddev_event));
-              // the below should not be necessary, but just to be absolutely sure !!
-              if (NumBytesRead>(Device.Caps.InputReportByteLength-1)) then NumBytesRead:=(Device.Caps.InputReportByteLength-1);
-
-              if (NumBytesRead > 0) then
-              begin
-                // copy data bytes
-                for i := 0 to (NumBytesRead-1) do Report[i+1]:=receiveBuffer[i].value;
-                // choose one of the below to signal the availability of data
-                DoData;
-                //Synchronize(@DoData);
-                //Queue(@DoData);
-              end;
-
-              //to prevent CPU burning ... for compatibility with JvHidControllerClass
-              if Device.PollingDelayTime > 0 then  // Throttle device polling
-                SysUtils.Sleep(Device.PollingDelayTime);
-
-            end;
-          end
-          else
-          begin
-            if (Not Terminated) AND (ret<0) then
-            begin
               FErr := fpGetErrno;
-              if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINPROGRESS) then
+              //if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINPROGRESS) then
               begin
-                DoDataError;
-                //Synchronize(@DoDataError);
-                //Queue(@DoDataError);
+                if IsLibrary then
+                  DoDataError
+                else
+                  //DoDataError;
+                  //Synchronize(@DoDataError);
+                  Queue(@DoDataError);
                 SysUtils.Sleep(Device.ThreadSleepTime);
               end;
             end;
           end;
-          *)
-
         end
         else Terminate; // Device.Caps.InputReportByteLength=0
       end;
@@ -2179,7 +2148,7 @@ end;
 
 function TJvHidDevice.CanRead(Timeout: Integer): Boolean;
 var
-  TimeVal: PTimeVal;
+  PTV: PTimeVal;
   TimeV: TTimeVal;
   FDSet: TFDSet;
   fd:cint;
@@ -2192,21 +2161,21 @@ begin
 
   TimeV.tv_usec := (Timeout mod 1000) * 1000;
   TimeV.tv_sec := Timeout div 1000;
-  TimeVal := @TimeV;
-  if Timeout = -1 then TimeVal := NIL;
+  PTV := @TimeV;
+  if Timeout = -1 then PTV := NIL;
 
   fpFD_ZERO(FDSet);
   fpFD_SET(fd, FDSet);
 
-  if fpSelect(fd+1, @FDSet, NIL, NIL, @TimeVal) > 0 THEN
+  if fpSelect(fd+1, @FDSet, NIL, NIL, PTV) > 0 THEN
   begin
-    result:=(fpFD_ISSET(fd, FDSet) <> 0);
+    result:=(fpFD_ISSET(fd, FDSet)>0);
   end;
 end;
 
 function TJvHidDevice.CanWrite(Timeout: Integer): Boolean;
 var
-  TimeVal: PTimeVal;
+  PTV: PTimeVal;
   TimeV: TTimeVal;
   FDSet: TFDSet;
   fd:cint;
@@ -2219,15 +2188,15 @@ begin
 
   TimeV.tv_usec := (Timeout mod 1000) * 1000;
   TimeV.tv_sec := Timeout div 1000;
-  TimeVal := @TimeV;
-  if Timeout = -1 then TimeVal := NIL;
+  PTV := @TimeV;
+  if Timeout = -1 then PTV := NIL;
 
   fpFD_ZERO(FDSet);
   fpFD_SET(fd, FDSet);
 
-  if fpSelect(fd+1, NIL, @FDSet, NIL, @TimeVal) > 0 THEN
+  if fpSelect(fd+1, NIL, @FDSet, NIL, PTV) > 0 THEN
   begin
-    result:=(fpFD_ISSET(fd, FDSet) <> 0);
+    result:=(fpFD_ISSET(fd, FDSet)>0);
   end;
 end;
 
@@ -2248,26 +2217,18 @@ begin
   if OpenFile then
   begin
 
-    {
-    if OpenFile then
+    {$ifdef hidraw}
+    if CanRead(0) then
     begin
-      if CanRead(ThreadSleepTime) then
+      ret:=FpRead( cint(HidFileHandle), Report, ToRead);
+      if (ret>=0) then
       begin
-        InitWithoutHint(readBuffer);
-        InitWithoutHint(readBufferByte);
-        ret := FpRead( cint(HidFileHandle), readBuffer, sizeof(readBuffer[0])*(ToRead));
-        if ret>=0 then
-        begin
-          BytesRead := ret DIV sizeof(readBuffer[0]);
-          for i:=0 to BytesRead-1 do readBufferByte[i+1]:=readBuffer[i].value;
-          Move(Report,readBufferByte,1);
-          Move(readBufferByte,Report,BytesRead);
-        end;
+        BytesRead:=ret;
       end;
     end;
-    }
+    {$endif hidraw}
 
-
+    {$ifdef hiddev}
     ref_multi_in.uref.report_type := HID_REPORT_TYPE_INPUT;
     ref_multi_in.uref.report_id := HID_REPORT_ID_FIRST;
     ref_multi_in.uref.field_index := 0;
@@ -2289,16 +2250,16 @@ begin
         BytesRead := ToRead;
       end;
     end;
+    {$endif hiddev}
   end;
   result :=(ret>=0);
 end;
 
-function TJvHidDevice.ReadFileTimeOut(var Report; ToRead: DWORD; var BytesRead: DWORD; TimeOut:DWORD): Boolean;
+function TJvHidDevice.ReadFileTimeOut(var Report; const ToRead: DWORD; var BytesRead: DWORD; const TimeOut:DWORD): Boolean;
 var
   //readBufferByte               : array[0..64] of byte;
   //readBuffer                   : packed array[0..64] of hiddev_event;
   ev                           : hiddev_event;
-  i                            : dword;
   ret                          : cint;
 begin
   result:=false;
@@ -2312,11 +2273,18 @@ begin
   begin
     if CanRead(TimeOut) then
     begin
-      (*
+      {$ifdef hidraw}
+      ret:=FpRead( cint(HidFileHandle), Report, ToRead);
+      if (ret>=0) then
+      begin
+        BytesRead:=ret;
+      end;
+      {$endif hidraw}
 
+      {$ifdef hiddev}
+      (*
       InitWithoutHint(readBuffer);
       InitWithoutHint(readBufferByte);
-
       ret:=FpRead( cint(HidFileHandle), readBuffer, sizeof(readBuffer[0])*(ToRead));
       if (ret>=0) then
       begin
@@ -2326,7 +2294,6 @@ begin
         Move(readBufferByte,Report,BytesRead);
       end;
       *)
-      i:=1;
       while true do
       begin
         ret:= {%H-}fpRead(cint(HidFileHandle), {%H-}ev, sizeof(hiddev_event));
@@ -2338,12 +2305,20 @@ begin
         if ret<0 then break; // Error
         if (ret=sizeof(hiddev_event)) then
         begin
-          PByte(@Report+i)^:=byte(ev.value);
-          Inc(i);
-          if (i>=ToRead) then break;
+          // The ReportID is not included in this read !!
+          // So skip it and get only (ToRead-1) data values
+          // Due to: InputReportByteLength = DataLength + ReportID
+          PByte(@Report+BytesRead+1)^:=byte(ev.value);
+          Inc(BytesRead);
+          if (BytesRead>=(ToRead-1)) then
+          begin
+            // Include the ReportID again in the count
+            Inc(BytesRead);
+            break;
+          end;
         end;
       end;
-      if (i>1) then BytesRead:=i;
+      {$endif hiddev}
     end;
   end;
   result:=(ret>=0);
@@ -2351,9 +2326,12 @@ end;
 
 function TJvHidDevice.WriteFile(const Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
 var
+  {$ifdef hiddev}
   ref_multi_out                : hiddev_usage_ref_multi;
   rinfo_out                    : hiddev_report_info;
-  writeBufferByte              : array[0..64] of byte;
+  writeBufferByte              : packed array[0..64] of byte;
+  {$endif hiddev}
+  //writeBuffer                  : packed array[0..64] of hiddev_event;
   i                            : integer;
   ret                          : cint;
 begin
@@ -2365,6 +2343,19 @@ begin
 
   if OpenFile then
   begin
+
+    {$ifdef hidraw}
+    if CanWrite(0) then
+    begin
+      ret:=FpWrite( cint(HidFileHandle), Report, ToWrite);
+      if (ret>=0) then
+      begin
+        BytesWritten:=ret;
+      end;
+    end;
+    {$endif hidraw}
+
+    {$ifdef hiddev}
     InitWithoutHint(writeBufferByte);
     Move(Report,writeBufferByte,ToWrite);
     ref_multi_out.uref.report_type := HID_REPORT_TYPE_OUTPUT;
@@ -2385,6 +2376,7 @@ begin
         BytesWritten:=ToWrite;
       end;
     end;
+    {$endif hiddev}
   end;
   result :=(ret>=0);
 end;

@@ -37,7 +37,7 @@ uses
   JclUnitVersioning,
   {$ENDIF UNITVERSIONING}
   Windows,
-  Classes, Messages, Sysutils, SyncObjs,
+  Classes, Messages, Sysutils,// SyncObjs,
   JvComponentBase,
   DBT, JvSetupApi, Hid{, JvTypes};
 
@@ -335,7 +335,7 @@ type
     function UnsetUsages(UsageList: PUsage; var UsageLength: ULONG;
       var Report; ReportLength: ULONG): NTSTATUS;
     function ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
-    function ReadFileTimeOut(var Report; ToRead: DWORD; var BytesRead: DWORD; TimeOut:DWORD): Boolean;
+    function ReadFileTimeOut(var Report; const ToRead: DWORD; var BytesRead: DWORD; const TimeOut:DWORD): Boolean;
     function ReadFileEx(var Report; ToRead: DWORD;
       CallBack: TPROverlappedCompletionRoutine): Boolean;
     function WriteFile(var Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
@@ -567,10 +567,6 @@ function WriteFileEx(hFile: THandle; var Buffer; nNumberOfBytesToWrite: DWORD;
   external kernel32 name 'WriteFileEx';
 {$endif}
 
-procedure DummyReadCompletion(ErrorCode: DWORD; Count: DWORD; Ovl: POverlapped); stdcall;
-begin
-end;
-
 //=== { TJvHidDeviceReadThread } =============================================
 
 constructor TJvHidDeviceReadThread.CtlCreate(const Dev: TJvHidDevice);
@@ -607,63 +603,98 @@ end;
 
 procedure TJvHidDeviceReadThread.Execute;
 var
-  SleepRet: DWORD;
+  Res        : DWORD;
+  Err_read   : DWORD;
+  Err_ovl    : DWORD;
+  Success    : boolean;
 begin
   {$ifndef FPC}
   NameThread(ThreadName);
   {$endif}
-  SleepRet := WAIT_IO_COMPLETION;
-  try
-    while (not Terminated) do
+
+  while (not Terminated) do
+  begin
+
+    Success:=Device.OpenFileEx(omhRead);
+
+    if Success then
     begin
-      if (Device.Caps.InputReportByteLength>0) then
+      FillChar(Device.FOvlRead, SizeOf(TOverlapped), #0);
+      Device.FOvlRead.hEvent:=CreateEvent(Nil, True, False, Nil);
+      Success := Windows.ReadFile(Device.HidOverlappedRead, Report[0], Device.Caps.InputReportByteLength, NumBytesRead, @Device.FOvlRead);
+
+      Err_read := GetLastError;
+
+      if (NOT Success) then
       begin
-        // read data
-        SleepRet := WAIT_IO_COMPLETION;
-        FillChar(Report[0], Device.Caps.InputReportByteLength, #0);
-        if Device.ReadFileEx(Report[0], Device.Caps.InputReportByteLength, @DummyReadCompletion) then
-        begin
-          // wait for read to complete
-          repeat
-            SleepRet := SleepEx(Device.ThreadSleepTime, True);
-          until Terminated or (SleepRet = WAIT_IO_COMPLETION);
-          // show data read
-          if (not Terminated) then
-          begin
-            NumBytesRead := Device.HidOverlappedReadResult;
-            if (NumBytesRead > 0) then
-              // synchronizing only works if the component is not instanciated in a DLL
-              if IsLibrary then
-                DoData
+        case Err_read of
+          ERROR_HANDLE_EOF:
+            begin
+              Success:=True;
+            end;
+          ERROR_IO_PENDING:
+            begin
+              repeat
+                Res:=WaitForSingleObject(Device.FOvlRead.hEvent, Device.ThreadSleepTime);
+                Success:=(Res=WAIT_OBJECT_0);
+              until Terminated or Success;
+              if Success then
+              begin
+                Success:=GetOverlappedResult(Device.HidOverlappedRead, Device.FOvlRead, NumBytesRead, False);
+                if (NOT Success) then
+                begin
+                  Err_ovl := GetLastError;
+                  case Err_ovl of
+                    ERROR_HANDLE_EOF:
+                      begin
+                        Success:=True;
+                      end;
+                    else
+                    begin
+                      FErr:=Err_ovl;
+                      Device.CancelIOEx(omhRead);
+                    end;
+                  end;
+                end;
+              end
               else
-                // choose one of the below to signal the availability of data
-                DoData;
-                //Synchronize(DoData);
-                //Queue(DoData);
-            if (Device.PollingDelayTime > 0) then  // Throttle device polling
-              SleepEx(Device.PollingDelayTime, True);
-          end;
-        end
-        else
-        begin
-          if (not Terminated) then
+              begin
+                FErr:=Res;
+                Device.CancelIOEx(omhRead);
+              end;
+            end;
+          else
           begin
-            FErr := GetLastError;
-            // choose one of the below to signal the error
-            DoDataError;
-            //Synchronize(DoDataError);
-            //Queue(DoDataError);
-            SleepEx(Device.ThreadSleepTime, True);  // avoid 100% CPU usage (Mantis 5749)
+            FErr:=Err_read;
           end;
         end;
-      end
-      else Terminate; // Device.Caps.InputReportByteLength=0
+      end;
     end;
-  finally
-    // cancel ReadFileEx call or the callback will
-    // crash your program
-    if (SleepRet <> WAIT_IO_COMPLETION) then
-      Device.CancelIO(omhRead);
+
+    if (not Terminated) then
+    begin
+      if Success then
+      begin
+        if IsLibrary then
+          DoData
+        else
+          // choose one of the below to signal the availability of data
+          //DoData;
+          //Synchronize(DoData);
+          Queue(DoData);
+        if (Device.PollingDelayTime > 0) then  // Throttle device polling
+          Sleep(Device.PollingDelayTime);
+      end
+      else
+      begin
+        FErr := GetLastError;
+        // choose one of the below to signal the error
+        //DoDataError;
+        //Synchronize(DoDataError);
+        Queue(DoDataError);
+        Sleep(Device.ThreadSleepTime);  // avoid 100% CPU usage (Mantis 5749)
+      end;
+    end;
   end;
 end;
 
@@ -1806,7 +1837,7 @@ begin
   end;
 end;
 
-function TJvHidDevice.ReadFileTimeOut(var Report; ToRead: DWORD; var BytesRead: DWORD; TimeOut:DWORD): Boolean;
+function TJvHidDevice.ReadFileTimeOut(var Report; const ToRead: DWORD; var BytesRead: DWORD; const TimeOut:DWORD): Boolean;
 var
   Success    : boolean;
   Err_read   : DWORD;
@@ -1857,7 +1888,7 @@ begin
             end
             else
             begin
-              FErr:=WAIT_TIMEOUT;
+              FErr:=Res;
               CancelIOEx(omhRead);
             end;
           end;

@@ -87,7 +87,7 @@ type
 
     function  CheckVendorProduct(const {%H-}VID,{%H-}PID:word):boolean;virtual;
     function  CheckHIDDevice(const {%H-}HidDev: TJvHidDevice):boolean;virtual;
-    function  CheckUSBController(const {%H-}Ctrl: TUSBController):boolean;virtual;
+    function  CheckUSBController(const Ctrl: TUSBController):boolean;virtual;
 
     function  Enumerate:integer;
 
@@ -121,7 +121,7 @@ uses
 
 const
   DeviceDelay                   = 20;
-  USBTimeout                    = 200;
+  USBTimeout                    = 500;
 
 function UTF16ToUTF8(const s: UnicodeString): string;
 begin
@@ -143,7 +143,6 @@ begin
   if HidCtrl<>nil then
   begin
     //OnData:=nil;
-    // enable this for non-blocking read of USB !!!
     OnData:=ShowRead;
   end;
 end;
@@ -212,6 +211,8 @@ begin
   FUSBList := TUSBList.Create;
 
   HidCtl:=TJvHidDeviceController.Create(nil);
+  //HidCtl.DevPollingDelayTime:=1;
+  HidCtl.DevThreadSleepTime:=USBTimeout;
   HidCtl.OnArrival:= nil;
   HidCtl.OnRemoval:= nil;
   HidCtl.OnDeviceChange:=nil;
@@ -343,9 +344,9 @@ begin
 
     if (NOT error) AND (NOT ReadOnly) then
     begin
-      error:=True;
       if Assigned(Ctrl.OnData) then
       begin
+       error:=True;
        if FWaitEx then
        begin
          Err:=0;
@@ -368,17 +369,22 @@ begin
       end
       else
       begin
+        TotalWritten:=0;
         Written:=0;
-        error:=(NOT Ctrl.HidCtrl.ReadFile(Ctrl.LocalData, Ctrl.HidCtrl.Caps.InputReportByteLength, Written));
-        if error then
+        while true do
         begin
           FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
-          {$ifdef MSWINDOWS}
-          Err := GetLastError;
-          {$else}
-          Err := fpgeterrno;
-          {$endif}
-          AddErrors(Format('USB normal read error: %s (%x)', [SysErrorMessage(Err), Err]));
+          error:=(NOT Ctrl.HidCtrl.ReadFileTimeOut(Ctrl.LocalData, Ctrl.HidCtrl.Caps.InputReportByteLength, Written, USBTimeout));
+          if (error) then
+          begin
+            FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
+            if (Ctrl.HidCtrl.Err<>ERROR_SUCCESS) then
+              AddErrors(Format('USB normal read error: %s (%x)', [SysErrorMessage(Ctrl.HidCtrl.Err), Ctrl.HidCtrl.Err]));
+            break;
+          end;
+          Inc(TotalWritten,Written);
+          if (TotalWritten>=SizeOf(Ctrl.LocalData)) then break;
+          break;
         end;
       end;
     end;
@@ -448,7 +454,7 @@ begin
 
      NewUSBController := TUSBController.Create(HidDev);
 
-     Sleep(DeviceDelay);
+     SysUtils.Sleep(DeviceDelay);
 
      with NewUSBController do
      begin
@@ -461,7 +467,7 @@ begin
        FaultCounter:=0;
      end;
 
-     Sleep(DeviceDelay);
+     SysUtils.Sleep(DeviceDelay);
 
      if NewUSBController.Serial='' then
      begin
@@ -590,8 +596,9 @@ procedure TUSB.AddErrors(data:string);
 begin
   if length(data)>0 then
   begin
-   while FErrors.Count>1000 do FErrors.Delete(0);
-   FErrors.Append(DateTimeToStr(Now)+': '+data);
+   while (FErrors.Count>1000) do FErrors.Delete(0);
+   FErrors.Append(DateTimeToStr(Now)+'; USB error: '+data);
+   //FErrors.Append('USB error: '+data);
   end;
 end;
 
@@ -599,7 +606,7 @@ function TUSB.GetErrors:String;
 begin
   if FErrors.Count>0 then
   begin
-    result:=FErrors.Text;
+    result:=FErrors.CommaText;
     FErrors.Clear;
   end else result:='';
 end;
