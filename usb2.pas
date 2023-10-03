@@ -22,7 +22,7 @@ const
 type
   TReport = packed record
     ReportID: byte;
-    Data:    array [0..15] of byte; // <-- this needs to be adapted to your report size
+    Data:    {packed?} array [0..15] of byte; // <-- this needs to be adapted to your report size
   end;
 
   TUSBController = class
@@ -142,8 +142,8 @@ begin
   FHidCtrl:=HidDev;
   if HidCtrl<>nil then
   begin
-    //OnData:=nil;
-    OnData:=ShowRead;
+    OnData:=nil;
+    //OnData:=ShowRead;
   end;
 end;
 
@@ -318,9 +318,9 @@ begin
 
   if Assigned(Ctrl.HidCtrl) then
   begin
-    //Ctrl.HidCtrl.FlushQueue;
     if (NOT ReadOnly) then
     begin
+      Ctrl.HidCtrl.FlushQueue;
       if Assigned(Ctrl.OnData) then Ctrl.LocalDataTimer.ResetEvent;
     end;
     TotalWritten:=0;
@@ -340,6 +340,7 @@ begin
       end;
       Inc(TotalWritten,Written);
       if (TotalWritten>=SizeOf(Ctrl.LocalData)) then break;
+      break;
     end;
 
     if (NOT error) AND (NOT ReadOnly) then
