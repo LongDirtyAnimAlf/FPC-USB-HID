@@ -199,8 +199,8 @@ type
 
   Phiddev_event = ^hiddev_event;
    hiddev_event = record
-     hid:cuint32;
-     value:cint32;
+     hid:cuint32;       // this is the usage_code of the event
+     value:cint32;      // this is the value of the event
    end;
   {$endif hiddev}
 
@@ -319,8 +319,10 @@ type
     FService: string;
     FUINumber: DWORD;
     FUINumberFormat: string;
+    function GetDevicePath: string;
   public
     property DeviceID: DWORD read FDeviceID write FDeviceID;
+    property DevicePath: string read GetDevicePath;
     property HidPath: string read FHidPath;
     property USBPath: string read FUSBPath;
 
@@ -435,7 +437,7 @@ type
     // methods
     procedure CloseFile;
     function OpenFile: Boolean;
-    function FlushQueue: Boolean;
+    function FlushQueue(BytesToFlush:integer=-1): Boolean;
     function ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
     function ReadFileTimeOut(var Report; const ToRead: DWORD; var BytesRead: DWORD; const TimeOut:DWORD): Boolean;
     function WriteFile(const {%H-}Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
@@ -722,6 +724,10 @@ begin
   inherited Destroy;
 end;
 
+function TJvHidPnPInfo.GetDevicePath: string;
+begin
+  result:=FUSBPath;
+end;
 
 { TJvHidDeviceControllerMonitorThread }
 
@@ -2239,11 +2245,13 @@ end;
 
 function TJvHidDevice.ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
 var
+  readBuffer                   : array[0..64] of hiddev_event;
   ref_multi_in                 : hiddev_usage_ref_multi;
   rinfo_in                     : hiddev_report_info;
-  readBufferByte               : array[0..64] of byte;
+  readBufferByte               : packed array[0..64] of byte;
   i                            : integer;
   ret                          : cint;
+  ev                           : hiddev_event;
 begin
   if (HidFileHandle=INVALID_HANDLE_VALUE)  then exit(false);
 
@@ -2265,33 +2273,57 @@ begin
     end;
     {$endif hidraw}
 
-    {$ifdef hiddevv}
-    ref_multi_in:=Default(hiddev_usage_ref_multi);
-    ref_multi_in.uref.report_type := HID_REPORT_TYPE_INPUT;
-    ref_multi_in.uref.report_id := HID_REPORT_ID;
-    ref_multi_in.uref.field_index := 0;
-    ref_multi_in.uref.usage_index := 0;
-    ref_multi_in.num_values := (ToRead-1);
-    ret:=fpioctl(cint(HidFileHandle), HIDIOCGUSAGES, @ref_multi_in);
+    // The ReportID is not included in this read !!
+    // So skip it and get only (ToRead-1) data values
+    // Done by starting with byte 1 of the Report variable
+
+    {$ifdef hiddev}
+    // This is a multi-byte read
+    BytesRead:=1;
+    InitWithoutHint(readBuffer);
+    InitWithoutHint(readBufferByte);
+    ret:=FpRead( cint(HidFileHandle), readBuffer, (sizeof(hiddev_event)*(ToRead-1)));
     if (ret>=0) then
     begin
-      rinfo_in:=Default(hiddev_report_info);
-      rinfo_in.report_type := HID_REPORT_TYPE_INPUT;
-      rinfo_in.report_id   := HID_REPORT_ID;
-      rinfo_in.num_fields  := 1;
-      ret:=fpioctl(cint(HidFileHandle),HIDIOCGREPORT,@rinfo_in);
-      if (ret>=0) then
+      BytesRead:=(ret DIV sizeof(hiddev_event));
+      if (BytesRead>0) then
       begin
-        InitWithoutHint(readBufferByte);
-        for i:=1 to (ToRead) do readBufferByte[i] := byte(ref_multi_in.values[i-1]);
-        Move(Report, readBufferByte, 1);
-        Move(readBufferByte, Report, ToRead);
-        BytesRead := ToRead;
+        for i:=1 to BytesRead do readBufferByte[i]:=readBuffer[i-1].value;
+      end;
+      // Add ReportID into byte buffer
+      Move(Report,readBufferByte,1);
+      // Include ReportID in bytecount
+      Inc(BytesRead);
+      // Fill Report with byte buffer data
+      Move(readBufferByte,Report,BytesRead);
+    end;
+    {$endif hiddev}
+
+    {$ifdef hiddevv}
+    BytesRead:=1;
+    while true do
+    begin
+      ret:= {%H-}fpRead(cint(HidFileHandle), {%H-}ev, sizeof(hiddev_event));
+      //FErr := fpGetErrno;
+      //if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINTR) then
+      //begin
+      //end;
+      if ret<0 then
+      begin
+        FErr := fpGetErrno;
+        break; // Error
+      end;
+      if ret=0 then break; // EOF
+      if (ret=sizeof(hiddev_event)) then
+      begin
+        PByte(@Report+BytesRead)^:=byte(ev.value);
+        Inc(BytesRead);
+        if (BytesRead>=ToRead) then break;
       end;
     end;
     {$endif hiddevv}
 
-    {$ifdef hiddev}
+    {$ifdef hiddevv}
     //fpioctl(cint(HidFileHandle),HIDIOCINITREPORT,Nil);
 
     ref_multi_in:=Default(hiddev_usage_ref_multi);
@@ -2316,20 +2348,28 @@ begin
         Move(Report, readBufferByte, 1);
         Move(readBufferByte, Report, ToRead);
         BytesRead := ToRead;
+        // This is tricky: we need to empty the read buffer with the correct amount
+        FlushQueue((ToRead-1)*sizeof(hiddev_event));
       end;
     end;
-    {$endif hiddev}
+    {$endif hiddevv}
 
   end;
   result :=(ret>=0);
 end;
 
-function TJvHidDevice.FlushQueue: Boolean;
+function TJvHidDevice.FlushQueue(BytesToFlush:integer): Boolean;
 var
   ret                          : cint;
+  amount                       : integer;
   readBufferByte               : array[0..4095] of byte;
 begin
   result:=false;
+  if BytesToFlush=-1 then
+    amount:=MaxInt
+  else
+    amount:=BytesToFlush;
+
   if (HidFileHandle=INVALID_HANDLE_VALUE)  then exit;
   ret:=-1;
   if OpenFile then
@@ -2337,7 +2377,14 @@ begin
     while true do
     begin
       if CanRead(1) then
-        ret:=FpRead( cint(HidFileHandle), {%H-}readBufferByte, Length(readBufferByte))
+      begin
+        if (amount DIV Length(readBufferByte)>0) then
+          ret:=FpRead( cint(HidFileHandle), {%H-}readBufferByte, Length(readBufferByte))
+        else
+          ret:=FpRead( cint(HidFileHandle), {%H-}readBufferByte, (amount MOD Length(readBufferByte)));
+        if (ret>0) then Dec(amount,ret);
+        if (ret<=0) or (amount<=0) then break;
+      end
       else
         break;
     end;
@@ -2347,8 +2394,7 @@ end;
 
 function TJvHidDevice.ReadFileTimeOut(var Report; const ToRead: DWORD; var BytesRead: DWORD; const TimeOut:DWORD): Boolean;
 var
-  //readBufferByte               : array[0..64] of byte;
-  //readBuffer                   : packed array[0..64] of hiddev_event;
+  readBuffer                   : array[0..64] of hiddev_event;
   ref_multi_in                 : hiddev_usage_ref_multi;
   rinfo_in                     : hiddev_report_info;
   readBufferByte               : packed array[0..64] of byte;
@@ -2375,25 +2421,34 @@ begin
       end;
       {$endif hidraw}
 
-      {$ifdef hiddevv}
-      (*
-      InitWithoutHint(readBuffer);
-      InitWithoutHint(readBufferByte);
-      ret:=FpRead( cint(HidFileHandle), readBuffer, sizeof(readBuffer[0])*(ToRead));
-      if (ret>=0) then
-      begin
-        BytesRead:=(ret DIV sizeof(readBuffer[0]));
-        for i:=0 to BytesRead-1 do readBufferByte[i+1]:=readBuffer[i].value;
-        Move(Report,readBufferByte,1);
-        Move(readBufferByte,Report,BytesRead);
-        // Include ReportID in bytecount
-        Inc(BytesRead);
-      end;
-      *)
-
       // The ReportID is not included in this read !!
       // So skip it and get only (ToRead-1) data values
       // Done by starting with byte 1 of the Report variable
+
+      {$ifdef hiddev}
+      // This is a multi-byte read
+      BytesRead:=1;
+      InitWithoutHint(readBuffer);
+      InitWithoutHint(readBufferByte);
+      ret:=FpRead( cint(HidFileHandle), readBuffer, (sizeof(hiddev_event)*(ToRead-1)));
+      if (ret>=0) then
+      begin
+        BytesRead:=(ret DIV sizeof(hiddev_event));
+        if (BytesRead>0) then
+        begin
+          for i:=1 to BytesRead do readBufferByte[i]:=readBuffer[i-1].value;
+        end;
+        // Add ReportID into byte buffer
+        Move(Report,readBufferByte,1);
+        // Include ReportID in bytecount
+        Inc(BytesRead);
+        // Fill Report with byte buffer data
+        Move(readBufferByte,Report,BytesRead);
+      end;
+      {$endif hiddev}
+
+      {$ifdef hiddevv}
+      // This is a single-byte read
       BytesRead:=1;
 
       while true do
@@ -2418,7 +2473,7 @@ begin
       end;
       {$endif hiddevv}
 
-      {$ifdef hiddev}
+      {$ifdef hiddevv}
       //fpioctl(cint(HidFileHandle),HIDIOCINITREPORT,Nil);
 
       rinfo_in:=Default(hiddev_report_info);
@@ -2442,9 +2497,11 @@ begin
           Move(Report, readBufferByte, 1);
           Move(readBufferByte, Report, ToRead);
           BytesRead := ToRead;
+          // This is tricky: we need to empty the read buffer with the correct amount
+          FlushQueue((ToRead-1)*sizeof(hiddev_event));
         end;
       end;
-      {$endif hiddev}
+      {$endif hiddevv}
     end;
   end;
   result:=(ret>=0);
