@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="12"/>
+    <BuildModes Active="Default"/>
+    <Units>
+      <Unit>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <TopLine Value="171"/>
+        <CursorPos X="17" Y="193"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="C:\fpcupsystems\stable\fpcsrc\packages\fcl-base\src\custapp.pp"/>
+        <UnitName Value="CustApp"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="754"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit>
+    </Units>
+    <JumpHistory HistoryIndex="2">
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="193" Column="17" TopLine="171"/>
+      </Position>
+      <Position>
+        <Filename Value="C:\fpcupsystems\stable\fpcsrc\packages\fcl-base\src\custapp.pp"/>
+        <Caret Line="65" Column="17" TopLine="51"/>
+      </Position>
+      <Position>
+        <Filename Value="C:\fpcupsystems\stable\fpcsrc\packages\fcl-base\src\custapp.pp"/>
+        <Caret Line="341" Column="3" TopLine="256"/>
+      </Position>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+</CONFIG>
