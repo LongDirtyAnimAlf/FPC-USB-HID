@@ -1,5 +1,7 @@
 unit usbcontroller;
 
+{$define NON_BLOCKING}
+
 //https://www.kernel.org/doc/Documentation/hid/
 
 {
@@ -2139,11 +2141,13 @@ begin
   if IsAccessible then
     if HidFileHandle = INVALID_HANDLE_VALUE then // if not already opened
     begin
-      fOpenHandle:={%H-}fpOpen(PnPInfo.HidPath, O_RDWR); //O_NONBLOCK
+      {$ifdef NON_BLOCKING}{$endif}
+
+      fOpenHandle:={%H-}fpOpen(PnPInfo.HidPath, O_RDWR{$ifdef NON_BLOCKING} OR O_NONBLOCK{$endif});
       fHidFileHandle := THandle(fOpenHandle);
       if HidFileHandle = INVALID_HANDLE_VALUE then
       begin
-        fOpenHandle:={%H-}fpOpen(PnPInfo.HidPath, O_RDONLY);
+        fOpenHandle:={%H-}fpOpen(PnPInfo.HidPath, O_RDONLY{$ifdef NON_BLOCKING} OR O_NONBLOCK{$endif});
         fHidFileHandle := THandle(fOpenHandle);
       end;
       if (HidFileHandle<>INVALID_HANDLE_VALUE) then
@@ -2152,8 +2156,6 @@ begin
         // Reset report
         fpioctl(cint(HidFileHandle),HIDIOCINITREPORT,Nil);
         {$endif}
-
-
         //fpioctl(cint(HidFileHandle), HIDIOCGDEVINFO, @device_info);
         //PNPInfo.DeviceID:=device_info.devnum;
         //FNumInputBuffers := 0;
@@ -2247,6 +2249,7 @@ var
   ret                          : cint;
   amount                       : integer;
   readBufferByte               : array[0..4095] of byte;
+  BytesRead                    : DWORD;
 begin
   result:=false;
   if BytesToFlush=-1 then
@@ -2260,17 +2263,14 @@ begin
   begin
     while true do
     begin
-      if CanRead(1) then
-      begin
-        if (amount DIV Length(readBufferByte)>0) then
-          ret:=FpRead( cint(HidFileHandle), {%H-}readBufferByte, Length(readBufferByte))
-        else
-          ret:=FpRead( cint(HidFileHandle), {%H-}readBufferByte, (amount MOD Length(readBufferByte)));
-        if (ret>0) then Dec(amount,ret);
-        if (ret<=0) or (amount<=0) then break;
-      end
+      BytesRead:=0;
+      if (amount DIV Length(readBufferByte)>0) then
+        result:=ReadFileTimeOut({%H-}readBufferByte, Length(readBufferByte),BytesRead,1)
       else
-        break;
+        result:=ReadFileTimeOut({%H-}readBufferByte, (amount MOD Length(readBufferByte)),BytesRead,1);
+      if (NOT result) then break;
+      Dec(amount,BytesRead);
+      if ((BytesRead=0) OR (amount=0)) then break;
     end;
   end;
   result:=(ret>=0);
@@ -2278,12 +2278,12 @@ end;
 
 function TJvHidDevice.ReadFileTimeOut(var Report; const ToRead: DWORD; var BytesRead: DWORD; const TimeOut:DWORD): Boolean;
 var
+  //ref_multi_in                 : hiddev_usage_ref_multi;
+  //rinfo_in                     : hiddev_report_info;
+  ///readBufferByte               : packed array[0..64] of byte;
+  //ev                           : hiddev_event;
   readBuffer                   : array[0..64] of hiddev_event;
-  ref_multi_in                 : hiddev_usage_ref_multi;
-  rinfo_in                     : hiddev_report_info;
-  readBufferByte               : packed array[0..64] of byte;
-  i,j                            : integer;
-  ev                           : hiddev_event;
+  i,j                          : integer;
   ret                          : cint;
   BytesLeft                    : DWORD;
   e                            : Exception;
@@ -2295,89 +2295,148 @@ begin
   BytesRead:=0;
   ret:=-1;
 
+  {$ifdef NON_BLOCKING}
   if OpenFile then
   begin
+    // This is a multi-byte non-blocking read
+    BytesRead:=1;
+    BytesLeft:=(ToRead-1);
     if CanRead(TimeOut*1000) then
     begin
-      {$ifdef hidraw}
+      while true do
+      begin
+        InitWithoutHint(readBuffer);
+        ret:={%H-}FpRead( cint(HidFileHandle), readBuffer, (sizeof(hiddev_event)*BytesLeft));
+        if (ret<0) then
+        begin
+          FErr:=fpGetErrno;
+          if ((Err=ESysEWOULDBLOCK) OR (Err=ESysEAGAIN )) then
+          begin
+            FErr:=ERROR_SUCCESS;
+            if CanRead(TimeOut*1000) then
+              continue
+            else
+              break;
+          end
+          else
+          begin
+            break;
+          end;
+        end
+        else
+        if ret=0 then
+        begin
+          break; // EOF
+        end
+        else
+        begin
+          i:=(ret DIV sizeof(hiddev_event));
+          j:=(ret MOD sizeof(hiddev_event));
+          if (j<>0) then
+          begin
+            // This should never happen.
+            e:=Exception.Create('FpRead returned wrong byte count ('+InttoStr(ret)+'). Should always be a multiple of '+InttoStr(sizeof(hiddev_event)));
+            raise e;
+          end;
+          Dec(BytesLeft,i);
+          for j:=0 to Pred(i) do
+          begin
+            PByte(@Report+BytesRead)^:=byte(readBuffer[j].value);
+            Inc(BytesRead);
+          end;
+          if (BytesLeft=0) then break;
+        end;
+      end;
+    end;
+  end;
+
+  {$else}
+  if OpenFile then
+  begin
+    {$ifdef hidraw}
+    if CanRead(TimeOut*1000) then
+    begin
       ret:=FpRead( cint(HidFileHandle), Report, ToRead);
       if (ret>=0) then
       begin
         BytesRead:=ret;
       end;
-      {$endif hidraw}
+    end;
+    {$endif hidraw}
 
-      // The ReportID is not included in this read !!
-      // So skip it and get only (ToRead-1) data values
-      // Done by starting with byte 1 of the Report variable
+    // The ReportID is not included in the read of hiddev !!
+    // So skip it and get only (ToRead-1) data values
+    // Done by starting with byte 1 of the Report variable
 
-      {$ifdef hiddev}
-      // This is a multi-byte read
-      BytesRead:=1;
-      BytesLeft:=(ToRead-1);
-      while true do
+    {$ifdef hiddev}
+    // This is a multi-byte read
+    BytesRead:=1;
+    BytesLeft:=(ToRead-1);
+    while CanRead(TimeOut*1000) do
+    begin
+      InitWithoutHint(readBuffer);
+      ret:={%H-}FpRead( cint(HidFileHandle), readBuffer, (sizeof(hiddev_event)*BytesLeft));
+      if (ret<0) then
       begin
-        InitWithoutHint(readBuffer);
-        ret:=FpRead( cint(HidFileHandle), readBuffer, (sizeof(hiddev_event)*BytesLeft));
-        if (ret<0) then
-        begin
-          FErr:=fpGetErrno;
-          break; // Error
-        end;
-        if ret=0 then break; // EOF
-        i:=(ret DIV sizeof(hiddev_event));
-        j:=(ret MOD sizeof(hiddev_event));
-        if (j<>0) then
-        begin
-          // This should never happen.
-          e:=Exception.Create('FpRead returned wrong byte count ('+InttoStr(ret)+'). Should always be a multiple of '+InttoStr(sizeof(hiddev_event)));
-          raise e;
-        end;
-        Dec(BytesLeft,i);
-        for j:=0 to Pred(i) do
-        begin
-          PByte(@Report+BytesRead)^:=byte(readBuffer[j].value);
-          Inc(BytesRead);
-        end;
-        if (BytesLeft=0) then break;
+        FErr:=fpGetErrno;
+        break; // Error
       end;
-      {$endif hiddev}
-
-      {$ifdef hiddevv}
-      // This is a single-byte read
-      BytesRead:=1;
-
-      while true do
+      if ret=0 then break; // EOF
+      i:=(ret DIV sizeof(hiddev_event));
+      j:=(ret MOD sizeof(hiddev_event));
+      if (j<>0) then
       begin
-        ret:= {%H-}fpRead(cint(HidFileHandle), {%H-}ev, sizeof(hiddev_event));
-        //FErr := fpGetErrno;
-        //if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINTR) then
-        //begin
-        //end;
-        if ret<0 then
-        begin
-          FErr := fpGetErrno;
-          break; // Error
-        end;
-        if ret=0 then break; // EOF
-        if (ret=sizeof(hiddev_event)) then
-        begin
-          PByte(@Report+BytesRead)^:=byte(ev.value);
-          Inc(BytesRead);
-          if (BytesRead>=ToRead) then break;
-        end
-        else
-        begin
-          // This should never happen.
-          e:=Exception.Create('FpRead returned wrong byte count ('+InttoStr(ret)+'). Should always be '+InttoStr(sizeof(hiddev_event)));
-          raise e;
-        end;
+        // This should never happen.
+        e:=Exception.Create('FpRead returned wrong byte count ('+InttoStr(ret)+'). Should always be a multiple of '+InttoStr(sizeof(hiddev_event)));
+        raise e;
       end;
-      {$endif hiddevv}
+      Dec(BytesLeft,i);
+      for j:=0 to Pred(i) do
+      begin
+        PByte(@Report+BytesRead)^:=byte(readBuffer[j].value);
+        Inc(BytesRead);
+      end;
+      if (BytesLeft=0) then break;
+    end;
+    {$endif hiddev}
 
-      {$ifdef hiddevv}
+    {$ifdef hiddevv}
+    // This is a single-byte read
+    BytesRead:=1;
+    while CanRead(TimeOut*1000) do
+    begin
+      ev.hid:=0;
+      ev.value:=0;
+      ret:= {%H-}fpRead(cint(HidFileHandle), ev, sizeof(hiddev_event));
+      //FErr := fpGetErrno;
+      //if (FErr<>ESysEAGAIN) AND (FErr<>ESysEINTR) then
+      //begin
+      //end;
+      if ret<0 then
+      begin
+        FErr := fpGetErrno;
+        break; // Error
+      end;
+      if ret=0 then break; // EOF
+      if (ret=sizeof(hiddev_event)) then
+      begin
+        PByte(@Report+BytesRead)^:=byte(ev.value);
+        Inc(BytesRead);
+        if (BytesRead>=ToRead) then break;
+      end
+      else
+      begin
+        // This should never happen.
+        e:=Exception.Create('FpRead returned wrong byte count ('+InttoStr(ret)+'). Should always be '+InttoStr(sizeof(hiddev_event)));
+        raise e;
+      end;
+    end;
+    {$endif hiddevv}
+
+    {$ifdef hiddevv}
+    if CanRead(TimeOut*1000) then
+    begin
       //fpioctl(cint(HidFileHandle),HIDIOCINITREPORT,Nil);
-
       rinfo_in:=Default(hiddev_report_info);
       rinfo_in.report_type := HID_REPORT_TYPE_INPUT;
       rinfo_in.report_id := HID_REPORT_ID;
@@ -2403,9 +2462,12 @@ begin
           FlushQueue((ToRead-1)*sizeof(hiddev_event));
         end;
       end;
-      {$endif hiddevv}
     end;
+    {$endif hiddevv}
   end;
+  {$endif}
+
+
   result:=(ret>=0);
 end;
 
