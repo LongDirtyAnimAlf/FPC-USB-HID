@@ -112,6 +112,12 @@ const
   HID_STRING_SIZE         = 256;
   HID_MAX_MULTI_USAGES    = 1024;
 
+  // hidraw
+  HIDRAW_MAX_DEVICES      = 64;
+  HIDRAW_BUFFER_SIZE      = 64;
+
+  HID_MAX_DESCRIPTOR_SIZE = 4096;
+
 type
   Pudev_handle = ^udev_handle;
   udev_handle = record
@@ -138,7 +144,6 @@ type
     {undefined structure}
   end;
 
-  {$ifdef hiddev}
   Phiddev_string_descriptor = ^hiddev_string_descriptor;
    hiddev_string_descriptor = record
       index:cint32;
@@ -204,18 +209,12 @@ type
      hid:cuint32;       // this is the usage_code of the event
      value:cint32;      // this is the value of the event
    end;
-  {$endif hiddev}
 
-  {$ifdef hidraw}
-  HIDRAW_MAX_DEVICES       = 64;
-  HIDRAW_BUFFER_SIZE       = 64;
-
-  HID_MAX_DESCRIPTOR_SIZE  = 4096;
-
+  Thidraw_report_descriptor_values = packed array[0..HID_MAX_DESCRIPTOR_SIZE-1] of byte;
   Phidraw_report_descriptor = ^hidraw_report_descriptor;
    hidraw_report_descriptor = record
-    	size     : cuint32;
-     value    : packed array[0..HID_MAX_DESCRIPTOR_SIZE-1] of char;
+     size     : cuint32;
+     value    : Thidraw_report_descriptor_values;
    end;
 
   Phidraw_devinfo = ^hidraw_devinfo;
@@ -224,14 +223,15 @@ type
      vendor   : cint16;
      product  : cint16;
    end;
-  {$endif hidraw}
 
 const
 
-  _IO                   = TIOCtlRequest(0);
+  _ION                   = TIOCtlRequest(0);
+  //_ION                   = TIOCtlRequest(1);
   _IOW                  = TIOCtlRequest(1);
   _IOR                  = TIOCtlRequest(2);
-  _IOWR                 = TIOCtlRequest(3);
+  //_IOW                  = TIOCtlRequest(4);
+  _IOWR                 = (_IOR OR _IOW);
 
   _IOC_NRBITS           = 8;
   _IOC_TYPEBITS         = 8;
@@ -252,7 +252,7 @@ const
   HIDIOCGDEVINFO        = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(hiddev_devinfo) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($03 shl _IOC_NRSHIFT));
   HIDIOCGSTRING         = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(hiddev_string_descriptor) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($04 shl _IOC_NRSHIFT));
 
-  HIDIOCINITREPORT	= TIOCtlRequest((_IO shl _IOC_DIRSHIFT) + (0 shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($05 shl _IOC_NRSHIFT));
+  HIDIOCINITREPORT	= TIOCtlRequest((_ION shl _IOC_DIRSHIFT) + (0 shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($05 shl _IOC_NRSHIFT));
 
   HIDIOCGREPORT         = TIOCtlRequest((_IOW shl _IOC_DIRSHIFT) + (sizeof(hiddev_report_info) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($07 shl _IOC_NRSHIFT));
   HIDIOCGUSAGES         = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (sizeof(hiddev_usage_ref_multi) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($13 shl _IOC_NRSHIFT));
@@ -264,15 +264,19 @@ const
   FIONREAD              = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(integer) shl _IOC_SIZESHIFT) + (Ord('f') shl _IOC_TYPESHIFT) + (127 shl _IOC_NRSHIFT));
 
   // HIDRAW
-  {$ifdef hidraw}
   HIDIOCGRDESCSIZE      = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(cint) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($01 shl _IOC_NRSHIFT));
   HIDIOCGRDESC          = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(hidraw_report_descriptor) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($02 shl _IOC_NRSHIFT));
   HIDIOCGRAWINFO        = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(hidraw_devinfo) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($03 shl _IOC_NRSHIFT));
-  //HIDIOCGRAWNAME(len)    = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (len shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($04 shl _IOC_NRSHIFT));
-  //HIDIOCGRAWPHYS(len)    = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (len shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($05 shl _IOC_NRSHIFT));
-  //HIDIOCSFEATURE(len)    = TIOCtlRequest((_IORW shl _IOC_DIRSHIFT) + (len shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($06 shl _IOC_NRSHIFT));
-  //HIDIOCGFEATURE(len)    = TIOCtlRequest((_IORW shl _IOC_DIRSHIFT) + (len shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($07 shl _IOC_NRSHIFT));
-  {$endif hidraw}
+  HIDIOCGRAWNAMEBASE    = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) OR (Ord('H') shl _IOC_TYPESHIFT) OR ($04 shl _IOC_NRSHIFT));
+  HIDIOCGRAWPHYSBASE    = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) OR (Ord('H') shl _IOC_TYPESHIFT) OR ($05 shl _IOC_NRSHIFT));
+  HIDIOCSFEATUREBASE    = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($06 shl _IOC_NRSHIFT));
+  HIDIOCGFEATUREBASE    = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($07 shl _IOC_NRSHIFT));
+  HIDIOCGRAWUNIQBASE    = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($08 shl _IOC_NRSHIFT));
+  HIDIOCSINPUTBASE      = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($09 shl _IOC_NRSHIFT));
+  HIDIOCGINPUTBASE      = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($0A shl _IOC_NRSHIFT));
+  HIDIOCSOUTPUTBASE     = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($0B shl _IOC_NRSHIFT));
+  HIDIOCGOUTPUTBASE     = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($0C shl _IOC_NRSHIFT));
+
 
 type
   TJvHidDeviceController = class; // forward declaration
@@ -307,6 +311,7 @@ type
     FVendorID: DWORD;
     FFriendlyName: string;
     FMfg: string;
+    FSerial: string;
     FAddress: string;
     FBusNumber: DWORD;
     FBusType: string;
@@ -339,6 +344,7 @@ type
     property ProductID: DWORD read FProductID;
     property FriendlyName: string read FFriendlyName;
     property Mfg: string read FMfg;
+    property Serial: string read FSerial;
     property Address: string read FAddress;
     property BusNumber: DWORD read FBusNumber;
     property BusType: string read FBusType;
@@ -387,6 +393,7 @@ type
 
   TJvHidDevice = class(TObject)
   private
+    FHidrawReportIDIncluded:boolean;
     FHidFileHandle : THandle;
     FUSBFileHandle : THandle;
     FMyController: TJvHidDeviceController;
@@ -439,6 +446,7 @@ type
     // methods
     procedure CloseFile;
     function OpenFile: Boolean;
+    procedure ParseDescriptor;
     function FlushQueue(BytesToFlush:integer=-1): Boolean;
     function ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
     function ReadFileTimeOut(var Report; const ToRead: DWORD; var BytesRead: DWORD; const TimeOut:DWORD): Boolean;
@@ -600,7 +608,7 @@ var
 implementation
 
 uses
-  SysUtils,DynLibs;
+  SysUtils,DynLibs, Bits;
 
 var
   // UdevOk could be used in whole unit ... not for now ... will fail already during init when no udev-lib found .. lazy ...
@@ -677,6 +685,44 @@ begin
 {$POP}
 end;
 
+// hidraw
+function HIDIOCGRAWNAME(len:word):TIOCtlRequest;
+begin
+  result:=HIDIOCGRAWNAMEBASE OR TIOCtlRequest(len shl _IOC_SIZESHIFT);
+end;
+function HIDIOCGRAWPHYS(len:word):TIOCtlRequest;
+begin
+  result:=HIDIOCGRAWPHYSBASE OR TIOCtlRequest(len shl _IOC_SIZESHIFT);
+end;
+function HIDIOCSFEATURE(len:word):TIOCtlRequest;
+begin
+  result:=HIDIOCSFEATUREBASE+TIOCtlRequest(len shl _IOC_SIZESHIFT);
+end;
+function HIDIOCGFEATURE(len:word):TIOCtlRequest;
+begin
+  result:=HIDIOCGFEATUREBASE+TIOCtlRequest(len shl _IOC_SIZESHIFT);
+end;
+function HIDIOCGRAWUNIQ(len:word):TIOCtlRequest;
+begin
+  result:=HIDIOCGRAWUNIQBASE+TIOCtlRequest(len shl _IOC_SIZESHIFT);
+end;
+function HIDIOCSINPUT(len:word):TIOCtlRequest;
+begin
+  result:=HIDIOCSINPUTBASE+TIOCtlRequest(len shl _IOC_SIZESHIFT);
+end;
+function HIDIOCGINPUT(len:word):TIOCtlRequest;
+begin
+  result:=HIDIOCGINPUTBASE+TIOCtlRequest(len shl _IOC_SIZESHIFT);
+end;
+function HIDIOCSOUTPUT(len:word):TIOCtlRequest;
+begin
+  result:=HIDIOCSOUTPUTBASE+TIOCtlRequest(len shl _IOC_SIZESHIFT);
+end;
+function HIDIOCGOUTPUT(len:word):TIOCtlRequest;
+begin
+  result:=HIDIOCGOUTPUTBASE+TIOCtlRequest(len shl _IOC_SIZESHIFT);
+end;
+
 //=== { TJvHidPnPInfo } ======================================================
 constructor TJvHidPnPInfo.Create(ADeviceId:DWORD; AHidDevicePath: String; AUSBDevice:Pudev_device_handle; AUSBDevicePath: String);
 function HexToInt(Hex : String) : Integer;
@@ -694,6 +740,7 @@ end;
 {
 var
   device_info:hiddev_devinfo;
+  device_info:hidraw_devinfo;
 }
 begin
   inherited Create;
@@ -708,14 +755,7 @@ begin
   FVendorID     := HexToInt(udev_device_get_sysattr_value(AUSBDevice,'idVendor'));
   FProductID    := HexToInt(udev_device_get_sysattr_value(AUSBDevice,'idProduct'));
 
-  {
-  fpioctl(cint(HidFileHandle), HIDIOCGDEVINFO, @device_info);
-  FDeviceID:=device_info.devnum;
-  FLegacyBusType:=device_info.bustype;
-  FBusType:=InttoStr(device_info.bustype);
-  FBusNumber:=device_info.busnum;
-  FUINumber:=device_info.ifnum;
-  }
+  FSerial       := udev_device_get_sysattr_value(AUSBDevice,'serial');
 end;
 
 destructor TJvHidPnPInfo.Destroy;
@@ -1839,6 +1879,7 @@ begin
 end;
 begin
   Result := '';
+  {$ifdef hiddev}
   if Idx > 0 then if OpenFile then
   begin
     Hstring1.index:=Idx;
@@ -1846,6 +1887,7 @@ begin
     fpioctl(cint(HidFileHandle), HIDIOCGSTRING, @Hstring1);
     Result:=ArrayToString(Hstring1.value);
   end;
+  {$endif hiddev}
 end;
 
 function TJvHidDevice.GetVendorName: String;
@@ -1948,20 +1990,24 @@ begin
   FIsPluggedIn := True;
   FIsCheckedOut := False;
   FIsEnumerated := False;
-  FVendorName := '';
-  FProductName := '';
   FPhysicalDescriptor:='';
-  FSerialNumber := '';
   FLanguageStrings := TStringList.Create;
   FDebugInfo := TStringList.Create;
   FThreadSleepTime := 100;
   FDataThread := nil;
 
+  FHidrawReportIDIncluded := False;
+
   FillChar(fCaps, SizeOf(THIDPCaps), #0);
 
   FillChar(FAttributes, SizeOf(THIDDAttributes), #0);
+
   FAttributes.VendorID:=FPnPInfo.VendorID;
   FAttributes.ProductID:=FPnPInfo.ProductID;
+
+  FProductName  := FPnPInfo.FFriendlyName;
+  FVendorName   := FPnPInfo.FMfg;
+  FSerialNumber := FPnPInfo.Serial;
 
   OnData := FMyController.OnDeviceData;
   OnUnplug := FMyController.OnDeviceUnplug;
@@ -2054,43 +2100,41 @@ begin
   Result := IsPluggedIn and (IsCheckedOut or FIsEnumerated);
 end;
 
-
 function TJvHidDevice.GetCaps: THIDPCaps;
 const
   HID_REPORT_ID     = 0;
 var
   finfo_out:hiddev_field_info;
 begin
-  if Openfile then
+  if ((fCaps.OutputReportByteLength=0) AND (fCaps.InputReportByteLength=0) AND (Caps.FeatureReportByteLength=0)) then
   begin
-
-    if fCaps.OutputReportByteLength=0 then
+    if Openfile then
     begin
-      finfo_out.report_type := HID_REPORT_TYPE_OUTPUT;
-      finfo_out.report_id   := HID_REPORT_ID;
-      finfo_out.field_index := 0;
-      if ((fpioctl(cint(HidFileHandle), HIDIOCGFIELDINFO, @finfo_out))>=0)
-         then fCaps.OutputReportByteLength:=finfo_out.maxusage+1;
+      if fCaps.OutputReportByteLength=0 then
+      begin
+        finfo_out.report_type := HID_REPORT_TYPE_OUTPUT;
+        finfo_out.report_id   := HID_REPORT_ID;
+        finfo_out.field_index := 0;
+        if ((fpioctl(cint(HidFileHandle), HIDIOCGFIELDINFO, @finfo_out))>=0)
+           then fCaps.OutputReportByteLength:=finfo_out.maxusage+1;
+      end;
+      if fCaps.InputReportByteLength=0 then
+      begin
+        finfo_out.report_type := HID_REPORT_TYPE_INPUT;
+        finfo_out.report_id   := HID_REPORT_ID;
+        finfo_out.field_index := 0;
+        if ((fpioctl(cint(HidFileHandle), HIDIOCGFIELDINFO, @finfo_out))>=0)
+           then fCaps.InputReportByteLength:=finfo_out.maxusage+1;
+      end;
+      if fCaps.FeatureReportByteLength=0 then
+      begin
+        finfo_out.report_type := HID_REPORT_TYPE_FEATURE;
+        finfo_out.report_id   := HID_REPORT_ID;
+        finfo_out.field_index := 0;
+        if ((fpioctl(cint(HidFileHandle), HIDIOCGFIELDINFO, @finfo_out))>=0)
+           then fCaps.FeatureReportByteLength:=finfo_out.maxusage+1;
+      end;
     end;
-
-    if fCaps.InputReportByteLength=0 then
-    begin
-      finfo_out.report_type := HID_REPORT_TYPE_INPUT;
-      finfo_out.report_id   := HID_REPORT_ID;
-      finfo_out.field_index := 0;
-      if ((fpioctl(cint(HidFileHandle), HIDIOCGFIELDINFO, @finfo_out))>=0)
-         then fCaps.InputReportByteLength:=finfo_out.maxusage+1;
-    end;
-
-    if fCaps.FeatureReportByteLength=0 then
-    begin
-      finfo_out.report_type := HID_REPORT_TYPE_FEATURE;
-      finfo_out.report_id   := HID_REPORT_ID;
-      finfo_out.field_index := 0;
-      if ((fpioctl(cint(HidFileHandle), HIDIOCGFIELDINFO, @finfo_out))>=0)
-         then fCaps.FeatureReportByteLength:=finfo_out.maxusage+1;
-    end;
-
   end;
   Result:=fCaps;
 end;
@@ -2099,12 +2143,15 @@ function TJvHidDevice.GetAttributes: THIDDAttributes;
 var
   device_info:hiddev_devinfo;
 begin
-  if Openfile then
+  if ((FAttributes.VendorID=0) OR (FAttributes.VendorID=0)) then
   begin
-    fpioctl(cint(HidFileHandle), HIDIOCGDEVINFO, @device_info);
-    if FAttributes.VendorID=0 then FAttributes.VendorID:=device_info.vendor;
-    if FAttributes.ProductID=0 then FAttributes.ProductID:=device_info.product;
-    if FAttributes.VersionNumber=0 then FAttributes.VersionNumber:=device_info.version;
+    if Openfile then
+    begin
+      fpioctl(cint(HidFileHandle), HIDIOCGDEVINFO, @device_info);
+      FAttributes.VendorID:=device_info.vendor;
+      FAttributes.ProductID:=device_info.product;
+      FAttributes.VersionNumber:=device_info.version;
+    end;
   end;
   Result:=FAttributes;
 end;
@@ -2117,10 +2164,12 @@ begin
     FIsCheckedOut := True;
     Inc(FMyController.FNumCheckedOutDevices);
     Dec(FMyController.FNumCheckedInDevices);
+    {$ifdef hidraw}
+    ParseDescriptor;
+    {$endif hidraw}
     StartThread;
   end;
 end;
-
 
 function TJvHidDevice.OpenFile: Boolean;
 var
@@ -2141,8 +2190,6 @@ begin
   if IsAccessible then
     if HidFileHandle = INVALID_HANDLE_VALUE then // if not already opened
     begin
-      {$ifdef NON_BLOCKING}{$endif}
-
       fOpenHandle:={%H-}fpOpen(PnPInfo.HidPath, O_RDWR{$ifdef NON_BLOCKING} OR O_NONBLOCK{$endif});
       fHidFileHandle := THandle(fOpenHandle);
       if HidFileHandle = INVALID_HANDLE_VALUE then
@@ -2179,6 +2226,206 @@ begin
      fpClose(cint(HidFileHandle));
   //FNumInputBuffers := 0;
   FHidFileHandle := INVALID_HANDLE_VALUE;
+end;
+
+procedure TJvHidDevice.ParseDescriptor;
+type
+  HID_ID_BYTE = bitpacked record
+    case integer of
+      1 : (  Data : record
+               L  : T2BITS; // Length
+               T  : T2BITS; // Type
+               F  : T4BITS; // Function
+             end
+          );
+      2 : (
+             Raw             : byte;
+          );
+  end;
+const
+  BZISE : array[0..3] of byte = (0,1,2,4);
+  // Type
+  MAIN = 0;
+  GLOBAL = 1;
+  LOCAL = 2;
+  // Main
+  INPUT = %1000;
+  OUTPUT = %1001;
+  FEATURE = %1011;
+  STARTCOLLECTION = %1010;
+  ENDCOLLECTION = %1100;
+    // Global
+  USAGE_PAGE = %0000;
+  LOGICAL_MINIMUM = %0001;
+  LOGICAL_MAXIMUM = %0010;
+  PHYSICAL_MINIMUM = %0011;
+  PHYSICAL_MAXIMUM = %0100;
+  UNIT_EXPONENT = %0101;
+  UNIT_VALUE = %0110;
+  REPORT_SIZE = %0111;
+  REPORT_ID = %1000;
+  REPORT_COUNT = %1001;
+  PUSH = %1010;
+  POP = %1011;
+  // Local
+  USAGE = %0000;
+  USAGE_MINIMUM = %0001;
+  USAGE_MAXIMUM = %0010;
+  DESIGNATOR_INDEX = %0011;
+  DESIGNATOR_MINIMUM = %0100;
+  DESIGNATOR_MAXIMUM = %0101;
+  STRING_INDEX = %0111;
+  STRING_MINIMUM = %1000;
+  STRING_MAXIMUM = %1001;
+  DELIMITER = %1010;
+
+  // Collections
+  PHYSICAL = $00;
+  APPLICATION = $01;
+  LOGICAL = $02;
+  REPORT = $03;
+  NAMED_ARRAY = $04;
+  USAGE_SWITCH = $05;
+  USAGE_MODIFIER = $06;
+
+  // Usage page
+  GENERIC_DESKTOP_CONTROLS_PAGE = $01;
+  SIMULATION_CONTROLS_PAGE = $02;
+  VR_CONTROLS_PAGE = $03;
+  SPORT_CONTROLS_PAGE = $04;
+  GAME_CONTROLS_PAGE = $05;
+  GENERIC_DEVICE_CONTROLS_PAGE = $06;
+  KEYBOARD_KEYPAD_PAGE = $07;
+  LED_PAGE = $08;
+  BUTTON_PAGE = $09;
+  ORDINAL_PAGE = $0A;
+  TELEPHONY_PAGE = $0B;
+  CONSUMER_PAGE = $0C;
+  DIGITIZER_PAGE = $0D;
+  HAPTICS_PAGE = $0E;
+  PID_PAGE = $0F;
+  UNICODE_PAGE = $10;
+  EYE_AND_HEAD_TRACKER_PAGE = $12;
+  ALPHANUMERIC_DISPLAY_PAGE = $14;
+  SENSOR_PAGE = $20;
+  MEDICAL_INSTRUMENTS_PAGE = $40;
+  BRAILLE_DISPLAY_PAGE = $41;
+  LIGHTING_AND_ILLUMINATION_PAGE = $59;
+  USB_MONITOR_PAGE = $80;
+  USB_ENUMERATED_VALUES_PAGE = $81;
+  VESA_VIRTUAL_CONTROLS_PAGE = $82;
+  POWER_DEVICE_PAGE = $84;
+  BATTERY_SYSTEM_PAGE = $85;
+  BARCODE_SCANNER_PAGE = $8C;
+  WEIGHING_PAGE = $8D;
+  MSR_PAGE = $8E;
+  RESERVED_POS_PAGE = $8F;
+  CAMERA_CONTROL_PAGE = $90;
+  ARCADE_PAGE = $91;
+  GAMING_DEVICE_PAGE = $92;
+  FIDO_ALLIANCE_PAGE = $F1D0;
+
+var
+  rpt_desc                 : hidraw_report_descriptor;
+  info                     : hidraw_devinfo;
+  desc_size                : cint;
+  i                        : integer;
+  hid_id                   : HID_ID_BYTE;
+  ReportLength             : WORD;
+  readBuffer               : array[0..255] of char;
+  ret                      : cint;
+begin
+  if Openfile then
+  begin
+    // Get name
+    FillChar(readBuffer,SizeOf(readBuffer),0);
+    ret:=fpioctl(cint(HidFileHandle), HIDIOCGRAWNAME(256), @readBuffer);
+    //if (ret>=0) then writeln('HIDIOCGRAWNAME: ',readBuffer);
+
+    // Get location
+    FillChar(readBuffer,SizeOf(readBuffer),0);
+    ret:=fpioctl(cint(HidFileHandle), HIDIOCGRAWPHYS(256), @readBuffer);
+    //if (ret>=0) then writeln('HIDIOCGRAWPHYS: ',readBuffer);
+
+    // Get raw info
+    ret:=fpioctl(cint(HidFileHandle), HIDIOCGRAWINFO, @info);
+    if (ret>=0) then
+    begin
+      //writeln('BUS: ',info.bustype);
+      //writeln('VID: ',info.vendor);
+      //writeln('PID: ',info.product);
+    end;
+
+    // Get descriptor
+    ret:=fpioctl(cint(HidFileHandle), HIDIOCGRDESCSIZE, @desc_size);
+    if (ret>=0) then
+    begin
+      rpt_desc.size := desc_size;
+      ret:=fpioctl(cint(HidFileHandle), HIDIOCGRDESC, @rpt_desc);
+      // Parse descriptor for usefull values
+      if (ret>=0) then
+      begin
+        i:=0;
+        while (i<rpt_desc.size) do
+        begin
+          hid_id.Raw:=rpt_desc.value[i];
+          Inc(i);
+          if (hid_id.Data.T=MAIN) then
+          begin
+            {$IFDEF debug}
+            if (hid_id.Data.F=STARTCOLLECTION) then FMyController.DebugInfo:='Parser: Start collection';
+            if (hid_id.Data.F=ENDCOLLECTION) then FMyController.DebugInfo:='Parser: End collection';
+            if (hid_id.Data.F=INPUT) then FMyController.DebugInfo:='Parser: Got input report';
+            if (hid_id.Data.F=OUTPUT) then FMyController.DebugInfo:='Parser: Got output report';
+            if (hid_id.Data.F=FEATURE) then FMyController.DebugInfo:='Parser: Got feature report';
+            {$ENDIF}
+            if (hid_id.Data.F=INPUT) then
+            begin
+              FCaps.InputReportByteLength:=ReportLength+1;
+              ReportLength:=0;
+            end;
+            if (hid_id.Data.F=OUTPUT) then
+            begin
+              FCaps.OutputReportByteLength:=ReportLength+1;
+              ReportLength:=0;
+            end;
+          end;
+          if (hid_id.Data.T=GLOBAL) then
+          begin
+            if ((hid_id.Data.F=REPORT_ID) AND (hid_id.Data.L=1)) then
+            begin
+              FHidrawReportIDIncluded:=True;
+              {$IFDEF debug}
+              FMyController.DebugInfo:='Parser: Start collection';
+              FMyController.DebugInfo:='Report ID found !!!!!!';
+              FMyController.DebugInfo:='ID: '+InttoStr(rpt_desc.value[i]);
+              FMyController.DebugInfo:='So, when reading from /dev/hidraw, the Report ID is included in the read !!!!';
+              {$ENDIF}
+            end;
+            if (hid_id.Data.F=REPORT_COUNT) then
+            begin
+              ReportLength:=rpt_desc.value[i];
+              {$IFDEF debug}
+              FMyController.DebugInfo:='Report count found: '+InttoStr(rpt_desc.value[i]);
+              {$ENDIF}
+            end;
+          end;
+
+          if (hid_id.Data.T=LOCAL) then
+          begin
+            if (hid_id.Data.F=USAGE) then
+            begin
+              //writeln('Usage found !!');
+              //writeln(rpt_desc.value[i]);
+            end;
+          end;
+
+          Inc(i,BZISE[hid_id.Data.L]);
+        end;
+      end;
+    end;
+
+  end;
 end;
 
 function TJvHidDevice.CanRead(Timeout: DWORD): Boolean;
@@ -2280,9 +2527,9 @@ function TJvHidDevice.ReadFileTimeOut(var Report; const ToRead: DWORD; var Bytes
 var
   //ref_multi_in                 : hiddev_usage_ref_multi;
   //rinfo_in                     : hiddev_report_info;
-  ///readBufferByte               : packed array[0..64] of byte;
   //ev                           : hiddev_event;
   readBuffer                   : array[0..64] of hiddev_event;
+  readBufferByte               : packed array[0..64] of byte;
   i,j                          : integer;
   ret                          : cint;
   BytesLeft                    : DWORD;
@@ -2298,6 +2545,18 @@ begin
   {$ifdef NON_BLOCKING}
   if OpenFile then
   begin
+    {$ifdef hidraw}
+    if CanRead(TimeOut*1000) then
+    begin
+      ret:=FpRead( cint(HidFileHandle), Report, ToRead);
+      if (ret>=0) then
+      begin
+        BytesRead:=ret;
+      end;
+    end;
+    {$endif hidraw}
+
+    {$ifdef hiddev}
     // This is a multi-byte non-blocking read
     BytesRead:=1;
     BytesLeft:=(ToRead-1);
@@ -2348,18 +2607,41 @@ begin
         end;
       end;
     end;
+    {$endif hiddev}
   end;
 
   {$else}
+
   if OpenFile then
   begin
     {$ifdef hidraw}
     if CanRead(TimeOut*1000) then
     begin
-      ret:=FpRead( cint(HidFileHandle), Report, ToRead);
-      if (ret>=0) then
+      BytesRead:=0;
+      BytesLeft:=ToRead;
+      if NOT FHidrawReportIDIncluded then
       begin
-        BytesRead:=ret;
+        Dec(BytesLeft,1);
+        BytesRead:=1;
+      end;
+      while CanRead(TimeOut*1000) do
+      begin
+        InitWithoutHint(readBufferByte);
+        ret:={%H-}FpRead( cint(HidFileHandle), readBufferByte, BytesLeft);
+        if (ret<0) then
+        begin
+          FErr:=fpGetErrno;
+          break; // Error
+        end;
+        if ret=0 then break; // EOF
+        i:=ret;
+        Dec(BytesLeft,i);
+        for j:=0 to Pred(i) do
+        begin
+          PByte(@Report+BytesRead)^:=byte(readBufferByte[j]);
+          Inc(BytesRead);
+        end;
+        if (BytesLeft=0) then break;
       end;
     end;
     {$endif hidraw}
@@ -2486,6 +2768,7 @@ var
   //writeBuffer                  : packed array[0..64] of hiddev_event;
   i                            : integer;
   flags,ret                    : cint;
+  BytesToWrite                 : DWORD;
 begin
   result:=false;
 
@@ -2497,7 +2780,6 @@ begin
 
   if OpenFile then
   begin
-
     {$ifdef hidraw}
     if CanWrite(0) then
     begin
@@ -2510,16 +2792,23 @@ begin
     {$endif hidraw}
 
     {$ifdef hiddev}
-    //fpioctl(cint(HidFileHandle),HIDIOCINITREPORT,Nil);
     InitWithoutHint(writeBufferByte);
     Move(Report,writeBufferByte,ToWrite);
+
+    BytesToWrite:=ToWrite;
+    if BytesToWrite>Caps.OutputReportByteLength then BytesToWrite:=Caps.OutputReportByteLength;
+    // We do not send the ReportID !
+    // So, send 1 byte less
+    Dec(BytesToWrite);
+
+    //fpioctl(cint(HidFileHandle),HIDIOCINITREPORT,Nil);
     ref_multi_out:=Default(hiddev_usage_ref_multi);
     ref_multi_out.uref.report_type := HID_REPORT_TYPE_OUTPUT;
-    ref_multi_out.uref.report_id := writeBufferByte[0];
+    ref_multi_out.uref.report_id   := writeBufferByte[0];
     ref_multi_out.uref.field_index := 0;
     ref_multi_out.uref.usage_index := 0;
-    ref_multi_out.num_values := ToWrite-1;
-    for i := 0 to ToWrite-1 do ref_multi_out.values[i]:=writeBufferByte[i+1];
+    ref_multi_out.num_values       := BytesToWrite;
+    for i := 1 to BytesToWrite do ref_multi_out.values[i-1]:=writeBufferByte[i];
     ret:=fpioctl(cint(HidFileHandle), HIDIOCSUSAGES, @ref_multi_out);
     if (ret>=0) then
     begin
@@ -2530,11 +2819,12 @@ begin
       ret:=fpioctl(cint(HidFileHandle),HIDIOCSREPORT,@rinfo_out);
       if (ret>=0) then
       begin
+        // Receive the extended report info
         //flags:=(HIDDEV_FLAG_UREF {OR HIDDEV_FLAG_REPORT});
         //ret:=fpioctl(cint(HidFileHandle),HIDIOCSFLAG,@flags);
         if (ret>=0) then
         begin
-          BytesWritten:=ToWrite;
+          BytesWritten:=Succ(BytesToWrite);
         end;
       end;
     end;

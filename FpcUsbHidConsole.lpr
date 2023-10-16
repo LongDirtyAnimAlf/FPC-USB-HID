@@ -63,7 +63,8 @@ begin
       writeln('Found correct HID device.');
       writeln('HID device index: '+InttoStr(datacarrier));
       writeln('VID: '+InttoHex(Attributes.VendorID,4)+'. PID: '+InttoHex(Attributes.ProductID,4)+'.');
-      writeln('Mfg: '+PnPInfo.Mfg+'. Name: '+ProductName+'. Vendor: '+VendorName+'.');
+      writeln('Name: '+ProductName+'. Vendor: '+VendorName+'.');
+      writeln('Serial: '+SerialNumber+'.');
       writeln('Length output report: '+InttoStr(Caps.OutputReportByteLength)+'.');
       writeln('Length input report: '+InttoStr(Caps.InputReportByteLength)+'.');
       writeln('DeviceDescription: '+PnPInfo.DeviceDescr+'.');
