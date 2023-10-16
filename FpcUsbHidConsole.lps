@@ -8,33 +8,56 @@
       <Unit>
         <Filename Value="FpcUsbHidConsole.lpr"/>
         <IsPartOfProject Value="True"/>
-        <TopLine Value="171"/>
-        <CursorPos X="17" Y="193"/>
+        <IsVisibleTab Value="True"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="C:\fpcupsystems\stable\fpcsrc\packages\fcl-base\src\custapp.pp"/>
         <UnitName Value="CustApp"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="754"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="usb2.pas"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="10" Y="15"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="jvcl\jvcl\run\JvHidControllerClass.pas"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="16" Y="16"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="usbcontroller.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="2084"/>
+        <CursorPos X="82" Y="2109"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
     </Units>
-    <JumpHistory HistoryIndex="2">
+    <JumpHistory HistoryIndex="3">
       <Position>
         <Filename Value="FpcUsbHidConsole.lpr"/>
         <Caret Line="193" Column="17" TopLine="171"/>
       </Position>
       <Position>
-        <Filename Value="C:\fpcupsystems\stable\fpcsrc\packages\fcl-base\src\custapp.pp"/>
-        <Caret Line="65" Column="17" TopLine="51"/>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="181" Column="34" TopLine="171"/>
       </Position>
       <Position>
-        <Filename Value="C:\fpcupsystems\stable\fpcsrc\packages\fcl-base\src\custapp.pp"/>
-        <Caret Line="341" Column="3" TopLine="256"/>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="13" Column="5"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="4" Column="12"/>
       </Position>
     </JumpHistory>
     <RunParams>

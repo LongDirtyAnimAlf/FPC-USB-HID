@@ -2106,7 +2106,7 @@ const
 var
   finfo_out:hiddev_field_info;
 begin
-  if ((fCaps.OutputReportByteLength=0) AND (fCaps.InputReportByteLength=0) AND (Caps.FeatureReportByteLength=0)) then
+  if ((fCaps.OutputReportByteLength=0) AND (fCaps.InputReportByteLength=0) AND (fCaps.FeatureReportByteLength=0)) then
   begin
     if Openfile then
     begin
