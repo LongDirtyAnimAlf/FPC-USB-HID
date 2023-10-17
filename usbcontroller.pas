@@ -272,8 +272,10 @@ const
   HIDIOCSFEATUREBASE    = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($06 shl _IOC_NRSHIFT));
   HIDIOCGFEATUREBASE    = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($07 shl _IOC_NRSHIFT));
   HIDIOCGRAWUNIQBASE    = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($08 shl _IOC_NRSHIFT));
+  // The first byte of SINPUT and GINPUT is the report number
   HIDIOCSINPUTBASE      = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($09 shl _IOC_NRSHIFT));
   HIDIOCGINPUTBASE      = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($0A shl _IOC_NRSHIFT));
+  // The first byte of SOUTPUT and GOUTPUT is the report number
   HIDIOCSOUTPUTBASE     = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($0B shl _IOC_NRSHIFT));
   HIDIOCGOUTPUTBASE     = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($0C shl _IOC_NRSHIFT));
 
@@ -617,6 +619,19 @@ var
   libudev: TLibHandle = NilHandle;
   {$endif}
 
+function HexToInt(Hex : String) : Integer;
+const
+  HexSymbols : String = '0123456789ABCDEF';
+var
+  I,J : Integer;
+begin
+  Hex := UpperCase(Hex);
+  Result := 0;
+  J := Length(Hex);
+  For I := 1 to J do
+    Result := Result+((Pos(Hex[J-I+1],HexSymbols)-1) shl ((I-1)*4));
+end;
+
 {$ifndef udevstatic}
 procedure LoadUdevLibrary;
 var
@@ -725,23 +740,6 @@ end;
 
 //=== { TJvHidPnPInfo } ======================================================
 constructor TJvHidPnPInfo.Create(ADeviceId:DWORD; AHidDevicePath: String; AUSBDevice:Pudev_device_handle; AUSBDevicePath: String);
-function HexToInt(Hex : String) : Integer;
-const
-  HexSymbols : String = '0123456789ABCDEF';
-var
-  I,J : Integer;
-begin
-  Hex := UpperCase(Hex);
-  Result := 0;
-  J := Length(Hex);
-  For I := 1 to J do
-    Result := Result+((Pos(Hex[J-I+1],HexSymbols)-1) shl ((I-1)*4));
-end;
-{
-var
-  device_info:hiddev_devinfo;
-  device_info:hidraw_devinfo;
-}
 begin
   inherited Create;
 
@@ -1397,6 +1395,7 @@ var
   procedure FillInList;
   var
     Devn: Integer;
+    iClass:string;
     HidDev: TJvHidDevice;
     path:Pchar;
     LocalRawNode,LocalUSBNode:string;
@@ -1451,6 +1450,8 @@ var
 
     while localudev_list_entry<>nil do
     begin
+      iClass:='';
+
       path := udev_list_entry_get_name(localudev_list_entry);
       localudev_rawdevice := udev_device_new_from_syspath(localudev, path);
 
@@ -1502,9 +1503,11 @@ var
 
         if(localudev_intfdevice<>nil) then
         begin
+          iClass:=udev_device_get_sysattr_value(localudev_intfdevice,'bInterfaceClass');
           {$IFDEF debug}
           LocalInterfaceNode:=udev_device_get_devnode(localudev_intfdevice);
           DebugInfo:='Found interface node: '+LocalInterfaceNode;
+          DebugInfo:='Interface Class: '+iClass;
           {$ENDIF}
         end
         else
@@ -1520,7 +1523,6 @@ var
           		     'usb_device');
         if(localudev_usbdevice<>nil) then
         begin
-
           LocalUSBNode:=udev_device_get_devnode(localudev_usbdevice);
           {$IFDEF debug}
           DebugInfo:='Found USB node: '+LocalUSBNode;
@@ -1533,7 +1535,6 @@ var
           DebugInfo:='Inside devnum: '+udev_device_get_sysattr_value(localudev_usbdevice,'devnum');
           DebugInfo:='Inside dev: '+udev_device_get_sysattr_value(localudev_usbdevice,'dev');
           DebugInfo:='Inside urbnum: '+udev_device_get_sysattr_value(localudev_usbdevice,'urbnum');
-          DebugInfo:='Class: '+udev_device_get_sysattr_value(localudev_usbdevice,'bInterfaceClass');
           DebugInfo:='Syspath: '+udev_device_get_syspath(localudev_usbdevice);
           {$ENDIF}
 
@@ -1578,6 +1579,36 @@ var
           DebugInfo:='Adding correct hid device !!';
           {$ENDIF}
           PnPInfo := TJvHidPnPInfo.Create(LocalDeviceId,LocalRawNode,localudev_usbdevice,LocalUSBNode);
+          with PnPInfo do
+          begin
+            case HexToInt(iClass) of
+              $00:FDeviceDescr:='Use class information in the Interface Descriptors';
+              $01:FDeviceDescr:='Audio';
+              $02:FDeviceDescr:='Communications and CDC Control';
+              $03:FDeviceDescr:='HID (Human Interface Device)';
+              $05:FDeviceDescr:='Physical';
+              $06:FDeviceDescr:='Image';
+              $07:FDeviceDescr:='Printer';
+              $08:FDeviceDescr:='Mass Storage';
+              $09:FDeviceDescr:='Hub';
+              $0A:FDeviceDescr:='CDC-Data';
+              $0B:FDeviceDescr:='Smart Card';
+              $0D:FDeviceDescr:='Content Security';
+              $0E:FDeviceDescr:='Video';
+              $0F:FDeviceDescr:='Personal Healthcare';
+              $10:FDeviceDescr:='Audio/Video Devices';
+              $11:FDeviceDescr:='Billboard Device Class';
+              $12:FDeviceDescr:='USB Type-C Bridge Class';
+              $13:FDeviceDescr:='USB Bulk Display Protocol Device Class';
+              $14:FDeviceDescr:='MCTP over USB Protocol Endpoint Device Class';
+              $3C:FDeviceDescr:='I3C Device Class';
+              $DC:FDeviceDescr:='Diagnostic Device';
+              $E0:FDeviceDescr:='Wireless Controller';
+              $EF:FDeviceDescr:='Miscellaneous';
+              $FE:FDeviceDescr:='Application Specific';
+              $FF:FDeviceDescr:='Vendor Specific';
+            end;
+          end;
           HidDev := TJvHidDevice.CtlCreate(PnPInfo, Self);
           //HidDev.FVendorName   := udev_device_get_sysattr_value(localudev_usbdevice,'manufacturer');
           //HidDev.FProductName  := udev_device_get_sysattr_value(localudev_usbdevice,'product');
@@ -2329,7 +2360,7 @@ var
   rpt_desc                 : hidraw_report_descriptor;
   info                     : hidraw_devinfo;
   desc_size                : cint;
-  i                        : integer;
+  i                        : cuint32;
   hid_id                   : HID_ID_BYTE;
   ReportLength             : WORD;
   readBuffer               : array[0..255] of char;
@@ -2340,7 +2371,21 @@ begin
     // Get name
     FillChar(readBuffer,SizeOf(readBuffer),0);
     ret:=fpioctl(cint(HidFileHandle), HIDIOCGRAWNAME(256), @readBuffer);
-    //if (ret>=0) then writeln('HIDIOCGRAWNAME: ',readBuffer);
+    if (ret>=0) then
+    begin
+      // This returns tow strings.
+      //writeln('HIDIOCGRAWNAME: ',readBuffer);
+    end;
+
+    // Get serial
+    FillChar(readBuffer,SizeOf(readBuffer),0);
+    ret:=fpioctl(cint(HidFileHandle), HIDIOCGRAWUNIQ(64), @readBuffer);
+    if (ret>=0) then
+    begin
+      //writeln('HIDIOCGRAWUNIQ: ',readBuffer);
+      SetLength(FSerialNumber,ret);
+      Move(readBuffer,FSerialNumber[1],ret);
+    end;
 
     // Get location
     FillChar(readBuffer,SizeOf(readBuffer),0);
@@ -2365,6 +2410,7 @@ begin
       // Parse descriptor for usefull values
       if (ret>=0) then
       begin
+        ReportLength:=0;
         i:=0;
         while (i<rpt_desc.size) do
         begin
@@ -2381,27 +2427,33 @@ begin
             {$ENDIF}
             if (hid_id.Data.F=INPUT) then
             begin
-              FCaps.InputReportByteLength:=ReportLength+1;
+              if (ReportLength>0) then FCaps.InputReportByteLength:=ReportLength+1; // +1 = add Report ID
               ReportLength:=0;
             end;
             if (hid_id.Data.F=OUTPUT) then
             begin
-              FCaps.OutputReportByteLength:=ReportLength+1;
+              if (ReportLength>0) then FCaps.OutputReportByteLength:=ReportLength+1; // +1 = add Report ID
+              ReportLength:=0;
+            end;
+            if (hid_id.Data.F=FEATURE) then
+            begin
+              FCaps.FeatureReportByteLength:=ReportLength;
               ReportLength:=0;
             end;
           end;
           if (hid_id.Data.T=GLOBAL) then
           begin
+            // Check if the descriptor contains any Report ID
             if ((hid_id.Data.F=REPORT_ID) AND (hid_id.Data.L=1)) then
             begin
               FHidrawReportIDIncluded:=True;
               {$IFDEF debug}
-              FMyController.DebugInfo:='Parser: Start collection';
               FMyController.DebugInfo:='Report ID found !!!!!!';
               FMyController.DebugInfo:='ID: '+InttoStr(rpt_desc.value[i]);
               FMyController.DebugInfo:='So, when reading from /dev/hidraw, the Report ID is included in the read !!!!';
               {$ENDIF}
             end;
+            // We have a report count !!
             if (hid_id.Data.F=REPORT_COUNT) then
             begin
               ReportLength:=rpt_desc.value[i];
@@ -2523,13 +2575,85 @@ begin
   result:=(ret>=0);
 end;
 
+{$ifdef hidraw}
+function TJvHidDevice.ReadFileTimeOut(var Report; const ToRead: DWORD; var BytesRead: DWORD; const TimeOut:DWORD): Boolean;
+var
+  readBufferByte               : packed array[0..64] of byte;
+  j                            : integer;
+  ret                          : cint;
+  BytesLeft                    : DWORD;
+begin
+  result:=false;
+
+  if (HidFileHandle=INVALID_HANDLE_VALUE)  then exit;
+
+  BytesRead:=0;
+  ret:=-1;
+
+  if OpenFile then
+  begin
+    if CanRead(TimeOut*1000) then
+    begin
+      BytesRead:=0;
+      BytesLeft:=ToRead;
+      if (NOT FHidrawReportIDIncluded) then
+      begin
+        Dec(BytesLeft,1);
+        BytesRead:=1;
+      end;
+      repeat
+        InitWithoutHint(readBufferByte);
+        ret:={%H-}FpRead( cint(HidFileHandle), readBufferByte, BytesLeft);
+        if (ret<0) then
+        begin
+          FErr:=fpGetErrno;
+          break; // Error
+        end;
+        if ret=0 then break; // EOF
+        Dec(BytesLeft,ret);
+        for j:=0 to Pred(ret) do
+        begin
+          PByte(@Report+BytesRead)^:=byte(readBufferByte[j]);
+          Inc(BytesRead);
+        end;
+        if (BytesLeft=0) then break;
+      until (NOT CanRead(TimeOut*1000));
+    end;
+  end;
+  result:=(ret>=0);
+end;
+
+function TJvHidDevice.WriteFile(const Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
+var
+  ret        : cint;
+begin
+  result:=false;
+  if (HidFileHandle=INVALID_HANDLE_VALUE)  then exit;
+  ret:=-1;
+  BytesWritten:=0;
+  if OpenFile then
+  begin
+    if CanWrite(0) then
+    begin
+      ret:=FpWrite( cint(HidFileHandle), Report, ToWrite);
+      if (ret>=0) then
+      begin
+        BytesWritten:=ret;
+      end;
+    end;
+  end;
+  result :=(ret>=0);
+end;
+{$endif hidraw}
+
+{$ifdef hiddev}
 function TJvHidDevice.ReadFileTimeOut(var Report; const ToRead: DWORD; var BytesRead: DWORD; const TimeOut:DWORD): Boolean;
 var
   //ref_multi_in                 : hiddev_usage_ref_multi;
   //rinfo_in                     : hiddev_report_info;
+  //readBufferByte               : packed array[0..64] of byte;
   //ev                           : hiddev_event;
   readBuffer                   : array[0..64] of hiddev_event;
-  readBufferByte               : packed array[0..64] of byte;
   i,j                          : integer;
   ret                          : cint;
   BytesLeft                    : DWORD;
@@ -2542,21 +2666,13 @@ begin
   BytesRead:=0;
   ret:=-1;
 
-  {$ifdef NON_BLOCKING}
+  // The ReportID is not included in the read of hiddev !!
+  // So skip it and get only (ToRead-1) data values
+  // Done by starting with byte 1 of the Report variable
+
+  {$ifndef NON_BLOCKING}
   if OpenFile then
   begin
-    {$ifdef hidraw}
-    if CanRead(TimeOut*1000) then
-    begin
-      ret:=FpRead( cint(HidFileHandle), Report, ToRead);
-      if (ret>=0) then
-      begin
-        BytesRead:=ret;
-      end;
-    end;
-    {$endif hidraw}
-
-    {$ifdef hiddev}
     // This is a multi-byte non-blocking read
     BytesRead:=1;
     BytesLeft:=(ToRead-1);
@@ -2607,50 +2723,10 @@ begin
         end;
       end;
     end;
-    {$endif hiddev}
   end;
-
   {$else}
-
   if OpenFile then
   begin
-    {$ifdef hidraw}
-    if CanRead(TimeOut*1000) then
-    begin
-      BytesRead:=0;
-      BytesLeft:=ToRead;
-      if NOT FHidrawReportIDIncluded then
-      begin
-        Dec(BytesLeft,1);
-        BytesRead:=1;
-      end;
-      while CanRead(TimeOut*1000) do
-      begin
-        InitWithoutHint(readBufferByte);
-        ret:={%H-}FpRead( cint(HidFileHandle), readBufferByte, BytesLeft);
-        if (ret<0) then
-        begin
-          FErr:=fpGetErrno;
-          break; // Error
-        end;
-        if ret=0 then break; // EOF
-        i:=ret;
-        Dec(BytesLeft,i);
-        for j:=0 to Pred(i) do
-        begin
-          PByte(@Report+BytesRead)^:=byte(readBufferByte[j]);
-          Inc(BytesRead);
-        end;
-        if (BytesLeft=0) then break;
-      end;
-    end;
-    {$endif hidraw}
-
-    // The ReportID is not included in the read of hiddev !!
-    // So skip it and get only (ToRead-1) data values
-    // Done by starting with byte 1 of the Report variable
-
-    {$ifdef hiddev}
     // This is a multi-byte read
     BytesRead:=1;
     BytesLeft:=(ToRead-1);
@@ -2680,9 +2756,8 @@ begin
       end;
       if (BytesLeft=0) then break;
     end;
-    {$endif hiddev}
 
-    {$ifdef hiddevv}
+    {$ifdef codeenabled}
     // This is a single-byte read
     BytesRead:=1;
     while CanRead(TimeOut*1000) do
@@ -2713,61 +2788,66 @@ begin
         raise e;
       end;
     end;
-    {$endif hiddevv}
+    {$endif codeenabled}
 
-    {$ifdef hiddevv}
-    if CanRead(TimeOut*1000) then
-    begin
-      //fpioctl(cint(HidFileHandle),HIDIOCINITREPORT,Nil);
-      rinfo_in:=Default(hiddev_report_info);
-      rinfo_in.report_type := HID_REPORT_TYPE_INPUT;
-      rinfo_in.report_id := HID_REPORT_ID;
-      rinfo_in.num_fields := 1;
-      ret:=fpioctl(cint(HidFileHandle),HIDIOCGREPORT,@rinfo_in);
-      if (ret>=0) then
-      begin
-        ref_multi_in:=Default(hiddev_usage_ref_multi);
-        ref_multi_in.uref.report_type := HID_REPORT_TYPE_INPUT;
-        ref_multi_in.uref.report_id := HID_REPORT_ID;
-        ref_multi_in.uref.field_index := 0;
-        ref_multi_in.uref.usage_index := 0; // byte index???
-        ref_multi_in.num_values := (ToRead-1);
-        ret:=fpioctl(cint(HidFileHandle), HIDIOCGUSAGES, @ref_multi_in);
-        if (ret>=0) then
-        begin
-          InitWithoutHint(readBufferByte);
-          for i:=1 to (ToRead) do readBufferByte[i] := byte(ref_multi_in.values[i-1]);
-          Move(Report, readBufferByte, 1);
-          Move(readBufferByte, Report, ToRead);
-          BytesRead := ToRead;
-          // This is tricky: we need to empty the read buffer with the correct amount
-          FlushQueue((ToRead-1)*sizeof(hiddev_event));
-        end;
-      end;
-    end;
-    {$endif hiddevv}
   end;
   {$endif}
 
+  {$ifdef codeenabled}
+  if CanRead(TimeOut*1000) then
+  begin
+    //fpioctl(cint(HidFileHandle),HIDIOCINITREPORT,Nil);
+
+    BytesLeft:=ToRead;
+    if BytesLeft>Caps.InputReportByteLength then BytesLeft:=Caps.InputReportByteLength;
+    // We do not read the ReportID !
+    // So, read 1 byte less
+    Dec(BytesLeft);
+
+    InitWithoutHint(readBufferByte);
+    // Copy the Report ID
+    Move(Report, readBufferByte, 1);
+
+    rinfo_in:=Default(hiddev_report_info);
+    rinfo_in.report_type := HID_REPORT_TYPE_INPUT;
+    rinfo_in.report_id := readBufferByte[0];
+    rinfo_in.num_fields := 1;
+    ret:=fpioctl(cint(HidFileHandle),HIDIOCGREPORT,@rinfo_in);
+    if (ret>=0) then
+    begin
+      ref_multi_in:=Default(hiddev_usage_ref_multi);
+      ref_multi_in.uref.report_type := HID_REPORT_TYPE_INPUT;
+      ref_multi_in.uref.report_id := readBufferByte[0];
+      ref_multi_in.uref.field_index := 0;
+      ref_multi_in.uref.usage_index := 0; // byte index???
+      ref_multi_in.num_values := BytesLeft;
+      ret:=fpioctl(cint(HidFileHandle), HIDIOCGUSAGES, @ref_multi_in);
+      if (ret>=0) then
+      begin
+        // This is tricky: we need to empty the read buffer with the correct amount
+        FlushQueue((BytesLeft)*sizeof(hiddev_event));
+        // Copy the data into the buffer
+        for i:=1 to BytesLeft do readBufferByte[i] := byte(ref_multi_in.values[i-1]);
+        // Include Report ID again
+        Inc(BytesLeft);
+        Move(readBufferByte, Report, BytesLeft);
+        BytesRead := BytesLeft;
+      end;
+    end;
+  end;
+  {$endif codeenabled}
 
   result:=(ret>=0);
 end;
 
-function TJvHidDevice.ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
-begin
-  result:=Self.ReadFileTimeOut(Report,ToRead,BytesRead,0);
-end;
-
 function TJvHidDevice.WriteFile(const Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
 var
-  {$ifdef hiddev}
   ref_multi_out                : hiddev_usage_ref_multi;
   rinfo_out                    : hiddev_report_info;
   writeBufferByte              : packed array[0..64] of byte;
-  {$endif hiddev}
-  //writeBuffer                  : packed array[0..64] of hiddev_event;
   i                            : integer;
-  flags,ret                    : cint;
+  ret                          : cint;
+  //flags                        : cint;
   BytesToWrite                 : DWORD;
 begin
   result:=false;
@@ -2780,18 +2860,6 @@ begin
 
   if OpenFile then
   begin
-    {$ifdef hidraw}
-    if CanWrite(0) then
-    begin
-      ret:=FpWrite( cint(HidFileHandle), Report, ToWrite);
-      if (ret>=0) then
-      begin
-        BytesWritten:=ret;
-      end;
-    end;
-    {$endif hidraw}
-
-    {$ifdef hiddev}
     InitWithoutHint(writeBufferByte);
     Move(Report,writeBufferByte,ToWrite);
 
@@ -2828,9 +2896,14 @@ begin
         end;
       end;
     end;
-    {$endif hiddev}
   end;
   result :=(ret>=0);
+end;
+{$endif hiddev}
+
+function TJvHidDevice.ReadFile(var Report; ToRead: DWORD; var BytesRead: DWORD): Boolean;
+begin
+  result:=Self.ReadFileTimeOut(Report,ToRead,BytesRead,0);
 end;
 
 procedure TJvHidDevice.DoUnplug;
