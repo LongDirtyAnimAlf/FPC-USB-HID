@@ -226,11 +226,9 @@ type
 
 const
 
-  _ION                   = TIOCtlRequest(0);
-  //_ION                   = TIOCtlRequest(1);
+  _ION                  = TIOCtlRequest(0);
   _IOW                  = TIOCtlRequest(1);
   _IOR                  = TIOCtlRequest(2);
-  //_IOW                  = TIOCtlRequest(4);
   _IOWR                 = (_IOR OR _IOW);
 
   _IOC_NRBITS           = 8;
@@ -267,8 +265,8 @@ const
   HIDIOCGRDESCSIZE      = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(cint) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($01 shl _IOC_NRSHIFT));
   HIDIOCGRDESC          = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(hidraw_report_descriptor) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($02 shl _IOC_NRSHIFT));
   HIDIOCGRAWINFO        = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (sizeof(hidraw_devinfo) shl _IOC_SIZESHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($03 shl _IOC_NRSHIFT));
-  HIDIOCGRAWNAMEBASE    = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) OR (Ord('H') shl _IOC_TYPESHIFT) OR ($04 shl _IOC_NRSHIFT));
-  HIDIOCGRAWPHYSBASE    = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) OR (Ord('H') shl _IOC_TYPESHIFT) OR ($05 shl _IOC_NRSHIFT));
+  HIDIOCGRAWNAMEBASE    = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($04 shl _IOC_NRSHIFT));
+  HIDIOCGRAWPHYSBASE    = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($05 shl _IOC_NRSHIFT));
   HIDIOCSFEATUREBASE    = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($06 shl _IOC_NRSHIFT));
   HIDIOCGFEATUREBASE    = TIOCtlRequest((_IOWR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($07 shl _IOC_NRSHIFT));
   HIDIOCGRAWUNIQBASE    = TIOCtlRequest((_IOR shl _IOC_DIRSHIFT) + (Ord('H') shl _IOC_TYPESHIFT) + ($08 shl _IOC_NRSHIFT));
@@ -369,6 +367,7 @@ type
   TJvHidDeviceReadThread = class(TThread)
   private
     FErr: DWORD;
+    FThreadLock: TRTLCriticalSection;
     procedure DoData;
     procedure DoDataError;
     {%H-}constructor CtlCreate(const Dev: TJvHidDevice);
@@ -481,10 +480,11 @@ type
 
   TJvHidDeviceControllerMonitorThread = class(TThread)
   private
+    FThreadLock: TRTLCriticalSection;
     FUSBController: TJvHidDeviceController;
     fNode:string;
   protected
-    procedure   Execute; override;
+    procedure Execute; override;
   public
     constructor CreateUSBChangeThread(USBController: TJvHidDeviceController);
   end;
@@ -703,11 +703,11 @@ end;
 // hidraw
 function HIDIOCGRAWNAME(len:word):TIOCtlRequest;
 begin
-  result:=HIDIOCGRAWNAMEBASE OR TIOCtlRequest(len shl _IOC_SIZESHIFT);
+  result:=HIDIOCGRAWNAMEBASE + TIOCtlRequest(len shl _IOC_SIZESHIFT);
 end;
 function HIDIOCGRAWPHYS(len:word):TIOCtlRequest;
 begin
-  result:=HIDIOCGRAWPHYSBASE OR TIOCtlRequest(len shl _IOC_SIZESHIFT);
+  result:=HIDIOCGRAWPHYSBASE + TIOCtlRequest(len shl _IOC_SIZESHIFT);
 end;
 function HIDIOCSFEATURE(len:word):TIOCtlRequest;
 begin
@@ -860,11 +860,23 @@ begin
         if not FUSBController.FInDeviceChange then
         begin
           FUSBController.FInDeviceChange := True;
-
-          // choose one of the following
-          FUSBController.DeviceChange;
-          //Synchronize(@FUSBController.DeviceChange);
-          FUSBController.FInDeviceChange := False;
+          try
+            if IsLibrary then
+            begin
+              EnterCriticalSection(FThreadLock);
+              try
+                FUSBController.DeviceChange;
+              finally
+                LeaveCriticalSection(FThreadLock);
+              end;
+            end
+            else
+              // Choose one of the following
+              Synchronize(@FUSBController.DeviceChange);
+              //Queue(@FUSBController.DeviceChange);
+          finally
+            FUSBController.FInDeviceChange := False;
+          end;
         end;
         {$IFDEF debug}
         FUSBController.DebugInfo:='Enum devpath: '+ udev_device_get_devpath(localudev_device);
@@ -1844,12 +1856,18 @@ begin
             if (ret>=0) then
             begin
               if IsLibrary then
-                DoData
+              begin
+                EnterCriticalSection(FThreadLock);
+                try
+                  DoData
+                finally
+                  LeaveCriticalSection(FThreadLock);
+                end;
+              end
               else
                 // choose one of the below to signal the availability of data
-                //DoData;
-                //Synchronize(@DoData);
-                Queue(@DoData);
+                Synchronize(@DoData);
+                //Queue(@DoData);
               if (Device.PollingDelayTime > 0) then  // Throttle device polling
                 SysUtils.Sleep(Device.PollingDelayTime);
             end

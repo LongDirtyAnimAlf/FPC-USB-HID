@@ -180,6 +180,7 @@ type
   TJvHidDeviceReadThread = class(TJvCustomThread)
   private
     FErr: DWORD;
+    FThreadLock: TRTLCriticalSection;
     procedure DoData;
     procedure DoDataError;
     constructor CtlCreate(const Dev: TJvHidDevice);
@@ -190,6 +191,7 @@ type
     NumBytesRead: Cardinal;
     Report: array of Byte;
     constructor Create(CreateSuspended: Boolean);
+    destructor Destroy; override;
   end;
 
   // the representation of a HID device
@@ -581,13 +583,19 @@ begin
     SetLength(Report, Device.Caps.InputReportByteLength);
     FillChar(Report[0], Device.Caps.InputReportByteLength, #0);
   end else Terminate;
+  Windows.InitializeCriticalSection(FThreadLock);
   Start;
 end;
-
 
 constructor TJvHidDeviceReadThread.Create(CreateSuspended: Boolean);
 begin
   raise EControllerError.CreateRes(@RsEDirectThreadCreationNotAllowed);
+end;
+
+destructor TJvHidDeviceReadThread.Destroy;
+begin
+  Windows.DeleteCriticalSection(FThreadLock);
+  inherited;
 end;
 
 procedure TJvHidDeviceReadThread.DoData;
@@ -676,12 +684,18 @@ begin
       if Success then
       begin
         if IsLibrary then
-          DoData
+        begin
+          EnterCriticalSection(FThreadLock);
+          try
+            DoData
+          finally
+            LeaveCriticalSection(FThreadLock);
+          end;
+        end
         else
           // choose one of the below to signal the availability of data
-          //DoData;
-          //Synchronize(DoData);
-          Queue(DoData);
+          Synchronize(DoData);
+          //Queue(DoData);
         if (Device.PollingDelayTime > 0) then  // Throttle device polling
           Sleep(Device.PollingDelayTime);
       end
