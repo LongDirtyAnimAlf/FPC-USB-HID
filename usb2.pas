@@ -1,5 +1,9 @@
 unit usb2;
 
+{$ifdef FPC}
+  {$mode DELPHI}
+{$endif}
+
 interface
 
 {$define USEHASHLIST}

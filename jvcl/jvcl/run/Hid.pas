@@ -38,6 +38,10 @@
 
 unit Hid;
 
+{$ifdef FPC}
+  {$mode DELPHI}
+{$endif}
+
 interface
 
 {$WEAKPACKAGEUNIT}
@@ -1984,57 +1988,57 @@ function HidP_InitializeReportForID(ReportType: THIDPReportType;
     var Report; ReportLength: ULONG): NTSTATUS; stdcall;
 
 var
-  HidD_Hello: THidD_Hello;
-  HidD_GetHidGuid: THidD_GetHidGuid;
-  HidD_GetPreparsedData: THidD_GetPreparsedData;
-  HidD_FreePreparsedData: THidD_FreePreparsedData;
-  HidD_GetConfiguration: THidD_GetConfiguration;
-  HidD_SetConfiguration: THidD_SetConfiguration;
-  HidD_FlushQueue: THidD_FlushQueue;
-  HidD_GetFeature: THidD_GetFeature;
-  HidD_SetFeature: THidD_SetFeature;
-  HidD_GetNumInputBuffers: THidD_GetNumInputBuffers;
-  HidD_SetNumInputBuffers: THidD_SetNumInputBuffers;
-  HidD_GetAttributes: THidD_GetAttributes;
-  HidD_GetManufacturerString: THidD_GetManufacturerString;
-  HidD_GetProductString: THidD_GetProductString;
-  HidD_GetSerialNumberString: THidD_GetSerialNumberString;
-  HidD_GetPhysicalDescriptor: THidD_GetPhysicalDescriptor;
-  HidD_GetIndexedString: THidD_GetIndexedString;
+  HidD_Hello: THidD_Hello = nil;
+  HidD_GetHidGuid: THidD_GetHidGuid = nil;
+  HidD_GetPreparsedData: THidD_GetPreparsedData = nil;
+  HidD_FreePreparsedData: THidD_FreePreparsedData = nil;
+  HidD_GetConfiguration: THidD_GetConfiguration = nil;
+  HidD_SetConfiguration: THidD_SetConfiguration = nil;
+  HidD_FlushQueue: THidD_FlushQueue = nil;
+  HidD_GetFeature: THidD_GetFeature = nil;
+  HidD_SetFeature: THidD_SetFeature = nil;
+  HidD_GetNumInputBuffers: THidD_GetNumInputBuffers = nil;
+  HidD_SetNumInputBuffers: THidD_SetNumInputBuffers = nil;
+  HidD_GetAttributes: THidD_GetAttributes = nil;
+  HidD_GetManufacturerString: THidD_GetManufacturerString = nil;
+  HidD_GetProductString: THidD_GetProductString = nil;
+  HidD_GetSerialNumberString: THidD_GetSerialNumberString = nil;
+  HidD_GetPhysicalDescriptor: THidD_GetPhysicalDescriptor = nil;
+  HidD_GetIndexedString: THidD_GetIndexedString = nil;
 
   // (rom) new XP functions
-  HidD_GetInputReport: THidD_GetInputReport;
-  HidD_SetOutputReport: THidD_SetOutputReport;
+  HidD_GetInputReport: THidD_GetInputReport = nil;
+  HidD_SetOutputReport: THidD_SetOutputReport = nil;
 
-  HidP_GetCaps: THidP_GetCaps;
-  HidP_GetLinkCollectionNodes: THidP_GetLinkCollectionNodes;
-  HidP_GetSpecificButtonCaps: THidP_GetSpecificButtonCaps;
-  HidP_GetSpecificValueCaps: THidP_GetSpecificValueCaps;
-  HidP_GetData: THidP_GetData;
-  HidP_SetData: THidP_SetData;
-  HidP_MaxDataListLength: THidP_MaxDataListLength;
-  HidP_GetUsages: THidP_GetUsages;
-  HidP_GetButtons: THidP_GetButtons;
-  HidP_GetUsagesEx: THidP_GetUsagesEx;
-  HidP_GetButtonsEx: THidP_GetButtonsEx;
-  HidP_SetUsages: THidP_SetUsages;
-  HidP_SetButtons: THidP_SetButtons;
-  HidP_UnsetUsages: THidP_UnsetUsages;
-  HidP_UnsetButtons: THidP_UnsetButtons;
-  HidP_MaxUsageListLength: THidP_MaxUsageListLength;
-  HidP_MaxButtonListLength: THidP_MaxButtonListLength;
-  HidP_GetUsageValue: THidP_GetUsageValue;
-  HidP_GetScaledUsageValue: THidP_GetScaledUsageValue;
-  HidP_GetUsageValueArray: THidP_GetUsageValueArray;
-  HidP_SetUsageValue: THidP_SetUsageValue;
-  HidP_SetScaledUsageValue: THidP_SetScaledUsageValue;
-  HidP_SetUsageValueArray: THidP_SetUsageValueArray;
-  HidP_UsageListDifference: THidP_UsageListDifference;
-  HidP_TranslateUsagesToI8042ScanCodes: THidP_TranslateUsagesToI8042ScanCodes;
+  HidP_GetCaps: THidP_GetCaps = nil;
+  HidP_GetLinkCollectionNodes: THidP_GetLinkCollectionNodes = nil;
+  HidP_GetSpecificButtonCaps: THidP_GetSpecificButtonCaps = nil;
+  HidP_GetSpecificValueCaps: THidP_GetSpecificValueCaps = nil;
+  HidP_GetData: THidP_GetData = nil;
+  HidP_SetData: THidP_SetData = nil;
+  HidP_MaxDataListLength: THidP_MaxDataListLength = nil;
+  HidP_GetUsages: THidP_GetUsages = nil;
+  HidP_GetButtons: THidP_GetButtons = nil;
+  HidP_GetUsagesEx: THidP_GetUsagesEx = nil;
+  HidP_GetButtonsEx: THidP_GetButtonsEx = nil;
+  HidP_SetUsages: THidP_SetUsages = nil;
+  HidP_SetButtons: THidP_SetButtons = nil;
+  HidP_UnsetUsages: THidP_UnsetUsages = nil;
+  HidP_UnsetButtons: THidP_UnsetButtons = nil;
+  HidP_MaxUsageListLength: THidP_MaxUsageListLength = nil;
+  HidP_MaxButtonListLength: THidP_MaxButtonListLength = nil;
+  HidP_GetUsageValue: THidP_GetUsageValue = nil;
+  HidP_GetScaledUsageValue: THidP_GetScaledUsageValue = nil;
+  HidP_GetUsageValueArray: THidP_GetUsageValueArray = nil;
+  HidP_SetUsageValue: THidP_SetUsageValue = nil;
+  HidP_SetScaledUsageValue: THidP_SetScaledUsageValue = nil;
+  HidP_SetUsageValueArray: THidP_SetUsageValueArray = nil;
+  HidP_UsageListDifference: THidP_UsageListDifference = nil;
+  HidP_TranslateUsagesToI8042ScanCodes: THidP_TranslateUsagesToI8042ScanCodes = nil;
 
   // (rom) new XP functions
-  HidP_GetExtendedAttributes: THidP_GetExtendedAttributes;
-  HidP_InitializeReportForID: THidP_InitializeReportForID;
+  HidP_GetExtendedAttributes: THidP_GetExtendedAttributes = nil;
+  HidP_InitializeReportForID: THidP_InitializeReportForID = nil;
 
 {$ENDIF HID_LINKONREQUEST}
 
@@ -2220,57 +2224,57 @@ begin
   Result := LoadModule(HidLib, HidModuleName);
   if Result then
   begin
-    @HidD_Hello := GetModuleSymbolEx(HidLib, 'HidD_Hello', Result);
-    @HidD_GetHidGuid := GetModuleSymbolEx(HidLib, 'HidD_GetHidGuid', Result);
-    @HidD_GetPreparsedData := GetModuleSymbolEx(HidLib, 'HidD_GetPreparsedData', Result);
-    @HidD_FreePreparsedData := GetModuleSymbolEx(HidLib, 'HidD_FreePreparsedData', Result);
-    @HidD_GetConfiguration := GetModuleSymbolEx(HidLib, 'HidD_GetConfiguration', Result);
-    @HidD_SetConfiguration := GetModuleSymbolEx(HidLib, 'HidD_SetConfiguration', Result);
-    @HidD_FlushQueue := GetModuleSymbolEx(HidLib, 'HidD_FlushQueue', Result);
-    @HidD_GetFeature := GetModuleSymbolEx(HidLib, 'HidD_GetFeature', Result);
-    @HidD_SetFeature := GetModuleSymbolEx(HidLib, 'HidD_SetFeature', Result);
-    @HidD_GetNumInputBuffers := GetModuleSymbolEx(HidLib, 'HidD_GetNumInputBuffers', Result);
-    @HidD_SetNumInputBuffers := GetModuleSymbolEx(HidLib, 'HidD_SetNumInputBuffers', Result);
-    @HidD_GetAttributes := GetModuleSymbolEx(HidLib, 'HidD_GetAttributes', Result);
-    @HidD_GetManufacturerString := GetModuleSymbolEx(HidLib, 'HidD_GetManufacturerString', Result);
-    @HidD_GetProductString := GetModuleSymbolEx(HidLib, 'HidD_GetProductString', Result);
-    @HidD_GetSerialNumberString := GetModuleSymbolEx(HidLib, 'HidD_GetSerialNumberString', Result);
-    @HidD_GetPhysicalDescriptor := GetModuleSymbolEx(HidLib, 'HidD_GetPhysicalDescriptor', Result);
-    @HidD_GetIndexedString := GetModuleSymbolEx(HidLib, 'HidD_GetIndexedString', Result);
+    (HidD_Hello) := GetModuleSymbolEx(HidLib, 'HidD_Hello', Result);
+    (HidD_GetHidGuid) := GetModuleSymbolEx(HidLib, 'HidD_GetHidGuid', Result);
+    (HidD_GetPreparsedData) := GetModuleSymbolEx(HidLib, 'HidD_GetPreparsedData', Result);
+    (HidD_FreePreparsedData) := GetModuleSymbolEx(HidLib, 'HidD_FreePreparsedData', Result);
+    (HidD_GetConfiguration) := GetModuleSymbolEx(HidLib, 'HidD_GetConfiguration', Result);
+    (HidD_SetConfiguration) := GetModuleSymbolEx(HidLib, 'HidD_SetConfiguration', Result);
+    (HidD_FlushQueue) := GetModuleSymbolEx(HidLib, 'HidD_FlushQueue', Result);
+    (HidD_GetFeature) := GetModuleSymbolEx(HidLib, 'HidD_GetFeature', Result);
+    (HidD_SetFeature) := GetModuleSymbolEx(HidLib, 'HidD_SetFeature', Result);
+    (HidD_GetNumInputBuffers) := GetModuleSymbolEx(HidLib, 'HidD_GetNumInputBuffers', Result);
+    (HidD_SetNumInputBuffers) := GetModuleSymbolEx(HidLib, 'HidD_SetNumInputBuffers', Result);
+    (HidD_GetAttributes) := GetModuleSymbolEx(HidLib, 'HidD_GetAttributes', Result);
+    (HidD_GetManufacturerString) := GetModuleSymbolEx(HidLib, 'HidD_GetManufacturerString', Result);
+    (HidD_GetProductString) := GetModuleSymbolEx(HidLib, 'HidD_GetProductString', Result);
+    (HidD_GetSerialNumberString) := GetModuleSymbolEx(HidLib, 'HidD_GetSerialNumberString', Result);
+    (HidD_GetPhysicalDescriptor) := GetModuleSymbolEx(HidLib, 'HidD_GetPhysicalDescriptor', Result);
+    (HidD_GetIndexedString) := GetModuleSymbolEx(HidLib, 'HidD_GetIndexedString', Result);
     if (Win32Platform = VER_PLATFORM_WIN32_NT) and JclCheckWinVersion(5, 1) then
     begin
-      @HidD_GetInputReport := GetModuleSymbolEx(HidLib, 'HidD_GetInputReport', Result);
-      @HidD_SetOutputReport := GetModuleSymbolEx(HidLib, 'HidD_SetOutputReport', Result);
+      (HidD_GetInputReport) := GetModuleSymbolEx(HidLib, 'HidD_GetInputReport', Result);
+      (HidD_SetOutputReport) := GetModuleSymbolEx(HidLib, 'HidD_SetOutputReport', Result);
     end;
-    @HidP_GetCaps := GetModuleSymbolEx(HidLib, 'HidP_GetCaps', Result);
-    @HidP_GetLinkCollectionNodes := GetModuleSymbolEx(HidLib, 'HidP_GetLinkCollectionNodes', Result);
-    @HidP_GetSpecificButtonCaps := GetModuleSymbolEx(HidLib, 'HidP_GetSpecificButtonCaps', Result);
-    @HidP_GetSpecificValueCaps := GetModuleSymbolEx(HidLib, 'HidP_GetSpecificValueCaps', Result);
-    @HidP_GetData := GetModuleSymbolEx(HidLib, 'HidP_GetData', Result);
-    @HidP_SetData := GetModuleSymbolEx(HidLib, 'HidP_SetData', Result);
-    @HidP_MaxDataListLength := GetModuleSymbolEx(HidLib, 'HidP_MaxDataListLength', Result);
-    @HidP_GetUsages := GetModuleSymbolEx(HidLib, 'HidP_GetUsages', Result);
-    @HidP_GetButtons := GetModuleSymbolEx(HidLib, 'HidP_GetUsages', Result);
-    @HidP_GetUsagesEx := GetModuleSymbolEx(HidLib, 'HidP_GetUsagesEx', Result);
-    @HidP_GetButtonsEx := GetModuleSymbolEx(HidLib, 'HidP_GetUsagesEx', Result);
-    @HidP_SetUsages := GetModuleSymbolEx(HidLib, 'HidP_SetUsages', Result);
-    @HidP_SetButtons := GetModuleSymbolEx(HidLib, 'HidP_SetUsages', Result);
-    @HidP_UnsetUsages := GetModuleSymbolEx(HidLib, 'HidP_UnsetUsages', Result);
-    @HidP_UnsetButtons := GetModuleSymbolEx(HidLib, 'HidP_UnsetUsages', Result);
-    @HidP_MaxUsageListLength := GetModuleSymbolEx(HidLib, 'HidP_MaxUsageListLength', Result);
-    @HidP_MaxButtonListLength := GetModuleSymbolEx(HidLib, 'HidP_MaxUsageListLength', Result);
-    @HidP_GetUsageValue := GetModuleSymbolEx(HidLib, 'HidP_GetUsageValue', Result);
-    @HidP_GetScaledUsageValue := GetModuleSymbolEx(HidLib, 'HidP_GetScaledUsageValue', Result);
-    @HidP_GetUsageValueArray := GetModuleSymbolEx(HidLib, 'HidP_GetUsageValueArray', Result);
-    @HidP_SetUsageValue := GetModuleSymbolEx(HidLib, 'HidP_SetUsageValue', Result);
-    @HidP_SetScaledUsageValue := GetModuleSymbolEx(HidLib, 'HidP_SetScaledUsageValue', Result);
-    @HidP_SetUsageValueArray := GetModuleSymbolEx(HidLib, 'HidP_SetUsageValueArray', Result);
-    @HidP_UsageListDifference := GetModuleSymbolEx(HidLib, 'HidP_UsageListDifference', Result);
-    @HidP_TranslateUsagesToI8042ScanCodes := GetModuleSymbolEx(HidLib, 'HidP_TranslateUsagesToI8042ScanCodes', Result);
+    (HidP_GetCaps) := GetModuleSymbolEx(HidLib, 'HidP_GetCaps', Result);
+    (HidP_GetLinkCollectionNodes) := GetModuleSymbolEx(HidLib, 'HidP_GetLinkCollectionNodes', Result);
+    (HidP_GetSpecificButtonCaps) := GetModuleSymbolEx(HidLib, 'HidP_GetSpecificButtonCaps', Result);
+    (HidP_GetSpecificValueCaps) := GetModuleSymbolEx(HidLib, 'HidP_GetSpecificValueCaps', Result);
+    (HidP_GetData) := GetModuleSymbolEx(HidLib, 'HidP_GetData', Result);
+    (HidP_SetData) := GetModuleSymbolEx(HidLib, 'HidP_SetData', Result);
+    (HidP_MaxDataListLength) := GetModuleSymbolEx(HidLib, 'HidP_MaxDataListLength', Result);
+    (HidP_GetUsages) := GetModuleSymbolEx(HidLib, 'HidP_GetUsages', Result);
+    (HidP_GetButtons) := GetModuleSymbolEx(HidLib, 'HidP_GetUsages', Result);
+    (HidP_GetUsagesEx) := GetModuleSymbolEx(HidLib, 'HidP_GetUsagesEx', Result);
+    (HidP_GetButtonsEx) := GetModuleSymbolEx(HidLib, 'HidP_GetUsagesEx', Result);
+    (HidP_SetUsages) := GetModuleSymbolEx(HidLib, 'HidP_SetUsages', Result);
+    (HidP_SetButtons) := GetModuleSymbolEx(HidLib, 'HidP_SetUsages', Result);
+    (HidP_UnsetUsages) := GetModuleSymbolEx(HidLib, 'HidP_UnsetUsages', Result);
+    (HidP_UnsetButtons) := GetModuleSymbolEx(HidLib, 'HidP_UnsetUsages', Result);
+    (HidP_MaxUsageListLength) := GetModuleSymbolEx(HidLib, 'HidP_MaxUsageListLength', Result);
+    (HidP_MaxButtonListLength) := GetModuleSymbolEx(HidLib, 'HidP_MaxUsageListLength', Result);
+    (HidP_GetUsageValue) := GetModuleSymbolEx(HidLib, 'HidP_GetUsageValue', Result);
+    (HidP_GetScaledUsageValue) := GetModuleSymbolEx(HidLib, 'HidP_GetScaledUsageValue', Result);
+    (HidP_GetUsageValueArray) := GetModuleSymbolEx(HidLib, 'HidP_GetUsageValueArray', Result);
+    (HidP_SetUsageValue) := GetModuleSymbolEx(HidLib, 'HidP_SetUsageValue', Result);
+    (HidP_SetScaledUsageValue) := GetModuleSymbolEx(HidLib, 'HidP_SetScaledUsageValue', Result);
+    (HidP_SetUsageValueArray) := GetModuleSymbolEx(HidLib, 'HidP_SetUsageValueArray', Result);
+    (HidP_UsageListDifference) := GetModuleSymbolEx(HidLib, 'HidP_UsageListDifference', Result);
+    (HidP_TranslateUsagesToI8042ScanCodes) := GetModuleSymbolEx(HidLib, 'HidP_TranslateUsagesToI8042ScanCodes', Result);
     if (Win32Platform = VER_PLATFORM_WIN32_NT) and JclCheckWinVersion(5, 0) then
     begin
-      @HidP_GetExtendedAttributes := GetModuleSymbolEx(HidLib, 'HidP_GetExtendedAttributes', Result);
-      @HidP_InitializeReportForID := GetModuleSymbolEx(HidLib, 'HidP_InitializeReportForID', Result);
+      (HidP_GetExtendedAttributes) := GetModuleSymbolEx(HidLib, 'HidP_GetExtendedAttributes', Result);
+      (HidP_InitializeReportForID) := GetModuleSymbolEx(HidLib, 'HidP_InitializeReportForID', Result);
     end;
     if not Result then
       UnloadHid;
@@ -2287,53 +2291,53 @@ begin
   if HidLoadCount > 0 then
     Exit;
   UnloadModule(HidLib);
-  @HidD_Hello := nil;
-  @HidD_GetHidGuid := nil;
-  @HidD_GetPreparsedData := nil;
-  @HidD_FreePreparsedData := nil;
-  @HidD_GetConfiguration := nil;
-  @HidD_SetConfiguration := nil;
-  @HidD_FlushQueue := nil;
-  @HidD_SetFeature := nil;
-  @HidD_GetNumInputBuffers := nil;
-  @HidD_SetNumInputBuffers := nil;
-  @HidD_GetAttributes := nil;
-  @HidD_GetManufacturerString := nil;
-  @HidD_GetProductString := nil;
-  @HidD_GetSerialNumberString := nil;
-  @HidD_GetPhysicalDescriptor := nil;
-  @HidD_GetIndexedString := nil;
+  (HidD_Hello) := nil;
+  (HidD_GetHidGuid) := nil;
+  (HidD_GetPreparsedData) := nil;
+  (HidD_FreePreparsedData) := nil;
+  (HidD_GetConfiguration) := nil;
+  (HidD_SetConfiguration) := nil;
+  (HidD_FlushQueue) := nil;
+  (HidD_SetFeature) := nil;
+  (HidD_GetNumInputBuffers) := nil;
+  (HidD_SetNumInputBuffers) := nil;
+  (HidD_GetAttributes) := nil;
+  (HidD_GetManufacturerString) := nil;
+  (HidD_GetProductString) := nil;
+  (HidD_GetSerialNumberString) := nil;
+  (HidD_GetPhysicalDescriptor) := nil;
+  (HidD_GetIndexedString) := nil;
 
-  @HidD_GetInputReport := nil;
-  @HidD_SetOutputReport := nil;
+  (HidD_GetInputReport) := nil;
+  (HidD_SetOutputReport) := nil;
 
-  @HidP_GetLinkCollectionNodes := nil;
-  @HidP_GetSpecificButtonCaps := nil;
-  @HidP_GetSpecificValueCaps := nil;
-  @HidP_GetData := nil;
-  @HidP_SetData := nil;
-  @HidP_MaxDataListLength := nil;
-  @HidP_GetUsages := nil;
-  @HidP_GetButtons := nil;
-  @HidP_GetUsagesEx := nil;
-  @HidP_GetButtonsEx := nil;
-  @HidP_SetUsages := nil;
-  @HidP_SetButtons := nil;
-  @HidP_UnsetUsages := nil;
-  @HidP_UnsetButtons := nil;
-  @HidP_MaxUsageListLength := nil;
-  @HidP_MaxButtonListLength := nil;
-  @HidP_GetUsageValue := nil;
-  @HidP_GetScaledUsageValue := nil;
-  @HidP_GetUsageValueArray := nil;
-  @HidP_SetUsageValue := nil;
-  @HidP_SetScaledUsageValue := nil;
-  @HidP_SetUsageValueArray := nil;
-  @HidP_UsageListDifference := nil;
-  @HidP_TranslateUsagesToI8042ScanCodes := nil;
+  (HidP_GetLinkCollectionNodes) := nil;
+  (HidP_GetSpecificButtonCaps) := nil;
+  (HidP_GetSpecificValueCaps) := nil;
+  (HidP_GetData) := nil;
+  (HidP_SetData) := nil;
+  (HidP_MaxDataListLength) := nil;
+  (HidP_GetUsages) := nil;
+  (HidP_GetButtons) := nil;
+  (HidP_GetUsagesEx) := nil;
+  (HidP_GetButtonsEx) := nil;
+  (HidP_SetUsages) := nil;
+  (HidP_SetButtons) := nil;
+  (HidP_UnsetUsages) := nil;
+  (HidP_UnsetButtons) := nil;
+  (HidP_MaxUsageListLength) := nil;
+  (HidP_MaxButtonListLength) := nil;
+  (HidP_GetUsageValue) := nil;
+  (HidP_GetScaledUsageValue) := nil;
+  (HidP_GetUsageValueArray) := nil;
+  (HidP_SetUsageValue) := nil;
+  (HidP_SetScaledUsageValue) := nil;
+  (HidP_SetUsageValueArray) := nil;
+  (HidP_UsageListDifference) := nil;
+  (HidP_TranslateUsagesToI8042ScanCodes) := nil;
 
-  @HidP_GetExtendedAttributes := nil;
-  @HidP_InitializeReportForID := nil;
+  (HidP_GetExtendedAttributes) := nil;
+  (HidP_InitializeReportForID) := nil;
   {$ENDIF HID_LINKONREQUEST}
 end;
 

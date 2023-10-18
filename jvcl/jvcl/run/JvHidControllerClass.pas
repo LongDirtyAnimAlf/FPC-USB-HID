@@ -715,6 +715,9 @@ end;
 //=== { TJvHidPnPInfo } ======================================================
 
 constructor TJvHidPnPInfo.Create(APnPHandle: HDEVINFO; ADevData: TSPDevInfoData; const ADevicePath: string);
+var
+  Buffer: array[0..1023] of Char;
+  BufferSize:dword;
 begin
   inherited Create;
   FDeviceID := ADevData.DevInst;
@@ -728,7 +731,15 @@ begin
   FConfigFlags := GetRegistryPropertyDWord(APnPHandle, ADevData, SPDRP_CONFIGFLAGS);
   FDeviceDescr := GetRegistryPropertyString(APnPHandle, ADevData, SPDRP_DEVICEDESC);
   FDriver := GetRegistryPropertyString(APnPHandle, ADevData, SPDRP_DRIVER);
+
   FFriendlyName := GetRegistryPropertyString(APnPHandle, ADevData, SPDRP_FRIENDLYNAME);
+  if Length(FFriendlyName)=0 then
+  begin
+    BufferSize:=0;
+    SetupDiGetClassDescription(ADevData.ClassGuid,Buffer,1024,{%H-}BufferSize);
+    if (BufferSize>0) then SetString(FFriendlyName,PChar(Buffer),BufferSize);
+  end;
+
   FHardwareID := GetRegistryPropertyStringList(APnPHandle, ADevData, SPDRP_HARDWAREID);
   FLowerFilters := GetRegistryPropertyStringList(APnPHandle, ADevData, SPDRP_LOWERFILTERS);
   FMfg := GetRegistryPropertyString(APnPHandle, ADevData, SPDRP_MFG);
