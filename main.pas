@@ -4,7 +4,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls,
-  usb2;
+  usb;
 
 type
 
@@ -39,35 +39,20 @@ implementation
 
 {$R *.lfm}
 
-
 function TMyUSB.CheckVendorProduct(const VID,PID:word):boolean;
 begin
+  // Allow all devices for testing !!
   result:=true;
 end;
 
 { TForm1 }
 
 procedure TForm1.btnHIDCreateClick(Sender: TObject);
-var
-  S:string;
 begin
   TButton(Sender).Enabled:=False;
   Memo1.Lines.Append('HID Created.');
   NewUSB:=TMyUSB.Create;
-  NewUSB.OnUSBDeviceChange:=UpdateUSBDevice;
   Memo1.Lines.Append('Ready.');
-  S:=NewUSB.Info;
-  if Length(S)>0 then
-  begin
-    Memo1.Lines.Append('INFO:');
-    Memo1.Lines.Append(S);
-  end;
-  S:=NewUSB.Errors;
-  if Length(S)>0 then
-  begin
-    Memo1.Lines.Append('ERRORS:');
-    Memo1.Lines.Append(S);
-  end;
   btnHIDEnable.Enabled:=True;
 end;
 
@@ -77,20 +62,9 @@ var
 begin
   TButton(Sender).Enabled:=False;
   Memo1.Lines.Append('HID Enabled.');
+  NewUSB.OnUSBDeviceChange:=UpdateUSBDevice;
   NewUSB.Enabled:=True;
   Memo1.Lines.Append('Ready.');
-  S:=NewUSB.Info;
-  if Length(S)>0 then
-  begin
-    Memo1.Lines.Append('INFO:');
-    Memo1.Lines.Append(S);
-  end;
-  S:=NewUSB.Errors;
-  if Length(S)>0 then
-  begin
-    Memo1.Lines.Append('ERRORS:');
-    Memo1.Lines.Append(S);
-  end;
   btnInfo.Enabled:=True;
 end;
 
@@ -104,6 +78,13 @@ begin
     Memo1.Lines.Append('INFO:');
     Memo1.Lines.Append(S);
   end else Memo1.Lines.Append('No new USB info.');
+
+  S:=NewUSB.Errors;
+  if Length(S)>0 then
+  begin
+    Memo1.Lines.Append('ERRORS:');
+    Memo1.Lines.Append(S);
+  end else Memo1.Lines.Append('No new USB errors.');
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -116,20 +97,39 @@ end;
 
 procedure TForm1.UpdateUSBDevice(Sender: TObject;datacarrier:integer);
 var
-  S:string;
+  LocalDevice:TUSBController;
+  DeviceIndex:integer;
 begin
-  if datacarrier>0 then Memo1.Lines.Append('HID device index: '+InttoStr(datacarrier));
-  S:=NewUSB.Info;
-  if Length(S)>0 then
+  Memo1.Lines.Append('***************');
+  Memo1.Lines.Append('Device change !');
+
+  DeviceIndex:=Abs(datacarrier);
+  LocalDevice:=TUSBController(NewUSB.USBList[DeviceIndex]);
+  if (datacarrier>0) then
   begin
-    Memo1.Lines.Append('INFO:');
-    Memo1.Lines.Append(S);
+    with LocalDevice.HidCtrl do
+    begin
+      Memo1.Lines.Append('Found correct HID device.');
+      Memo1.Lines.Append('HID device index: '+InttoStr(DeviceIndex));
+      Memo1.Lines.Append('VID: '+InttoHex(Attributes.VendorID,4)+'. PID: '+InttoHex(Attributes.ProductID,4)+'.');
+      Memo1.Lines.Append('Name: '+ProductName+'. Vendor: '+VendorName+'.');
+      Memo1.Lines.Append('Serial: '+SerialNumber+'.');
+      Memo1.Lines.Append('Length output report: '+InttoStr(Caps.OutputReportByteLength)+'.');
+      Memo1.Lines.Append('Length input report: '+InttoStr(Caps.InputReportByteLength)+'.');
+      Memo1.Lines.Append('DeviceDescription: '+PnPInfo.DeviceDescr+'.');
+      Memo1.Lines.Append('Device Path: '+PnPInfo.DevicePath+'.');
+      Memo1.Lines.Append('Friendly Name: '+PnPInfo.FriendlyName+'.');
+    end;
   end;
-  S:=NewUSB.Errors;
-  if Length(S)>0 then
+  if (datacarrier<0) then
   begin
-    Memo1.Lines.Append('ERRORS:');
-    Memo1.Lines.Append(S);
+    if (LocalDevice.BoardNumber=Abs(datacarrier)) then
+    begin
+      with LocalDevice.HidCtrl do
+      begin
+        Memo1.Lines.Append('Removed HID device.');
+      end;
+    end;
   end;
 end;
 

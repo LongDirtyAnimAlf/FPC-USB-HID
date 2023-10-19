@@ -7,10 +7,10 @@ uses
   Windows,
   {$endif}
   {$IFDEF UNIX}
-  cthreads, ctypes,
+  cthreads,
   {$ENDIF}
   Classes, SysUtils, CustApp,
-  usb2;
+  usb;
 
 const
   ProductVID                       = $0665;
@@ -54,14 +54,19 @@ end;
 procedure TMyUSB.UpdateUSBDevice(Sender: TObject;datacarrier:integer);
 var
   LocalDevice:TUSBController;
+  DeviceIndex:integer;
 begin
+  writeln('***************');
+  writeln('Device change !');
+
+  DeviceIndex:=Abs(datacarrier);
+  LocalDevice:=TUSBController(Self.USBList[DeviceIndex]);
   if (datacarrier>0) then
   begin
-    LocalDevice:=TUSBController(USBList[datacarrier]);
     with LocalDevice.HidCtrl do
     begin
       writeln('Found correct HID device.');
-      writeln('HID device index: '+InttoStr(datacarrier));
+      writeln('HID device index: '+InttoStr(DeviceIndex));
       writeln('VID: '+InttoHex(Attributes.VendorID,4)+'. PID: '+InttoHex(Attributes.ProductID,4)+'.');
       writeln('Name: '+ProductName+'. Vendor: '+VendorName+'.');
       writeln('Serial: '+SerialNumber+'.');
@@ -78,7 +83,7 @@ begin
   end;
   if (datacarrier<0) then
   begin
-    if (FDevice.BoardNumber=Abs(datacarrier)) then
+    if (FDevice.BoardNumber=DeviceIndex) then
     begin
       with FDevice.HidCtrl do
       begin
@@ -119,7 +124,7 @@ begin
     end;
 
     // Give some rest ... ;-)
-    sleep(5000);
+    sleep(500);
   end;
 
   writeln('Ready');
