@@ -514,7 +514,6 @@ type
     FNumCheckedInDevices: Integer;
     FNumCheckedOutDevices: Integer;
     FNumUnpluggedDevices: Integer;
-    FInDeviceChange: Boolean;
     FDebugInfo: TStringList;
     function    CheckThisOut(var HidDev: TJvHidDevice; Idx: Integer; Check: Boolean): Boolean;
     procedure   SetDevPollingDelayTime(const DevTime: Integer);
@@ -831,7 +830,10 @@ begin
   if fd_monitor >= fd
      then fd := fd_monitor + 1;
 
-  while NOT Terminated do
+  // Some startup time
+  Sleep(FUSBController.DevThreadSleepTime);
+
+  while (NOT Terminated) do
   begin
     fpFD_ZERO(readSet);
     fpFD_SET(fd_monitor, readSet);
@@ -858,27 +860,19 @@ begin
         FUSBController.DebugInfo:='Enum action: '+Action;
         {$ENDIF}
         fNode:=udev_device_get_devnode(localudev_device);
-        if not FUSBController.FInDeviceChange then
+        if IsLibrary then
         begin
-          FUSBController.FInDeviceChange := True;
+          EnterCriticalSection(FThreadLock);
           try
-            if IsLibrary then
-            begin
-              EnterCriticalSection(FThreadLock);
-              try
-                FUSBController.DeviceChange;
-              finally
-                LeaveCriticalSection(FThreadLock);
-              end;
-            end
-            else
-              // Choose one of the following
-              Synchronize(@FUSBController.DeviceChange);
-              //Queue(@FUSBController.DeviceChange);
+            FUSBController.DeviceChange;
           finally
-            FUSBController.FInDeviceChange := False;
+            LeaveCriticalSection(FThreadLock);
           end;
-        end;
+        end
+        else
+          // Choose one of the following
+          Synchronize(@FUSBController.DeviceChange);
+          //Queue(@FUSBController.DeviceChange);
         {$IFDEF debug}
         FUSBController.DebugInfo:='Enum devpath: '+ udev_device_get_devpath(localudev_device);
         FUSBController.DebugInfo:='Enum syspath: '+ udev_device_get_syspath(localudev_device);
@@ -917,8 +911,6 @@ begin
   FNumUnpluggedDevices := 0;
   DevPollingDelayTime := 0;
   FDevThreadSleepTime := 100;
-
-  FInDeviceChange := False;
 
   fEnabled:=False;
 
@@ -1641,9 +1633,9 @@ var
 
 begin
   Changed:=False;
+
   // get new device list
   NewList := THidDevList.Create;
-
   FillInList;
 
   // unplug devices in FList which are not in NewList

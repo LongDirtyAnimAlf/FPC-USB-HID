@@ -265,8 +265,11 @@ begin
   if Value <> FEnabled then
   begin
     FEnabled := Value;
+    HidCtl.Enabled:=FEnabled;
     if FEnabled then
     begin
+      // Get and process the connected devices
+      Enumerate;
       // either enable this, or the other two, to detect USB device changes
       HidCtl.OnDeviceChange:=DeviceChange;
       //HidCtl.OnArrival:= DeviceArrival;
@@ -278,27 +281,14 @@ begin
       HidCtl.OnRemoval:= nil;
       HidCtl.OnDeviceChange:=nil;
     end;
-    HidCtl.Enabled:=FEnabled;
   end;
 end;
 
 function TUSB.HidCtlEnumerate(HidDev: TJvHidDevice; const Idx: Integer): Boolean;
 begin
-  AddInfo('Device #'+InttoStr(Idx)+' arrival. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
-  if (CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) AND CheckHIDDevice(HidDev)) then
-  begin
-    if HidDev.IsCheckedOut then
-    begin
-      AddInfo('I1: '+HidDev.DeviceStrings[1]);
-      AddInfo('I2: '+HidDev.DeviceStrings[2]);
-      AddInfo('I3: '+HidDev.DeviceStrings[3]);
-      AddInfo('I4: '+HidDev.DeviceStrings[4]);
-
-      AddInfo('Input length: '+InttoStr(HidDev.Caps.InputReportByteLength));
-      AddInfo('Output length: '+InttoStr(HidDev.Caps.OutputReportByteLength));
-    end;
-  end;
   result:=True;
+  AddInfo('Enumerate device #'+InttoStr(Idx)+'. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'. Name: '+HidDev.PnPInfo.FriendlyName+'. Product: '+HidDev.ProductName);
+  DeviceArrival(HidDev);
 end;
 
 function TUSB.Enumerate:integer;
@@ -404,10 +394,12 @@ var
   aController:TUSBController;
   aHidCtrl:TJvHidDevice;
 begin
-  AddInfo('Device removal. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
+  //AddInfo('Device removal. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
 
   if (CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) AND CheckHIDDevice(HidDev)) then
   begin
+   AddInfo('Correct device removal. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
+
     // Find device in our list of devices
     for board:=Pred(USBList.Count) downto 0 do
     begin
@@ -439,10 +431,12 @@ var
   NewUSBController : TUSBController;
   aHidCtrl         : TJvHidDevice;
 begin
-  AddInfo('Device arrival. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
+  //AddInfo('Device arrival. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
 
   if (CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) AND CheckHIDDevice(HidDev)) then
   begin
+    AddInfo('Correct Device arrival. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
+
     // Devices need to be checked out to be able to read the serial device string[4]
     // This might be changed when needed
     if HidDev.CheckOut then
@@ -459,8 +453,6 @@ begin
 
      NewUSBController := TUSBController.Create(HidDev);
 
-     SysUtils.Sleep(DeviceDelay);
-
      with NewUSBController do
      begin
        Serial:=HidDev.DeviceStrings[4];
@@ -471,8 +463,6 @@ begin
        end;
        FaultCounter:=0;
      end;
-
-     SysUtils.Sleep(DeviceDelay);
 
      if NewUSBController.Serial='' then
      begin

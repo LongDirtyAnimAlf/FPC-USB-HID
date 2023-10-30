@@ -436,10 +436,10 @@ type
     FNumCheckedOutDevices: Integer;
     FNumUnpluggedDevices: Integer;
     // reentrancy
-    FInDeviceChange: Boolean;
-    FLParam: LPARAM;
+    FEventLock: TRTLCriticalSection;
     // window to catch WM_DEVICECHANGE
     FHWnd: HWND;
+    FNotificationHandle: HDEVNOTIFY;
     FEnabled: Boolean;
     // internal worker functions
     function CheckThisOut(var HidDev: TJvHidDevice; Idx: Integer; Check: Boolean): Boolean;
@@ -549,6 +549,22 @@ uses
   {$endif}
   {$endif}
   JvResources;
+
+const
+  DEVICE_NOTIFY_WINDOW_HANDLE  = $00000000;
+  DEVICE_NOTIFY_SERVICE_HANDLE = $00000001;
+  DEVICE_NOTIFY_ALL_INTERFACE_CLASSES = $00000004;
+
+  GUID_DEVINTERFACE_USB_DEVICE: TGUID = '{A5DCBF10-6530-11D2-901F-00C04FB951ED}';
+  GUID_DEVINTERFACE_HID: TGUID = '{4D1E55B2-F16F-11CF-88CB-001111000030}';
+
+function RegisterDeviceNotificationA(hRecipient: HANDLE; NotificationFilter: LPVOID;
+  Flags: DWORD): HDEVNOTIFY; stdcall; external user32 name 'RegisterDeviceNotificationA';
+function RegisterDeviceNotificationW(hRecipient: HANDLE; NotificationFilter: LPVOID;
+  Flags: DWORD): HDEVNOTIFY; stdcall; external user32 name 'RegisterDeviceNotificationW';
+function RegisterDeviceNotification(hRecipient: HANDLE; NotificationFilter: LPVOID;
+  Flags: DWORD): HDEVNOTIFY; stdcall; external user32 name 'RegisterDeviceNotificationA';
+function UnregisterDeviceNotification(Handle: HDEVNOTIFY): BOOL; stdcall; external user32 name 'UnregisterDeviceNotification';
 
 type
   EControllerError = class(EJVCLException);
@@ -1997,15 +2013,17 @@ end;
 
 constructor TJvHidDeviceController.Create(AOwner: TComponent;
   AOnHidCtlDeviceCreateError: TJvHidDeviceCreateError; AOnDeviceChange: TNotifyEvent);
-const
-  cHidGuid: TGUID = '{4d1e55b2-f16f-11cf-88cb-001111000030}';
 begin
   inherited Create(AOwner);
 
   FHWnd:=0;
 
+  FNotificationHandle := 0;
+
   FDevThreadSleepTime := 100;
   FVersion := cHidControllerClassVersion;
+
+  Windows.InitializeCriticalSection(FEventLock);
 
   FList := TList.Create;
 
@@ -2016,20 +2034,9 @@ begin
   FOnDeviceCreateError := AOnHidCtlDeviceCreateError;
 
   if IsHidLoaded then
-  begin
-    HidD_GetHidGuid(FHidGuid);
-
-    if false then
-    begin
-      // only hook messages if there is a HID DLL
-      FHWnd := AllocateHWnd(EventPipe);
-      // this one executes after Create completed which ensures
-      // that all global elements like Application.MainForm are initialized
-      PostMessage(FHWnd, WM_DEVICECHANGE, DBT_DEVNODES_CHANGED, -1);
-    end;
-  end
+    HidD_GetHidGuid(FHidGuid)
   else
-    FHidGuid := cHidGuid;
+    FHidGuid := GUID_DEVINTERFACE_HID;
 end;
 
 // unplug or kill all controlled TJvHidDevices on controller destruction
@@ -2072,6 +2079,8 @@ begin
     UnloadSetupApi;
   UnloadHid;
 
+  Windows.DeleteCriticalSection(FEventLock);
+
   inherited Destroy;
 end;
 
@@ -2108,19 +2117,63 @@ end;
 // gets all the Windows events/messages directly
 
 procedure TJvHidDeviceController.EventPipe(var Msg: TMessage);
+var
+  PbroadcastHdr : PDevBroadcastHeader;
+  PbroadcastHandle : PDevBroadcastHandle;
+  PbroadcastInterface : PDevBroadcastDeviceInterface;
+  DeviceMessage : TWMDeviceChange;
+  NewDevicePath:string;
+  NewDeviceNotificationHandle: HDEVNOTIFY;
+  DoDataChange:boolean;
 begin
-  // sort out WM_DEVICECHANGE : DBT_DEVNODES_CHANGED
-  if not (csDestroying in ComponentState) and
-   (Msg.Msg = WM_DEVICECHANGE) and
-   (TWMDeviceChange(Msg).Event = DBT_DEVNODES_CHANGED)
+  DoDataChange:=false;
+
+  if not (csDestroying in ComponentState)
+    and  (Msg.Msg = WM_DEVICECHANGE)
   then
-    if not FInDeviceChange then
+  begin
+    DeviceMessage:=TWMDeviceChange(Msg);
+
+    if (FNotificationHandle = 0) then
     begin
-      FLParam := Msg.LParam;
-      FInDeviceChange := True;
-      DeviceChange;
-      FInDeviceChange := False;
+      if (DeviceMessage.Event = DBT_DEVNODES_CHANGED) then
+      begin
+         DoDataChange:=true;
+      end;
+    end
+    else
+    begin
+      // We can receive notification, so use them !!
+
+      PbroadcastHdr := {%H-}PDevBroadcastHeader(DeviceMessage.dwData);
+      PbroadcastHandle := {%H-}PDevBroadcastHandle(DeviceMessage.dwData);
+      PbroadcastInterface := PDevBroadcastDeviceInterface(DeviceMessage.dwData);
+
+      if ((DeviceMessage.Event = DBT_DEVICEARRIVAL) OR (Msg.wParam = DBT_DEVICEREMOVECOMPLETE)) then
+      begin
+        if ((PbroadcastInterface^.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE) AND (IsEqualGUID(PbroadcastInterface^.dbcc_classguid,GUID_DEVINTERFACE_HID))) then
+        begin
+          SetString(NewDevicePath, PWideChar(@PbroadcastInterface^.dbcc_name), (PbroadcastInterface^.dbcc_size - Sizeof(PbroadcastInterface^) + Sizeof(PbroadcastInterface^.dbcc_name)) div SizeOf(WideChar));
+          NewDeviceNotificationHandle := PbroadcastHandle^.dbch_hdevnotify;
+          // The NewDevicePath and NewDeviceNotificationHandle could be used to only process the device thet has been added or removed !!
+          // This is for future use.
+          // For now, just do the normal thing: process all devices.
+          DoDataChange:=true;
+        end;
+      end;
     end;
+
+    if DoDataChange then
+    begin
+      EnterCriticalSection(FEventLock);
+      try
+        DeviceChange;
+      finally
+        LeaveCriticalSection(FEventLock);
+      end;
+    end;
+
+  end;
   if (FHWnd<>0) then
     Msg.Result := DefWindowProc(FHWnd, Msg.Msg, Msg.wParam, Msg.lParam)
   else
@@ -2249,8 +2302,8 @@ var
   end;
 
 begin
-  // initial auto message always triggers OnDeviceChange event
-  Changed := (FLParam = -1);
+  Changed := false;
+
   // get new device list
   NewList := TList.Create;
   FillInList;
@@ -2347,8 +2400,6 @@ begin
      (TMethod(Notifier).Data <> TMethod(FOnDeviceChange).Data) then
   begin
     FOnDeviceChange := Notifier;
-    if not (csLoading in ComponentState) then
-      DeviceChange;
   end;
 end;
 
@@ -2372,6 +2423,9 @@ begin
 end;
 
 procedure TJvHidDeviceController.SetEnabled(Value: Boolean);
+var
+  Size: Cardinal;
+  Dbi: TDevBroadcastDeviceInterfaceA;
 begin
   if Value <> FEnabled then
   begin
@@ -2390,14 +2444,19 @@ begin
           {$else}
           FHWnd := AllocateHWnd(EventPipe);
           {$endif}
+
+          Size := SizeOf(Dbi);
+          ZeroMemory(@Dbi, Size);
+
+          Dbi.dbcc_size := Size;
+          Dbi.dbcc_devicetype := DBT_DEVTYP_DEVICEINTERFACE;
+          Dbi.dbcc_classguid := GUID_DEVINTERFACE_HID;
+          //Dbi.dbcc_classguid := FHidGuid
+          //Dbi.dbcc_classguid := GUID_DEVINTERFACE_USB_DEVICE;
+          FNotificationHandle := RegisterDeviceNotification(FHWnd, @Dbi, DEVICE_NOTIFY_WINDOW_HANDLE);
         end;
-        // send change message to enumerate devices
-        if not FInDeviceChange then
-        begin
-          FInDeviceChange := True;
-          DeviceChange;
-          FInDeviceChange := False;
-        end;
+        // Enumerate connected devices
+        DeviceChange;
       end;
     end
     else
@@ -2407,6 +2466,7 @@ begin
       begin
         if (FHWnd<>0) then
         begin
+          UnregisterDeviceNotification(FNotificationHandle);
           {$ifdef FPC}
           {$ifdef LCL}
           LCLIntf.DeallocateHWnd(FHWnd);
