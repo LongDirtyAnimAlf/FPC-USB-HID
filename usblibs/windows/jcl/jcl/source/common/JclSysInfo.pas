@@ -2983,7 +2983,7 @@ end;
 function IsWindowResponding(Wnd: THandle; Timeout: Integer): Boolean;
 var
   {$ifdef win64}
-  Res: QWORD;
+  Res: UInt64;
   {$else}
   Res: DWORD;
   {$endif}

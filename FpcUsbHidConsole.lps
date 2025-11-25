@@ -8,9 +8,8 @@
       <Unit>
         <Filename Value="FpcUsbHidConsole.lpr"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
-        <TopLine Value="31"/>
-        <CursorPos Y="61"/>
+        <TopLine Value="106"/>
+        <CursorPos X="28" Y="17"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit>
@@ -44,11 +43,9 @@
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
-        <Filename Value="usblibs\USB.pas"/>
-        <UnitName Value="usb"/>
+        <Filename Value="usblibs\usb.pas"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="626"/>
-        <CursorPos X="5" Y="656"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit>
@@ -58,60 +55,15 @@
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit>
+      <Unit>
+        <Filename Value="C:\fpcupsystems\stable324\fpcsrc\rtl\win\wininc\messages.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="1301"/>
+        <CursorPos X="6" Y="1318"/>
+        <UsageCount Value="10"/>
+      </Unit>
     </Units>
     <JumpHistory HistoryIndex="29">
-      <Position>
-        <Filename Value="usblibs\USB.pas"/>
-        <Caret Line="553" TopLine="534"/>
-      </Position>
-      <Position>
-        <Filename Value="usblibs\USB.pas"/>
-        <Caret Line="554" TopLine="534"/>
-      </Position>
-      <Position>
-        <Filename Value="usblibs\USB.pas"/>
-        <Caret Line="556" TopLine="534"/>
-      </Position>
-      <Position>
-        <Filename Value="usblibs\USB.pas"/>
-        <Caret Line="557" TopLine="534"/>
-      </Position>
-      <Position>
-        <Filename Value="usblibs\USB.pas"/>
-        <Caret Line="572" TopLine="558"/>
-      </Position>
-      <Position>
-        <Filename Value="usblibs\USB.pas"/>
-        <Caret Line="574" TopLine="558"/>
-      </Position>
-      <Position>
-        <Filename Value="usblibs\USB.pas"/>
-        <Caret Line="579" TopLine="558"/>
-      </Position>
-      <Position>
-        <Filename Value="usblibs\USB.pas"/>
-        <Caret Line="577" TopLine="561"/>
-      </Position>
-      <Position>
-        <Filename Value="usblibs\USB.pas"/>
-        <Caret Line="441" TopLine="425"/>
-      </Position>
-      <Position>
-        <Filename Value="usblibs\USB.pas"/>
-        <Caret Line="442" TopLine="425"/>
-      </Position>
-      <Position>
-        <Filename Value="usblibs\USB.pas"/>
-        <Caret Line="444" TopLine="425"/>
-      </Position>
-      <Position>
-        <Filename Value="usblibs\USB.pas"/>
-        <Caret Line="448" TopLine="425"/>
-      </Position>
-      <Position>
-        <Filename Value="usblibs\USB.pas"/>
-        <Caret Line="450" TopLine="425"/>
-      </Position>
       <Position>
         <Filename Value="usblibs\USB.pas"/>
         <Caret Line="452" TopLine="427"/>
@@ -179,6 +131,57 @@
       <Position>
         <Filename Value="usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
         <Caret Line="2110" Column="25" TopLine="2098"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="102" Column="9" TopLine="91"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="54" Column="28" TopLine="34"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="25" Column="24" TopLine="10"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="43" TopLine="36"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="60" TopLine="30"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="57" TopLine="42"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="91" TopLine="78"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="62" TopLine="49"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="155" Column="22" TopLine="141"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="34" Column="5" TopLine="18"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="101" Column="28" TopLine="86"/>
+      </Position>
+      <Position>
+        <Filename Value="usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
+      </Position>
+      <Position>
+        <Filename Value="usblibs\usb.pas"/>
+        <Caret Line="589" Column="5" TopLine="559"/>
       </Position>
     </JumpHistory>
     <RunParams>

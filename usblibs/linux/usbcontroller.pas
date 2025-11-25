@@ -749,11 +749,10 @@ begin
 
   FFriendlyName := udev_device_get_sysattr_value(AUSBDevice,'product');
   FMfg          := udev_device_get_sysattr_value(AUSBDevice,'manufacturer');
+  FSerial       := udev_device_get_sysattr_value(AUSBDevice,'serial');
 
   FVendorID     := HexToInt(udev_device_get_sysattr_value(AUSBDevice,'idVendor'));
   FProductID    := HexToInt(udev_device_get_sysattr_value(AUSBDevice,'idProduct'));
-
-  FSerial       := udev_device_get_sysattr_value(AUSBDevice,'serial');
 end;
 
 destructor TJvHidPnPInfo.Destroy;
@@ -2054,8 +2053,8 @@ begin
   FAttributes.VendorID:=FPnPInfo.VendorID;
   FAttributes.ProductID:=FPnPInfo.ProductID;
 
-  FProductName  := FPnPInfo.FFriendlyName;
-  FVendorName   := FPnPInfo.FMfg;
+  FProductName  := FPnPInfo.FriendlyName;
+  FVendorName   := FPnPInfo.Mfg;
   FSerialNumber := FPnPInfo.Serial;
 
   OnData := FMyController.OnDeviceData;

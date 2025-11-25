@@ -22,7 +22,7 @@ type
     FDevice:TUSBController;
   public
     function CheckVendorProduct(const VID,PID:word):boolean;override;
-    procedure UpdateUSBDevice(Sender: TObject;datacarrier:integer);
+    procedure UpdateUSBDevice(Sender: TObject;LocalDevice:TUSBController);
     property Device:TUSBController read FDevice;
     constructor Create;
   end;
@@ -51,46 +51,26 @@ begin
   result:=true;
 end;
 
-procedure TMyUSB.UpdateUSBDevice(Sender: TObject;datacarrier:integer);
-var
-  LocalDevice:TUSBController;
-  DeviceIndex:integer;
+procedure TMyUSB.UpdateUSBDevice(Sender: TObject;LocalDevice:TUSBController);
 begin
   writeln('***************');
   writeln('Device change !');
 
-  DeviceIndex:=Abs(datacarrier);
-  LocalDevice:=TUSBController(Self.USBList[DeviceIndex]);
-  if (datacarrier>0) then
+  with LocalDevice.HidCtrl do
   begin
-    with LocalDevice.HidCtrl do
-    begin
-      writeln('Found correct HID device.');
-      writeln('HID device index: '+InttoStr(DeviceIndex));
-      writeln('VID: '+InttoHex(Attributes.VendorID,4)+'. PID: '+InttoHex(Attributes.ProductID,4)+'.');
-      writeln('Name: '+ProductName+'. Vendor: '+VendorName+'.');
-      writeln('Serial: '+SerialNumber+'.');
-      writeln('Length output report: '+InttoStr(Caps.OutputReportByteLength)+'.');
-      writeln('Length input report: '+InttoStr(Caps.InputReportByteLength)+'.');
-      writeln('DeviceDescription: '+PnPInfo.DeviceDescr+'.');
-      writeln('Device Path: '+PnPInfo.DevicePath+'.');
-      writeln('Friendly Name: '+PnPInfo.FriendlyName+'.');
-    end;
-    if (NOT Assigned(FDevice)) then
-    begin
-      FDevice:=LocalDevice;
-    end;
+    writeln('Found correct HID device.');
+    writeln('VID: '+InttoHex(Attributes.VendorID,4)+'. PID: '+InttoHex(Attributes.ProductID,4)+'.');
+    writeln('Name: '+ProductName+'. Vendor: '+VendorName+'.');
+    writeln('Serial: '+SerialNumber+'.');
+    writeln('Length output report: '+InttoStr(Caps.OutputReportByteLength)+'.');
+    writeln('Length input report: '+InttoStr(Caps.InputReportByteLength)+'.');
+    writeln('DeviceDescription: '+PnPInfo.DeviceDescr+'.');
+    writeln('Device Path: '+PnPInfo.DevicePath+'.');
+    writeln('Friendly Name: '+PnPInfo.FriendlyName+'.');
   end;
-  if (datacarrier<0) then
+  if (NOT Assigned(FDevice)) then
   begin
-    if (FDevice.BoardNumber=DeviceIndex) then
-    begin
-      with FDevice.HidCtrl do
-      begin
-        writeln('Removed HID device.');
-      end;
-      FDevice:=nil;
-    end;
+    FDevice:=LocalDevice;
   end;
 end;
 
@@ -172,7 +152,7 @@ begin
     MyMsg.lParam:=LParam;
     if Assigned(Application.USBDevice) then
     begin
-      Application.USBDevice.Controller.EventPipeExternal(MyMsg,HWindow);
+      Application.USBDevice.USBMasterController.EventPipeExternal(MyMsg,HWindow);
       Result:=MyMsg.Result;
     end
     else

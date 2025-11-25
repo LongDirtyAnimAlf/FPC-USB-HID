@@ -512,7 +512,7 @@ type
     dbch_devicetype: DWORD;
     dbch_reserved: DWORD;
     dbch_handle: THandle;            { file handle used in call to RegisterDeviceNotification }
-    dbch_hdevnotify: DWORD;          { HDEVNOTIFY returned from RegisterDeviceNotification }
+    dbch_hdevnotify: HDEVNOTIFY;          { HDEVNOTIFY returned from RegisterDeviceNotification }
 
     { The following 3 fields are only valid if wParam is DBT_CUSTOMEVENT. }
 

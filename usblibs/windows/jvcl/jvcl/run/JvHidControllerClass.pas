@@ -558,11 +558,11 @@ const
   GUID_DEVINTERFACE_USB_DEVICE: TGUID = '{A5DCBF10-6530-11D2-901F-00C04FB951ED}';
   GUID_DEVINTERFACE_HID: TGUID = '{4D1E55B2-F16F-11CF-88CB-001111000030}';
 
-function RegisterDeviceNotificationA(hRecipient: HANDLE; NotificationFilter: LPVOID;
+function RegisterDeviceNotificationA(hRecipient: THandle; NotificationFilter: LPVOID;
   Flags: DWORD): HDEVNOTIFY; stdcall; external user32 name 'RegisterDeviceNotificationA';
-function RegisterDeviceNotificationW(hRecipient: HANDLE; NotificationFilter: LPVOID;
+function RegisterDeviceNotificationW(hRecipient: THandle; NotificationFilter: LPVOID;
   Flags: DWORD): HDEVNOTIFY; stdcall; external user32 name 'RegisterDeviceNotificationW';
-function RegisterDeviceNotification(hRecipient: HANDLE; NotificationFilter: LPVOID;
+function RegisterDeviceNotification(hRecipient: THandle; NotificationFilter: LPVOID;
   Flags: DWORD): HDEVNOTIFY; stdcall; external user32 name 'RegisterDeviceNotificationA';
 function UnregisterDeviceNotification(Handle: HDEVNOTIFY): BOOL; stdcall; external user32 name 'UnregisterDeviceNotification';
 
@@ -585,11 +585,15 @@ function WriteFileEx(hFile: THandle; var Buffer; nNumberOfBytesToWrite: DWORD;
   external kernel32 name 'WriteFileEx';
 {$endif}
 
+function GetOverlappedResultEx(hFile: THandle; lpOverlapped: POverlapped; lpNumberOfBytesTransferred: PDWORD; dwMilliseconds: DWORD; bAlertable: BOOL): BOOL; stdcall; external 'kernel32' name 'GetOverlappedResultEx';
+
+
+
 //=== { TJvHidDeviceReadThread } =============================================
 
 constructor TJvHidDeviceReadThread.CtlCreate(const Dev: TJvHidDevice);
 begin
-  inherited Create(True);
+  inherited Create(False);
   Device := Dev;
   NumBytesRead := 0;
   FreeOnTerminate:=False;
@@ -600,7 +604,7 @@ begin
     FillChar(Report[0], Device.Caps.InputReportByteLength, #0);
   end else Terminate;
   Windows.InitializeCriticalSection(FThreadLock);
-  Start;
+  //Start;
 end;
 
 constructor TJvHidDeviceReadThread.Create(CreateSuspended: Boolean);
@@ -643,8 +647,9 @@ begin
 
     if Success then
     begin
-      FillChar(Device.FOvlRead, SizeOf(TOverlapped), #0);
-      Device.FOvlRead.hEvent:=CreateEvent(Nil, True, False, Nil);
+      Device.FOvlRead:=Default(TOverlapped);
+      Device.FOvlRead.hEvent:=CreateEvent(Nil, False, False, Nil);
+
       Success := Windows.ReadFile(Device.HidOverlappedRead, Report[0], Device.Caps.InputReportByteLength, NumBytesRead, @Device.FOvlRead);
 
       Err_read := GetLastError;
@@ -684,7 +689,7 @@ begin
               else
               begin
                 FErr:=Res;
-                Device.CancelIOEx(omhRead);
+                if (NOT Terminated) then Device.CancelIOEx(omhRead);
               end;
             end;
           else
@@ -693,6 +698,7 @@ begin
           end;
         end;
       end;
+      if (Device.FOvlRead.hEvent<>INVALID_HANDLE_VALUE) then CloseHandle(Device.FOvlRead.hEvent);
     end;
 
     if (not Terminated) then
@@ -762,7 +768,7 @@ begin
   begin
     BufferSize:=0;
     SetupDiGetClassDescription(ADevData.ClassGuid,Buffer,1024,{%H-}BufferSize);
-    if (BufferSize>0) then SetString(FFriendlyName,PChar(Buffer),BufferSize);
+    if (BufferSize>0) then SetString(FFriendlyName,PChar(@Buffer),BufferSize);
   end;
 
   FHardwareID := GetRegistryPropertyStringList(APnPHandle, ADevData, SPDRP_HARDWAREID);
@@ -982,9 +988,9 @@ begin
   FHidOverlappedWrite := INVALID_HANDLE_VALUE;
   FVendorName := '';
   FProductName := '';
+  FSerialNumber := '';
   FPreparsedData := nil;
   SetLength(FPhysicalDescriptor, 0);
-  FSerialNumber := '';
   FLanguageStrings := TStringList.Create;
   FNumInputBuffers := 0;
   FNumOverlappedBuffers := 0;
@@ -1019,6 +1025,9 @@ begin
     FillChar(Buffer, SizeOf(Buffer), #0);
     if HidD_GetManufacturerString(HidFileHandle, Buffer, SizeOf(Buffer)) then
       FVendorName := Buffer;
+    FillChar(Buffer, SizeOf(Buffer), #0);
+    if HidD_GetSerialNumberString(HidFileHandle, Buffer, SizeOf(Buffer)) then
+      FSerialNumber := Buffer;
     FAttributes.Size := SizeOf(THIDDAttributes);
     if not HidD_GetAttributes(HidFileHandle, FAttributes) then
       raise EControllerError.CreateRes(@RsEDeviceCannotBeIdentified);
@@ -1900,8 +1909,9 @@ begin
 
   if Success then
   begin
-    FillChar(FOvlRead, SizeOf(TOverlapped), #0);
-    FOvlRead.hEvent:=CreateEvent(Nil, True, False, Nil);
+    FOvlRead:=Default(TOverlapped);
+    FOvlRead.hEvent:=CreateEvent(Nil, False, False, Nil);
+
     Success := Windows.ReadFile(HidOverlappedRead, Report, ToRead, BytesRead, @FOvlRead);
 
     Err_read := GetLastError;
@@ -1948,6 +1958,7 @@ begin
         end;
       end;
     end;
+    if (FOvlRead.hEvent<>INVALID_HANDLE_VALUE) then CloseHandle(FOvlRead.hEvent);
   end;
   Result:=Success;
 end;
@@ -2134,7 +2145,11 @@ begin
   begin
     DeviceMessage:=TWMDeviceChange(Msg);
 
+    {$ifndef FPC}
     if (FNotificationHandle = 0) then
+    {$else}
+    if (FNotificationHandle = NIL) then
+    {$endif}
     begin
       if (DeviceMessage.Event = DBT_DEVNODES_CHANGED) then
       begin

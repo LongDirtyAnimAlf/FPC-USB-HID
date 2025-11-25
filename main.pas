@@ -27,7 +27,7 @@ type
   private
     { private declarations }
     NewUSB:TUSB;
-    procedure UpdateUSBDevice(Sender: TObject;datacarrier:integer);
+    procedure UpdateUSBDevice(Sender: TObject;LocalDevice:TUSBController);
   public
     { public declarations }
   end;
@@ -95,41 +95,22 @@ begin
   end;
 end;
 
-procedure TForm1.UpdateUSBDevice(Sender: TObject;datacarrier:integer);
-var
-  LocalDevice:TUSBController;
-  DeviceIndex:integer;
+procedure TForm1.UpdateUSBDevice(Sender: TObject;LocalDevice:TUSBController);
 begin
   Memo1.Lines.Append('***************');
   Memo1.Lines.Append('Device change !');
-
-  DeviceIndex:=Abs(datacarrier);
-  LocalDevice:=TUSBController(NewUSB.USBList[DeviceIndex]);
-  if (datacarrier>0) then
+  with LocalDevice.HidCtrl do
   begin
-    with LocalDevice.HidCtrl do
-    begin
-      Memo1.Lines.Append('Found correct HID device.');
-      Memo1.Lines.Append('HID device index: '+InttoStr(DeviceIndex));
-      Memo1.Lines.Append('VID: '+InttoHex(Attributes.VendorID,4)+'. PID: '+InttoHex(Attributes.ProductID,4)+'.');
-      Memo1.Lines.Append('Name: '+ProductName+'. Vendor: '+VendorName+'.');
-      Memo1.Lines.Append('Serial: '+SerialNumber+'.');
-      Memo1.Lines.Append('Length output report: '+InttoStr(Caps.OutputReportByteLength)+'.');
-      Memo1.Lines.Append('Length input report: '+InttoStr(Caps.InputReportByteLength)+'.');
-      Memo1.Lines.Append('DeviceDescription: '+PnPInfo.DeviceDescr+'.');
-      Memo1.Lines.Append('Device Path: '+PnPInfo.DevicePath+'.');
-      Memo1.Lines.Append('Friendly Name: '+PnPInfo.FriendlyName+'.');
-    end;
-  end;
-  if (datacarrier<0) then
-  begin
-    if (LocalDevice.BoardNumber=Abs(datacarrier)) then
-    begin
-      with LocalDevice.HidCtrl do
-      begin
-        Memo1.Lines.Append('Removed HID device.');
-      end;
-    end;
+    Memo1.Lines.Append('Found correct HID device.');
+    //Memo1.Lines.Append('HID device index: '+InttoStr(DeviceIndex));
+    Memo1.Lines.Append('VID: '+InttoHex(Attributes.VendorID,4)+'. PID: '+InttoHex(Attributes.ProductID,4)+'.');
+    Memo1.Lines.Append('Name: '+ProductName+'. Vendor: '+VendorName+'.');
+    Memo1.Lines.Append('Serial: '+SerialNumber+'.');
+    Memo1.Lines.Append('Length output report: '+InttoStr(Caps.OutputReportByteLength)+'.');
+    Memo1.Lines.Append('Length input report: '+InttoStr(Caps.InputReportByteLength)+'.');
+    Memo1.Lines.Append('DeviceDescription: '+PnPInfo.DeviceDescr+'.');
+    Memo1.Lines.Append('Device Path: '+PnPInfo.DevicePath+'.');
+    Memo1.Lines.Append('Friendly Name: '+PnPInfo.FriendlyName+'.');
   end;
 end;
 

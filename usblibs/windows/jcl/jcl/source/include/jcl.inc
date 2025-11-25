@@ -33,6 +33,12 @@
 {                                                                                                  }
 {**************************************************************************************************}
 
+{$ifdef FPC}
+{$hints off}
+{$warnings off}
+{$notes off}
+{$endif}
+
 {$BOOLEVAL OFF}       // Boolean shortcut evaluation
 {$LONGSTRINGS ON}     // Long strings
 {$WRITEABLECONST OFF} // Read-only typed constants
