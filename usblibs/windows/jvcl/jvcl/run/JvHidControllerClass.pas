@@ -437,6 +437,7 @@ type
     FNumUnpluggedDevices: Integer;
     // reentrancy
     FEventLock: TRTLCriticalSection;
+    FLParam: LPARAM;
     // window to catch WM_DEVICECHANGE
     FHWnd: HWND;
     FNotificationHandle: HDEVNOTIFY;
@@ -2029,7 +2030,7 @@ begin
 
   FHWnd:=0;
 
-  FNotificationHandle := 0;
+  FNotificationHandle := NIL;
 
   FDevThreadSleepTime := 100;
   FVersion := cHidControllerClassVersion;
@@ -2145,11 +2146,7 @@ begin
   begin
     DeviceMessage:=TWMDeviceChange(Msg);
 
-    {$ifndef FPC}
-    if (FNotificationHandle = 0) then
-    {$else}
     if (FNotificationHandle = NIL) then
-    {$endif}
     begin
       if (DeviceMessage.Event = DBT_DEVNODES_CHANGED) then
       begin
@@ -2180,6 +2177,7 @@ begin
 
     if DoDataChange then
     begin
+      FLParam := Msg.LParam;
       EnterCriticalSection(FEventLock);
       try
         DeviceChange;
@@ -2317,8 +2315,8 @@ var
   end;
 
 begin
-  Changed := false;
-
+  //Changed := false;
+  Changed := (FLParam = -1);
   // get new device list
   NewList := TList.Create;
   FillInList;
@@ -2415,6 +2413,8 @@ begin
      (TMethod(Notifier).Data <> TMethod(FOnDeviceChange).Data) then
   begin
     FOnDeviceChange := Notifier;
+    if not (csLoading in ComponentState) then
+      DeviceChange;
   end;
 end;
 

@@ -102,7 +102,6 @@ begin
   with LocalDevice.HidCtrl do
   begin
     Memo1.Lines.Append('Found correct HID device.');
-    //Memo1.Lines.Append('HID device index: '+InttoStr(DeviceIndex));
     Memo1.Lines.Append('VID: '+InttoHex(Attributes.VendorID,4)+'. PID: '+InttoHex(Attributes.ProductID,4)+'.');
     Memo1.Lines.Append('Name: '+ProductName+'. Vendor: '+VendorName+'.');
     Memo1.Lines.Append('Serial: '+SerialNumber+'.');

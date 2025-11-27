@@ -8,8 +8,8 @@
       <Unit>
         <Filename Value="FpcUsbHidConsole.lpr"/>
         <IsPartOfProject Value="True"/>
-        <TopLine Value="106"/>
-        <CursorPos X="28" Y="17"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="73"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit>
@@ -44,7 +44,6 @@
       </Unit>
       <Unit>
         <Filename Value="usblibs\usb.pas"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
@@ -52,6 +51,8 @@
       <Unit>
         <Filename Value="usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
         <EditorIndex Value="2"/>
+        <TopLine Value="526"/>
+        <CursorPos X="3" Y="549"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit>
@@ -64,10 +65,6 @@
       </Unit>
     </Units>
     <JumpHistory HistoryIndex="29">
-      <Position>
-        <Filename Value="usblibs\USB.pas"/>
-        <Caret Line="452" TopLine="427"/>
-      </Position>
       <Position>
         <Filename Value="usblibs\USB.pas"/>
         <Caret Line="520" TopLine="501"/>
@@ -182,6 +179,10 @@
       <Position>
         <Filename Value="usblibs\usb.pas"/>
         <Caret Line="589" Column="5" TopLine="559"/>
+      </Position>
+      <Position>
+        <Filename Value="FpcUsbHidConsole.lpr"/>
+        <Caret Line="17" Column="28" TopLine="106"/>
       </Position>
     </JumpHistory>
     <RunParams>
