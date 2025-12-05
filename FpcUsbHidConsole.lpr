@@ -54,11 +54,26 @@ end;
 procedure TMyUSB.UpdateUSBDevice(Sender: TObject;LocalDevice:TUSBController);
 begin
   writeln('***************');
+  writeln('CheckVendorProduct(const VID,PID:word) has returned true.');
   writeln('Device change !');
 
   with LocalDevice.HidCtrl do
   begin
-    writeln('Found correct HID device.');
+    if IsPluggedIn then
+      writeln('Arrival of correct HID device.')
+    else
+      writeln('Removal of correct HID device.');
+  end;
+
+  (*
+  if Length(LocalDevice.ProductSerial)=0 then
+    writeln('Removal of correct HID device.')
+  else
+    writeln('Arrival of correct HID device.');
+  *)
+
+  with LocalDevice.HidCtrl do
+  begin
     writeln('VID: '+InttoHex(Attributes.VendorID,4)+'. PID: '+InttoHex(Attributes.ProductID,4)+'.');
     writeln('Name: '+ProductName+'. Vendor: '+VendorName+'.');
     writeln('Serial: '+SerialNumber+'.');

@@ -19,8 +19,8 @@
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="Main"/>
         <IsVisibleTab Value="True"/>
-        <TopLine Value="12"/>
-        <CursorPos Y="105"/>
+        <TopLine Value="96"/>
+        <CursorPos X="3" Y="118"/>
         <UsageCount Value="21"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
@@ -28,8 +28,8 @@
       <Unit2>
         <Filename Value="usblibs\usb.pas"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="26"/>
-        <CursorPos X="3" Y="23"/>
+        <TopLine Value="242"/>
+        <CursorPos Y="256"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit2>
@@ -43,10 +43,12 @@
       </Unit3>
       <Unit4>
         <Filename Value="usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="422"/>
-        <CursorPos X="30" Y="443"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="344"/>
+        <CursorPos Y="369"/>
         <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit4>
       <Unit5>
         <Filename Value="usblibs\windows\jvcl\jvcl\run\HidToken.pas"/>
@@ -84,7 +86,7 @@
         <UsageCount Value="10"/>
       </Unit9>
     </Units>
-    <JumpHistory Count="18" HistoryIndex="17">
+    <JumpHistory Count="22" HistoryIndex="21">
       <Position1>
         <Filename Value="main.pas"/>
         <Caret Line="124" TopLine="118"/>
@@ -157,6 +159,22 @@
         <Filename Value="main.pas"/>
         <Caret Line="103" TopLine="88"/>
       </Position18>
+      <Position19>
+        <Filename Value="main.pas"/>
+        <Caret Line="109" TopLine="36"/>
+      </Position19>
+      <Position20>
+        <Filename Value="main.pas"/>
+        <Caret Line="98" Column="65" TopLine="89"/>
+      </Position20>
+      <Position21>
+        <Filename Value="usblibs\usb.pas"/>
+        <Caret Line="25" Column="29" TopLine="8"/>
+      </Position21>
+      <Position22>
+        <Filename Value="usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
+        <Caret Line="203" Column="12" TopLine="182"/>
+      </Position22>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>

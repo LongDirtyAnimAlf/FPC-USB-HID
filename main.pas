@@ -98,7 +98,24 @@ end;
 procedure TForm1.UpdateUSBDevice(Sender: TObject;LocalDevice:TUSBController);
 begin
   Memo1.Lines.Append('***************');
+  Memo1.Lines.Append('CheckVendorProduct(const VID,PID:word) has returned true.');
   Memo1.Lines.Append('Device change !');
+
+  with LocalDevice.HidCtrl do
+  begin
+    if IsPluggedIn then
+      Memo1.Lines.Append('Arrival of correct HID device.')
+    else
+      Memo1.Lines.Append('Removal of correct HID device.');
+  end;
+
+  (*
+  if Length(LocalDevice.ProductSerial)=0 then
+    Memo1.Lines.Append('Removal of correct HID device.')
+  else
+    Memo1.Lines.Append('Arrival of correct HID device.');
+  *)
+
   with LocalDevice.HidCtrl do
   begin
     Memo1.Lines.Append('Found correct HID device.');

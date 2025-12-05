@@ -14,6 +14,9 @@ uses
   usbcontroller;
   {$endif}
 
+const
+  USBSERIALREMOVEME ='I_AM_UNPLUGGED_AND_REMOVED';
+
 type
   TReport = packed record
     ReportID: byte;
@@ -44,6 +47,9 @@ type
     property  ProductSerial  : ansistring read FProductSerial;
   end;
 
+  TRemoveUSBController = class(TUSBController)
+  end;
+
   TUSBChangeEvent  = procedure(Sender: TObject;datacarrier:TUSBController) of object;
 
   TUSB=class
@@ -70,7 +76,7 @@ type
     function  GetHidCtl:TJvHidDeviceController;
 
     function  Enumerate:integer;
-protected
+  protected
     procedure DeviceArrival(HidDev: TJvHidDevice);
     procedure DeviceRemoval(HidDev: TJvHidDevice);
   public
@@ -248,15 +254,16 @@ function TUSB.SendDevice(HidDev: TJvHidDevice; const LocalSerial: ansistring):bo
 var
   NewUSBController:TUSBController;
 begin
-  result:=Assigned(FOnUSBDeviceChange);
-  if result then
+  result:=false;
+  if Assigned(FOnUSBDeviceChange) then
   begin
     // Create controller with serial
     // Will be freed by the boss, if accepted
     NewUSBController:=TUSBController.Create(HidDev,LocalSerial);
     FOnUSBDeviceChange(Self,NewUSBController);
+    result:=NewUSBController.Accepted;
     // if the controller is not accepted by the boss, we need to destroy it ourselves !
-    if (NOT NewUSBController.Accepted) then NewUSBController.Destroy;
+    if (NOT result) then NewUSBController.Destroy;
   end;
 end;
 
@@ -395,12 +402,14 @@ begin
   if (CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) AND CheckHIDDevice(HidDev)) then
   begin
     AddInfo('Correct device removal. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
-    if HidDev.IsCheckedOut then
+    //if HidDev.IsCheckedOut then
     begin
-      // Send device to boss [without serial to indicate removal}
-      SendDevice(HidDev);
-      // perform checkin
-      USBMasterController.CheckIn(HidDev);
+      // Send device to boss [without serial to indicate possible removal]
+      if (NOT SendDevice(HidDev)) then
+      begin
+        // The device is not accepted by the boss, we might need to checkin !
+        if HidDev.IsCheckedOut then USBMasterController.CheckIn(HidDev);
+      end;
     end;
   end;
   FEmulation:=(USBMasterController.NumCheckedOutDevices=0);
@@ -409,17 +418,19 @@ end;
 
 procedure TUSB.DeviceArrival(HidDev: TJvHidDevice);
 var
-  LocalSerial      : ansistring;
+  LocalSerial      : string;
 begin
   if (CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) AND CheckHIDDevice(HidDev)) then
   begin
     AddInfo('Correct device arrival. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
 
     LocalSerial:='';
+    // Our special processing of product serial
+    // Should be removed if not needed by our main application
     if ((LocalSerial='') OR (Length(LocalSerial)<>29)) then LocalSerial:=HidDev.DeviceStrings[6];
     if ((LocalSerial='') OR (Length(LocalSerial)<>29)) then LocalSerial:=HidDev.DeviceStrings[5];
     if ((LocalSerial='') OR (Length(LocalSerial)<>29)) then LocalSerial:=HidDev.DeviceStrings[4];
-    if ((LocalSerial='') OR (Length(LocalSerial)<>29)) then LocalSerial:=HidDev.SerialNumber;
+    if ((LocalSerial='') OR (Length(LocalSerial)<>29)) then LocalSerial:=string(HidDev.SerialNumber);
     // Last resort serial
     if ((LocalSerial='') OR (Length(LocalSerial)<>29)) then LocalSerial:=InttoStr(HidDev.Attributes.VendorID)+'_'+InttoStr(HidDev.Attributes.ProductID)+'_'+InttoStr(HidDev.PnPInfo.DeviceID);
 
@@ -439,7 +450,12 @@ begin
         // Give internal threads some time to start
         //sleep(200);
         //AddInfo('Correct device arrival checked out. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
-        SendDevice(HidDev,LocalSerial);
+        // Send device to boss
+        if (NOT SendDevice(HidDev,LocalSerial)) then
+        begin
+          // The device is not accepted by the boss, we need to checkin !
+          USBMasterController.CheckIn(HidDev);
+        end;
       end;
     end;
   end
