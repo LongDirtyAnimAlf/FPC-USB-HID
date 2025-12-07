@@ -20,18 +20,19 @@
         <UnitName Value="Main"/>
         <IsVisibleTab Value="True"/>
         <TopLine Value="96"/>
-        <CursorPos X="3" Y="118"/>
+        <CursorPos Y="118"/>
         <UsageCount Value="21"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit1>
       <Unit2>
         <Filename Value="usblibs\usb.pas"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="242"/>
         <CursorPos Y="256"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit2>
       <Unit3>
         <Filename Value="backup\usb2.pas"/>
@@ -43,11 +44,10 @@
       </Unit3>
       <Unit4>
         <Filename Value="usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="344"/>
         <CursorPos Y="369"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit4>
       <Unit5>
@@ -56,6 +56,7 @@
         <TopLine Value="36"/>
         <CursorPos X="20" Y="51"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit5>
       <Unit6>
         <Filename Value="usblibs\windows\jcl\jcl\source\common\JclUnicode.pas"/>
@@ -63,6 +64,7 @@
         <TopLine Value="2726"/>
         <CursorPos X="30" Y="2740"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit6>
       <Unit7>
         <Filename Value="usblibs\windows\jcl\jcl\source\common\JclFileUtils.pas"/>
@@ -70,6 +72,7 @@
         <TopLine Value="6418"/>
         <CursorPos X="38" Y="6433"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit7>
       <Unit8>
         <Filename Value="usblibs\linux\usbcontroller.pas"/>
@@ -86,7 +89,7 @@
         <UsageCount Value="10"/>
       </Unit9>
     </Units>
-    <JumpHistory Count="22" HistoryIndex="21">
+    <JumpHistory Count="16" HistoryIndex="15">
       <Position1>
         <Filename Value="main.pas"/>
         <Caret Line="124" TopLine="118"/>
@@ -112,69 +115,45 @@
         <Caret Line="7" Column="4"/>
       </Position6>
       <Position7>
-        <Filename Value="usblibs\usb.pas"/>
-        <Caret Line="17" Column="13"/>
+        <Filename Value="main.pas"/>
+        <Caret Line="65" Column="21" TopLine="50"/>
       </Position7>
       <Position8>
         <Filename Value="main.pas"/>
-        <Caret Line="65" Column="21" TopLine="50"/>
+        <Caret Line="65" Column="34" TopLine="50"/>
       </Position8>
       <Position9>
-        <Filename Value="usblibs\usb.pas"/>
-        <Caret Line="96" Column="68" TopLine="83"/>
+        <Filename Value="main.pas"/>
+        <Caret Line="30" Column="20" TopLine="15"/>
       </Position9>
       <Position10>
-        <Filename Value="usblibs\usb.pas"/>
-        <Caret Line="58" Column="42" TopLine="42"/>
+        <Filename Value="main.pas"/>
+        <Caret Line="126" Column="7" TopLine="108"/>
       </Position10>
       <Position11>
-        <Filename Value="usblibs\usb.pas"/>
-        <Caret Line="45" Column="96" TopLine="42"/>
+        <Filename Value="main.pas"/>
+        <Caret Line="108" Column="5" TopLine="102"/>
       </Position11>
       <Position12>
         <Filename Value="main.pas"/>
-        <Caret Line="65" Column="34" TopLine="50"/>
+        <Caret Line="98" Column="23" TopLine="89"/>
       </Position12>
       <Position13>
         <Filename Value="main.pas"/>
-        <Caret Line="30" Column="20" TopLine="15"/>
+        <Caret Line="30" Column="22" TopLine="15"/>
       </Position13>
       <Position14>
         <Filename Value="main.pas"/>
-        <Caret Line="126" Column="7" TopLine="108"/>
+        <Caret Line="103" TopLine="88"/>
       </Position14>
       <Position15>
         <Filename Value="main.pas"/>
-        <Caret Line="108" Column="5" TopLine="102"/>
+        <Caret Line="109" TopLine="36"/>
       </Position15>
       <Position16>
         <Filename Value="main.pas"/>
-        <Caret Line="98" Column="23" TopLine="89"/>
-      </Position16>
-      <Position17>
-        <Filename Value="main.pas"/>
-        <Caret Line="30" Column="22" TopLine="15"/>
-      </Position17>
-      <Position18>
-        <Filename Value="main.pas"/>
-        <Caret Line="103" TopLine="88"/>
-      </Position18>
-      <Position19>
-        <Filename Value="main.pas"/>
-        <Caret Line="109" TopLine="36"/>
-      </Position19>
-      <Position20>
-        <Filename Value="main.pas"/>
         <Caret Line="98" Column="65" TopLine="89"/>
-      </Position20>
-      <Position21>
-        <Filename Value="usblibs\usb.pas"/>
-        <Caret Line="25" Column="29" TopLine="8"/>
-      </Position21>
-      <Position22>
-        <Filename Value="usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <Caret Line="203" Column="12" TopLine="182"/>
-      </Position22>
+      </Position16>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>

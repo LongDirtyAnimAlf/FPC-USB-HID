@@ -22,6 +22,7 @@ type
     ReportID: byte;
     Data:    {packed?} array [0..15] of byte; // <-- this needs to be adapted to the report size
   end;
+  PReport = ^TReport;
 
   TUSBController = class
   strict private
@@ -398,22 +399,17 @@ end;
 
 procedure TUSB.DeviceRemoval(HidDev: TJvHidDevice);
 begin
-  //AddInfo('Device removal. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
   if (CheckVendorProduct(HidDev.Attributes.VendorID,HidDev.Attributes.ProductID) AND CheckHIDDevice(HidDev)) then
   begin
     AddInfo('Correct device removal. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
-    //if HidDev.IsCheckedOut then
+    if (NOT SendDevice(HidDev)) then
     begin
-      // Send device to boss [without serial to indicate possible removal]
-      if (NOT SendDevice(HidDev)) then
-      begin
-        // The device is not accepted by the boss, we might need to checkin !
-        if HidDev.IsCheckedOut then USBMasterController.CheckIn(HidDev);
-      end;
+      // The device is not accepted by the boss, we might need to checkin !
+      if HidDev.IsCheckedOut then USBMasterController.CheckIn(HidDev);
     end;
   end;
   FEmulation:=(USBMasterController.NumCheckedOutDevices=0);
-  if (MainThreadID=GetCurrentThreadID) then CheckSynchronize;
+  //if (MainThreadID=GetCurrentThreadID) then CheckSynchronize;
 end;
 
 procedure TUSB.DeviceArrival(HidDev: TJvHidDevice);
@@ -424,32 +420,13 @@ begin
   begin
     AddInfo('Correct device arrival. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
 
-    LocalSerial:='';
-    // Our special processing of product serial
-    // Should be removed if not needed by our main application
-    if ((LocalSerial='') OR (Length(LocalSerial)<>29)) then LocalSerial:=HidDev.DeviceStrings[6];
-    if ((LocalSerial='') OR (Length(LocalSerial)<>29)) then LocalSerial:=HidDev.DeviceStrings[5];
-    if ((LocalSerial='') OR (Length(LocalSerial)<>29)) then LocalSerial:=HidDev.DeviceStrings[4];
-    if ((LocalSerial='') OR (Length(LocalSerial)<>29)) then LocalSerial:=string(HidDev.SerialNumber);
-    // Last resort serial
-    if ((LocalSerial='') OR (Length(LocalSerial)<>29)) then LocalSerial:=InttoStr(HidDev.Attributes.VendorID)+'_'+InttoStr(HidDev.Attributes.ProductID)+'_'+InttoStr(HidDev.PnPInfo.DeviceID);
-
-    if LocalSerial='' then
-    begin
-      AddInfo('Severe error while receiving serial number of controller !!!!');
-      AddInfo('Therefor: ignoring the USB device !!');
-      exit;
-    end;
+    LocalSerial:=string(HidDev.SerialNumber);
+    if (LocalSerial='') then LocalSerial:=InttoStr(HidDev.Attributes.VendorID)+'_'+InttoStr(HidDev.Attributes.ProductID)+'_'+InttoStr(HidDev.PnPInfo.DeviceID);
 
     if (NOT HidDev.IsCheckedOut) then
     begin
-      // Perform checkout and send device to boss with serial to indicate arrival
-      //AddInfo('Correct device arrival not yet checked out. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
       if HidDev.CheckOut then
       begin
-        // Give internal threads some time to start
-        //sleep(200);
-        //AddInfo('Correct device arrival checked out. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
         // Send device to boss
         if (NOT SendDevice(HidDev,LocalSerial)) then
         begin

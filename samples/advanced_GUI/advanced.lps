@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="12"/>
+    <BuildModes Active="Default"/>
+    <Units>
+      <Unit>
+        <Filename Value="advanced.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="-1"/>
+        <TopLine Value="-1"/>
+        <CursorPos X="-1" Y="-1"/>
+        <UsageCount Value="21"/>
+      </Unit>
+      <Unit>
+        <Filename Value="main.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Form1"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <TopLine Value="27"/>
+        <UsageCount Value="21"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="usbbase.pas"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="143"/>
+        <CursorPos Y="203"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\usblibs\usb.pas"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="202"/>
+        <CursorPos X="21" Y="214"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="15"/>
+        <CursorPos X="2" Y="30"/>
+        <UsageCount Value="10"/>
+      </Unit>
+    </Units>
+    <JumpHistory HistoryIndex="28">
+      <Position>
+        <Filename Value="..\..\usblibs\usb.pas"/>
+        <Caret Line="436" TopLine="414"/>
+      </Position>
+      <Position>
+        <Filename Value="..\..\usblibs\usb.pas"/>
+        <Caret Line="438" TopLine="414"/>
+      </Position>
+      <Position>
+        <Filename Value="..\..\usblibs\usb.pas"/>
+        <Caret Line="445" TopLine="431"/>
+      </Position>
+      <Position>
+        <Filename Value="..\..\usblibs\usb.pas"/>
+        <Caret Line="449" TopLine="431"/>
+      </Position>
+      <Position>
+        <Filename Value="..\..\usblibs\usb.pas"/>
+        <Caret Line="455" TopLine="434"/>
+      </Position>
+      <Position>
+        <Filename Value="..\..\usblibs\usb.pas"/>
+        <Caret Line="257" TopLine="241"/>
+      </Position>
+      <Position>
+        <Filename Value="..\..\usblibs\usb.pas"/>
+        <Caret Line="258" TopLine="241"/>
+      </Position>
+      <Position>
+        <Filename Value="..\..\usblibs\usb.pas"/>
+        <Caret Line="259" TopLine="241"/>
+      </Position>
+      <Position>
+        <Filename Value="..\..\usblibs\usb.pas"/>
+        <Caret Line="263" TopLine="241"/>
+      </Position>
+      <Position>
+        <Filename Value="..\..\usblibs\usb.pas"/>
+        <Caret Line="264" TopLine="241"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="494" TopLine="480"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="495" TopLine="480"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="496" TopLine="480"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="497" TopLine="480"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="498" TopLine="480"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="499" TopLine="480"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="501" TopLine="480"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="503" TopLine="480"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="507" TopLine="492"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="509" TopLine="492"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="510" TopLine="492"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="489" TopLine="482"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="500" Column="62" TopLine="485"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="489" Column="8" TopLine="472"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="491" Column="23" TopLine="484"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="97" TopLine="60"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="92" Column="9" TopLine="75"/>
+      </Position>
+      <Position>
+        <Filename Value="usbbase.pas"/>
+        <Caret Line="93" Column="14" TopLine="75"/>
+      </Position>
+      <Position>
+        <Filename Value="main.pas"/>
+        <Caret Line="60" Column="23" TopLine="45"/>
+      </Position>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+</CONFIG>
