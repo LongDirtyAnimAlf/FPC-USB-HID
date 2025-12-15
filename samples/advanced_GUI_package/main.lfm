@@ -1,0 +1,40 @@
+object Form1: TForm1
+  Left = 414
+  Height = 240
+  Top = 218
+  Width = 320
+  Caption = 'Form1'
+  ClientHeight = 240
+  ClientWidth = 320
+  LCLVersion = '4.2.0.0'
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  object btnEnableUSB: TButton
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    Left = 4
+    Height = 43
+    Top = 4
+    Width = 106
+    BorderSpacing.Around = 4
+    Caption = 'Enable USB'
+    TabOrder = 0
+    OnClick = btnEnableUSBClick
+  end
+  object Memo1: TMemo
+    AnchorSideLeft.Control = btnEnableUSB
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 114
+    Height = 232
+    Top = 4
+    Width = 202
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    BorderSpacing.Around = 4
+    TabOrder = 1
+  end
+end

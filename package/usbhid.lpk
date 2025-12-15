@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Package Version="5">
+    <Name Value="usbhid"/>
+    <Author Value="Don Alfredo"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <SearchPaths>
+        <IncludeFiles Value="../usblibs/windows/jvcl/jvcl/common;../usblibs/windows/jcl/jcl/source/include"/>
+        <OtherUnitFiles Value="../usblibs;../usblibs/linux;../usblibs/windows;../usblibs/windows/jvcl/jvcl/run;../usblibs/windows/jcl/jcl/source/common;../usblibs/windows/jcl/jcl/source/windows"/>
+        <UnitOutputDirectory Value="../usblibs/lib/$(TargetCPU)-$(TargetOS)"/>
+      </SearchPaths>
+      <Linking>
+        <Debugging>
+          <DebugInfoType Value="dsDwarf3"/>
+        </Debugging>
+      </Linking>
+      <Other>
+        <Verbosity>
+          <ShowHintsForUnusedUnitsInMainSrc Value="True"/>
+          <ShowHintsForSenderNotUsed Value="True"/>
+        </Verbosity>
+        <CustomOptions Value="-Ur"/>
+      </Other>
+    </CompilerOptions>
+    <Description Value="USB HID library"/>
+    <License Value="MPL, GPL or LGPL"/>
+    <Version Major="1" Release="1"/>
+    <Files Count="1">
+      <Item1>
+        <Filename Value="../usblibs/usb.pas"/>
+        <UnitName Value="usb"/>
+      </Item1>
+    </Files>
+    <CompatibilityMode Value="True"/>
+    <UsageOptions>
+      <IncludePath Value="$(PkgIncPath)"/>
+      <LibraryPath Value="$(PkgOutDir)"/>
+      <ObjectPath Value="../usblibs/lib/$(TargetCPU)-$(TargetOS)"/>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+      <UseFileFilters Value="True"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>
