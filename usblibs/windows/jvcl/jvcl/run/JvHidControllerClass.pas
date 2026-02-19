@@ -2341,6 +2341,7 @@ begin
       begin
         FList.Delete(I);
         HidDev.Free;
+        //HidDev := nil;
       end;
       Changed := True;
     end;

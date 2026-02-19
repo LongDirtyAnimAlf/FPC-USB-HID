@@ -8,6 +8,7 @@ interface
 
 uses
   SysUtils, Classes,
+  Contnrs,
   usb;
 
 type
@@ -50,7 +51,7 @@ type
   public
     MaxErrors:word;
 
-    ControllerBoards : Classes.TList;
+    ControllerBoards : TObjectList;
 
     constructor Create(aName:string);
     destructor Destroy;override;
@@ -101,7 +102,7 @@ begin
   MaxErrors  := 2;
   BoardCount := 10;
 
-  ControllerBoards:=TList.Create;
+  ControllerBoards:=TObjectList.Create;
   Inc(BoardCount); // we do not use board zero.
   ControllerBoards.Count:=BoardCount;
   FDataSource:=TMyUSB.Create;
@@ -110,15 +111,7 @@ begin
 end;
 
 destructor TDataDevice.Destroy;
-var
-  i:word;
-  Ctrl:TUSBController;
 begin
-  for i:=0 to Pred(ControllerBoards.Count) do
-  begin
-    Ctrl:=TUSBController(ControllerBoards.Items[i]);
-    if Assigned(Ctrl) then Ctrl.Destroy;
-  end;
   ControllerBoards.Free;
   FDataSource.Free;
 end;
@@ -190,9 +183,11 @@ begin
         if (Ctrl.HidCtrl=Board.HidCtrl) then
         begin
           // Got you !!
+          // Delete and remove controller from list
+          ControllerBoards.Delete(localboard);
+          // Insert empty slot as we access boards by their board/list index.
+          ControllerBoards.Insert(localboard,nil);
           AddInfo('Board [#'+InttoStr(localboard)+'] removed.');
-          Ctrl.Destroy;
-          ControllerBoards.Items[localboard]:=nil;
           if Assigned(FOnDeviceChange) then FOnDeviceChange(Self,-1*localboard);
           break;
         end;
