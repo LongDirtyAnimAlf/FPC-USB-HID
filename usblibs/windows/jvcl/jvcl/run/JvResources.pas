@@ -569,7 +569,7 @@ resourcestring
 
 //=== JvDatePickerEdit.pas ===================================================
 resourcestring
-  RsDefaultNoDateShortcut = 'Alt+Del';
+  RsDefaultNoDateShortcut = 'Alt+Del'; // not used anymore in JvDatePickerEdit.pas
 
   RsEMustHaveADate = '%s must have a date!';
 
@@ -795,7 +795,7 @@ resourcestring
 //=== JvFindReplace.pas ======================================================
 resourcestring
   RsNotFound = 'Search string ''%s'' not found';
-  RsXOccurencesReplaced = '%0:d occurence(s) of ''%1:s'' were replaced';
+  RsXOccurrencesReplaced = '%0:d occurrence(s) of ''%1:s'' were replaced';
   RsReplaceCaption = 'Replace';
   RsFindCaption = 'Find';
 

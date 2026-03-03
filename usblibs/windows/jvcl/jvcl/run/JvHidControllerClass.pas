@@ -207,7 +207,9 @@ type
     FHidOverlappedRead: THandle;
     FHidOverlappedWrite: THandle;
     FOvlRead: TOverlapped;
+    FReadEvent : THandle;
     FOvlWrite: TOverlapped;
+
     // internal properties part
     FAttributes: THIDDAttributes;
     FPnPInfo: TJvHidPnPInfo;
@@ -279,7 +281,7 @@ type
     // even if this call raises an exception.
     // The destructor of this class will take care of the cleanup even when an exception
     // is raised (as specified by the Delphi language)
-    constructor CtlCreate(const APnPInfo: TJvHidPnPInfo; const Controller: TJvHidDeviceController);
+    {%H-}constructor CtlCreate(const APnPInfo: TJvHidPnPInfo; const Controller: TJvHidDeviceController);
   protected
     // internal event implementor
     procedure DoUnplug;
@@ -411,7 +413,7 @@ type
   // controller class to manage all HID devices
 
   {$IFDEF RTL230_UP}
-  [ComponentPlatformsAttribute(pidWin32 or pidWin64)]
+  [ComponentPlatformsAttribute(pidWin32 or pidWin64{$IFDEF RTL360_UP} or pidWin64x{$ENDIF RTL360_UP})]
   {$ENDIF RTL230_UP}
   TJvHidDeviceController = class(TJvComponent)
   private
@@ -630,26 +632,34 @@ begin
     Device.FOnDataError(Device, FErr);
 end;
 
+procedure DummyReadCompletion(ErrorCode: DWORD; Count: DWORD; Ovl: POverlapped); stdcall;
+begin
+end;
+
 procedure TJvHidDeviceReadThread.Execute;
 var
-  Res        : DWORD;
+  LocalRes   : DWORD;
   Err_read   : DWORD;
   Err_ovl    : DWORD;
+  hReadEvent : THandle;
   Success    : boolean;
 begin
   {$ifndef FPC}
   NameThread(ThreadName);
   {$endif}
 
+  hReadEvent:=CreateEvent(Nil, True, False, Nil);
+
   while (not Terminated) do
   begin
-
     Success:=Device.OpenFileEx(omhRead);
 
     if Success then
     begin
+      ResetEvent(hReadEvent);
       Device.FOvlRead:=Default(TOverlapped);
-      Device.FOvlRead.hEvent:=CreateEvent(Nil, False, False, Nil);
+      //Device.FOvlRead.hEvent:=CreateEvent(Nil, True, False, Nil);
+      Device.FOvlRead.hEvent:=hReadEvent;
 
       Success := Windows.ReadFile(Device.HidOverlappedRead, Report[0], Device.Caps.InputReportByteLength, NumBytesRead, @Device.FOvlRead);
 
@@ -665,11 +675,13 @@ begin
           ERROR_IO_PENDING:
             begin
               repeat
-                Res:=WaitForSingleObject(Device.FOvlRead.hEvent, Device.ThreadSleepTime);
-                Success:=(Res=WAIT_OBJECT_0);
+                LocalRes:=WaitForSingleObject(Device.FOvlRead.hEvent, Device.ThreadSleepTime);
+                Success:=(LocalRes=WAIT_OBJECT_0);
               until Terminated or Success;
               if Success then
               begin
+                //NumBytesRead:=Device.GetOverlappedReadResult;
+                //Success:=(NumBytesRead>0);
                 Success:=GetOverlappedResult(Device.HidOverlappedRead, Device.FOvlRead, NumBytesRead, False);
                 if (NOT Success) then
                 begin
@@ -683,14 +695,23 @@ begin
                     begin
                       FErr:=Err_ovl;
                       Device.CancelIOEx(omhRead);
+                      //GetOverlappedResult(Device.HidOverlappedRead, Device.FOvlRead, NumBytesRead, True);
+                      if LocalRes = WAIT_TIMEOUT then
+                        FErr := ERROR_TIMEOUT
+                      else
+                        FErr := Err_ovl;
                     end;
                   end;
                 end;
               end
               else
               begin
-                FErr:=Res;
-                if (NOT Terminated) then Device.CancelIOEx(omhRead);
+                FErr:=LocalRes;
+                if (NOT Terminated) then
+                begin
+                  Device.CancelIOEx(omhRead);
+                  //GetOverlappedResult(Device.HidOverlappedRead, Device.FOvlRead, NumBytesRead, True);
+                end;
               end;
             end;
           else
@@ -699,7 +720,7 @@ begin
           end;
         end;
       end;
-      if (Device.FOvlRead.hEvent<>INVALID_HANDLE_VALUE) then CloseHandle(Device.FOvlRead.hEvent);
+      //if (Device.FOvlRead.hEvent<>INVALID_HANDLE_VALUE) then CloseHandle(Device.FOvlRead.hEvent);
     end;
 
     if (not Terminated) then
@@ -742,6 +763,7 @@ begin
       end;
     end;
   end;
+  if (Device.FOvlRead.hEvent<>INVALID_HANDLE_VALUE) then CloseHandle(Device.FOvlRead.hEvent);
 end;
 
 //=== { TJvHidPnPInfo } ======================================================
@@ -987,6 +1009,7 @@ begin
   FIsEnumerated := False;
   FHidOverlappedRead := INVALID_HANDLE_VALUE;
   FHidOverlappedWrite := INVALID_HANDLE_VALUE;
+  FReadEvent := CreateEvent(Nil, True, False, Nil);
   FVendorName := '';
   FProductName := '';
   FSerialNumber := '';
@@ -1059,11 +1082,14 @@ begin
   // to prevent strange problems
   OnData := nil;
   OnUnplug := nil;
-  // free the data which needs special handling
+
   CloseFile;
   CloseFileEx(omhRead);
   CloseFileEx(omhWrite);
 
+  if (FReadEvent<>INVALID_HANDLE_VALUE) then CloseHandle(FReadEvent);
+
+  // free the data which needs special handling
   if FPreparsedData <> nil then
     HidD_FreePreparsedData(FPreparsedData);
   FLanguageStrings.Free;
@@ -1897,6 +1923,65 @@ begin
   end;
 end;
 
+function TJvHidDevice.ReadFileTimeOut(var Report; const ToRead: DWORD; var BytesRead: DWORD; const TimeOut: DWORD): Boolean;
+var
+  LocalError  : DWORD;
+  LocalRes    : DWORD;
+begin
+  Result := False;
+  if not OpenFileEx(omhRead) then Exit;
+
+  // 1. Always use Manual-Reset (True) for Overlapped events
+  ResetEvent(FReadEvent);
+  FOvlRead := Default(TOverlapped);
+  FOvlRead.hEvent := FReadEvent;
+  //FOvlRead.hEvent := CreateEvent(Nil, True, False, Nil);
+  //if FOvlRead.hEvent = 0 then Exit;
+
+  try
+    if not Windows.ReadFile(HidOverlappedRead, Report, ToRead, BytesRead, @FOvlRead) then
+    begin
+      LocalError := GetLastError;
+      if LocalError = ERROR_IO_PENDING then
+      begin
+        LocalRes := WaitForSingleObject(FOvlRead.hEvent, TimeOut);
+        if LocalRes = WAIT_OBJECT_0 then
+        begin
+          // Data arrived within timeout
+          //BytesRead:=GetOverlappedReadResult;
+          //Result:=(BytesRead>0);
+          Result := GetOverlappedResult(HidOverlappedRead, FOvlRead, BytesRead, False);
+          if (NOT Result) then FErr := GetLastError;
+        end
+        else
+        begin
+          // Timeout or Error - WE MUST CANCEL SAFELY
+          CancelIOEx(omhRead);
+          // Crucial: Wait for the OS to acknowledge the cancellation
+          // to ensure the 'Report' buffer is no longer being accessed by the kernel.
+          //GetOverlappedResult(HidOverlappedRead, FOvlRead, BytesRead, True);
+          if LocalRes = WAIT_TIMEOUT then
+            FErr := ERROR_TIMEOUT
+          else
+            FErr := GetLastError;
+          Result := False;
+        end;
+      end
+      else
+      begin
+        FErr := LocalError;
+        Result := (LocalError = ERROR_HANDLE_EOF); // EOF is technically a success in some HID contexts
+      end;
+    end
+    else
+      Result := True; // Read completed immediately
+  finally
+    //CloseHandle(FOvlRead.hEvent);
+    //FOvlRead.hEvent := 0;
+  end;
+end;
+
+(*
 function TJvHidDevice.ReadFileTimeOut(var Report; const ToRead: DWORD; var BytesRead: DWORD; const TimeOut:DWORD): Boolean;
 var
   Success    : boolean;
@@ -1963,6 +2048,7 @@ begin
   end;
   Result:=Success;
 end;
+*)
 
 function TJvHidDevice.CheckOut: Boolean;
 begin

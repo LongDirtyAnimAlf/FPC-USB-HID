@@ -38,15 +38,15 @@
 
 {* ----------------------------------------------------------------
                      NOTES ON INTEGRATION
-                     
+
  This file is specific to the JVCL and works well with the current
  version of the library.
  Note however that is not complete and might well be out of date
  with respect to the official windows API.
  If you want a more up to date version, you should look for 
  SetupApi.pas inside the JEDI WinAPI project at this address:
- 
- http://blog.delphi-jedi.net/jedi-api-headers/                    
+
+ http://blog.delphi-jedi.net/jedi-api-headers/
 ---------------------------------------------------------------- *}
 
 unit JvSetupApi;
