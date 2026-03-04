@@ -18,6 +18,8 @@ const
   USBSERIALREMOVEME ='I_AM_UNPLUGGED_AND_REMOVED';
 
 type
+  EUSBException = class(Exception);
+
   TReport = packed record
     ReportID: byte;
     Data:    {packed?} array [0..15] of byte; // <-- this needs to be adapted to the report size
@@ -31,7 +33,8 @@ type
     //FaultCounter   : word;
     procedure SetDataEvent(const DataEvent: TJvHidDataEvent);
     function  GetDataEvent:TJvHidDataEvent;
-    procedure ShowRead({%H-}HidDev: TJvHidDevice; ReportID: Byte;const Data: Pointer; {%H-}Size: Word);
+    procedure ReadCallBack({%H-}HidDev: TJvHidDevice; ReportID: Byte;const Data: Pointer; {%H-}Size: Word);
+    function GetShowReadThreading:boolean;
   private
     LocalDataTimer    : TEvent;
     property OnData   : TJvHidDataEvent read GetDataEvent write SetDataEvent;
@@ -42,27 +45,28 @@ type
     ControllerData    : TObject;
     constructor Create(HidDev: TJvHidDevice; SN:ansistring='');
     destructor Destroy;override;
-    procedure EnableShowReadThreading;
-    procedure DisableShowReadThreading;
-    property  HidCtrl        : TJvHidDevice read FHidCtrl;
-    property  ProductSerial  : ansistring read FProductSerial;
-  end;
-
-  TRemoveUSBController = class(TUSBController)
+    procedure EnableReadThreading;
+    procedure DisableReadThreading;
+    property  HidCtrl            : TJvHidDevice read FHidCtrl;
+    property  ProductSerial      : ansistring read FProductSerial;
+    property  ReadThreading      : boolean read GetShowReadThreading;
   end;
 
   TUSBChangeEvent  = procedure(Sender: TObject;datacarrier:TUSBController) of object;
 
   TUSB=class
   strict private
-    FHidCtl    : TJvHidDeviceController;
+    FHidCtl      : TJvHidDeviceController;
 
-    FErrors    : TStringList;
-    FInfo      : TStringList;
-    FEmulation : boolean;
+    FErrorLock   : TRTLCriticalSection;
+    FInfoLock    : TRTLCriticalSection;
 
-    FEnabled   : Boolean;
-    FWaitEx    : Boolean;
+    FErrors      : TStringList;
+    FInfo        : TStringList;
+    FEmulation   : boolean;
+
+    FEnabled     : Boolean;
+    FWaitEx      : Boolean;
 
     FOnUSBDeviceChange: TUSBChangeEvent;
 
@@ -87,7 +91,10 @@ type
     function  CheckVendorProduct(const {%H-}VID,{%H-}PID:word):boolean;virtual;
     function  CheckHIDDevice(const {%H-}HidDev: TJvHidDevice):boolean;virtual;
 
-    function  HidReadWrite(Ctrl: TUSBController; WriteOnly:boolean):boolean;
+    function  HidWriteReadSimple(Ctrl: TUSBController; WriteOnly:boolean=false):boolean;
+    function  HidWriteRead(Ctrl: TUSBController; WriteOnly:boolean=false):boolean;
+
+    function  HidReadWrite(Ctrl: TUSBController; WriteOnly:boolean):boolean; deprecated 'use HidWriteRead or HidWriteReadSimple';
 
     property  Emulation:boolean read FEmulation;
 
@@ -150,27 +157,34 @@ begin
   LocalDataTimer:=nil;
   if Assigned(ControllerData) then ControllerData.Destroy;
   ControllerData:=nil;
+  //if Assigned(FHidCtrl) then FHidCtrl.Destroy;
+  //FHidCtrl:=nil;
   inherited Destroy;
 end;
 
-procedure TUSBController.EnableShowReadThreading;
+procedure TUSBController.EnableReadThreading;
 begin
   if Assigned(HidCtrl) then
   begin
     HidCtrl.FlushQueue;
-    // Start reading thread and direct data to ShowRead
-    OnData:=ShowRead;
+    // Start reading thread and direct data to ReadCallBack
+    OnData:=ReadCallBack;
     // Sleep a bit to give threads some time to startup
     Sleep(25);
   end;
 end;
 
-procedure TUSBController.DisableShowReadThreading;
+procedure TUSBController.DisableReadThreading;
 begin
   OnData:=nil;
 end;
 
-procedure TUSBController.ShowRead(HidDev: TJvHidDevice; ReportID: Byte;const Data: Pointer; Size: Word);
+function TUSBController.GetShowReadThreading:boolean;
+begin
+  result:=Assigned(OnData);
+end;
+
+procedure TUSBController.ReadCallBack(HidDev: TJvHidDevice; ReportID: Byte;const Data: Pointer; Size: Word);
 var
   x: Integer;
   P: PByte;
@@ -218,6 +232,9 @@ constructor TUSB.Create;
 begin
   inherited Create;
 
+  InitCriticalSection(FErrorLock);
+  InitCriticalSection(FInfoLock);
+
   FErrors       := TStringList.Create;
   FInfo         := TStringList.Create;
   FEmulation    := True;
@@ -251,6 +268,10 @@ begin
   end;
   FErrors.Free;
   FInfo.Free;
+
+  DoneCriticalSection(FInfoLock);
+  DoneCriticalSection(FErrorLock);
+
   inherited Destroy;
 end;
 
@@ -267,7 +288,11 @@ begin
     FOnUSBDeviceChange(Self,NewUSBController);
     result:=NewUSBController.Accepted;
     // if the controller is not accepted by the boss, we need to destroy it ourselves !
-    if (NOT result) then NewUSBController.Destroy;
+    if (NOT result) then
+    begin
+      NewUSBController.Destroy;
+      //NewUSBController:=nil;
+    end;
   end;
 end;
 
@@ -303,101 +328,178 @@ begin
   result:=USBMasterController.Enumerate;
 end;
 
-function TUSB.HidReadWrite(Ctrl: TUSBController; WriteOnly:boolean):boolean;
+function TUSB.HidWriteReadSimple(Ctrl: TUSBController; WriteOnly:boolean):boolean;
 var
-  error:boolean;
-  Written,TotalWritten:DWORD;
-  Err:DWORD;
+  error           : boolean;
+  BytesProcessed  : DWORD;
+  Err             : DWORD;
 begin
-  error:=False;
+  error:=True;
 
-  if ((NOT Assigned(Ctrl)) OR (NOT Assigned(Ctrl.HidCtrl))) then
+  if Assigned(Ctrl) then
   begin
-    result:=False;
-    exit;
-  end;
-
-  if Assigned(Ctrl.HidCtrl) then
-  begin
-    if (NOT WriteOnly) then
-    begin
-      Ctrl.HidCtrl.FlushQueue;
-      if Assigned(Ctrl.OnData) then Ctrl.LocalDataTimer.ResetEvent;
-    end;
-    TotalWritten:=0;
-    while true do
-    begin
-      Written:=0;
-      error:=(NOT Ctrl.HidCtrl.WriteFile(Ctrl.LocalData, Ctrl.HidCtrl.Caps.OutputReportByteLength, Written));
-      error:=(error OR (Written=0));
-      if (error) then
+    try
+      if Assigned(Ctrl.HidCtrl) then
       begin
-        {$ifdef MSWINDOWS}
-        Err := GetLastError;
-        {$else}
-        Err := fpgeterrno;
-        {$endif}
-        AddErrors(Format('USB normal write error: %s (%x)', [SysErrorMessage(Err), Err]));
-        break;
-      end;
-      Inc(TotalWritten,Written);
-      if (TotalWritten>=SizeOf(Ctrl.LocalData)) then break;
-      break;
-    end;
-
-    if (NOT error) AND (NOT WriteOnly) then
-    begin
-      if Assigned(Ctrl.OnData) then
-      begin
-       error:=True;
-       if (WaitEx {OR True}) then
-       begin
-         Err:=0;
-         repeat
-           if (MainThreadID=GetCurrentThreadID) then CheckSynchronize(USBTimeout DIV 10);
-           error:=(Ctrl.LocalDataTimer.WaitFor(USBTimeout DIV 10)<>wrSignaled);
-           Inc(Err);
-         until ((NOT error) OR (Err>10));
-       end
-       else
-       begin
-         if (MainThreadID=GetCurrentThreadID) then CheckSynchronize(USBTimeout);
-         error:=(Ctrl.LocalDataTimer.WaitFor(USBTimeout)<>wrSignaled);
-       end;
-       if error then
-       begin
-         FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
-         AddErrors('USB thread read timeout !!');
-       end;
-      end
-      else
-      begin
-        TotalWritten:=0;
-        while true do
+        if ((NOT WriteOnly) and Ctrl.ReadThreading) then
+          raise EUSBException.Create('Simple reading not allowed with threaded reading enabled !')
+        else
         begin
-          FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
-          Written:=0;
-          error:=(NOT Ctrl.HidCtrl.ReadFileTimeOut(Ctrl.LocalData, Ctrl.HidCtrl.Caps.InputReportByteLength, Written, USBTimeout));
+          BytesProcessed:=0;
+          if (NOT WriteOnly) then Ctrl.HidCtrl.FlushQueue;
+          error:=(NOT Ctrl.HidCtrl.WriteFile(Ctrl.LocalData, Ctrl.HidCtrl.Caps.OutputReportByteLength, BytesProcessed));
+          error:=(error OR (BytesProcessed<>Ctrl.HidCtrl.Caps.OutputReportByteLength));
           if (error) then
           begin
-            //windows.beep(1000,100);
-            FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
-            if (Ctrl.HidCtrl.Err<>ERROR_SUCCESS) then
-              AddErrors(Format('USB normal read error: %s (%x)', [SysErrorMessage(Ctrl.HidCtrl.Err), Ctrl.HidCtrl.Err]));
-            break;
-          end
-          else
+            {$ifdef MSWINDOWS}
+            Err := GetLastError;
+            {$else}
+            Err := fpgeterrno;
+            {$endif}
+            AddErrors(Format('USB normal write error: %s (%x)', [SysErrorMessage(Err), Err]));
+          end;
+
+          if ( (NOT WriteOnly) AND (NOT error) AND (NOT Ctrl.ReadThreading) ) then
           begin
-            Inc(TotalWritten,Written);
-            if (TotalWritten>=SizeOf(Ctrl.LocalData)) then break;
-            break;
+            FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
+            BytesProcessed:=0;
+            error:=(NOT Ctrl.HidCtrl.ReadFileTimeOut(Ctrl.LocalData, Ctrl.HidCtrl.Caps.InputReportByteLength, BytesProcessed, USBTimeout));
+            error:=(error OR (BytesProcessed<>Ctrl.HidCtrl.Caps.InputReportByteLength));
+            if (error) then
+            begin
+              {$ifdef MSWINDOWS}
+              Err := GetLastError;
+              {$else}
+              Err := fpgeterrno;
+              {$endif}
+              AddErrors(Format('USB normal read error: %s (%x)', [SysErrorMessage(Err), Err]));
+            end;
           end;
         end;
       end;
+    except
+      error:=true;
+      AddErrors('Unknown USB exception !!');
     end;
   end;
 
   result:=error;
+end;
+
+function TUSB.HidWriteRead(Ctrl: TUSBController; WriteOnly:boolean):boolean;
+var
+  error                   : boolean;
+  BytesProcessed          : DWORD;
+  TotalBytesProcessed     : DWORD;
+  Err                     : DWORD;
+begin
+  error:=True;
+
+  if Assigned(Ctrl) then
+  begin
+    try
+      if Assigned(Ctrl.HidCtrl) then
+      begin
+        if (NOT WriteOnly) then
+        begin
+          Ctrl.HidCtrl.FlushQueue;
+          if (Assigned(Ctrl.OnData) AND Assigned(Ctrl.LocalDataTimer)) then Ctrl.LocalDataTimer.ResetEvent;
+        end;
+        TotalBytesProcessed:=0;
+        while true do
+        begin
+          BytesProcessed:=0;
+          error:=(NOT Ctrl.HidCtrl.WriteFile(Ctrl.LocalData, Ctrl.HidCtrl.Caps.OutputReportByteLength, BytesProcessed));
+          error:=(error OR (BytesProcessed=0));
+          if (error) then
+          begin
+            {$ifdef MSWINDOWS}
+            Err := GetLastError;
+            {$else}
+            Err := fpgeterrno;
+            {$endif}
+            AddErrors(Format('USB normal write error: %s (%x)', [SysErrorMessage(Err), Err]));
+            break;
+          end;
+          Inc(TotalBytesProcessed,BytesProcessed);
+          if (TotalBytesProcessed=Ctrl.HidCtrl.Caps.OutputReportByteLength) then break;
+          //break;
+        end;
+
+        if (NOT error) AND (NOT WriteOnly) then
+        begin
+          if Assigned(Ctrl.OnData) then
+          begin
+           error:=True;
+           if (WaitEx {OR True}) then
+           begin
+             Err:=0;
+             repeat
+               if (MainThreadID=GetCurrentThreadID) then CheckSynchronize(USBTimeout DIV 10);
+               // While we are waiting, the device might be removed
+               // So check if the device is still valid
+               if Assigned(Ctrl) then
+                 error:=(Ctrl.LocalDataTimer.WaitFor(USBTimeout DIV 10)<>wrSignaled)
+               else
+                 error:=true;
+               Inc(Err);
+             until ((NOT error) OR (Err>10) OR (NOT Assigned(Ctrl)));
+           end
+           else
+           begin
+             if (MainThreadID=GetCurrentThreadID) then CheckSynchronize(USBTimeout);
+             // While we are waiting, the device might be removed
+             // So check if the device is still valid
+             if Assigned(Ctrl) then
+               error:=(Ctrl.LocalDataTimer.WaitFor(USBTimeout)<>wrSignaled)
+             else
+               error:=true;
+           end;
+           if error then
+           begin
+             FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
+             AddErrors('USB thread read timeout !!');
+           end;
+          end
+          else
+          begin
+            TotalBytesProcessed:=0;
+            while true do
+            begin
+              FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
+              BytesProcessed:=0;
+              error:=(NOT Ctrl.HidCtrl.ReadFileTimeOut(Ctrl.LocalData, Ctrl.HidCtrl.Caps.InputReportByteLength, BytesProcessed, USBTimeout));
+              error:=(error OR (BytesProcessed=0));
+              if (error) then
+              begin
+                //windows.beep(1000,100);
+                FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
+                if (Ctrl.HidCtrl.Err<>ERROR_SUCCESS) then
+                  AddErrors(Format('USB normal read error: %s (%x)', [SysErrorMessage(Ctrl.HidCtrl.Err), Ctrl.HidCtrl.Err]));
+                break;
+              end
+              else
+              begin
+                Inc(TotalBytesProcessed,BytesProcessed);
+                if (TotalBytesProcessed=Ctrl.HidCtrl.Caps.InputReportByteLength) then break;
+                //break;
+              end;
+            end;
+          end;
+        end;
+      end;
+    except
+      error:=true;
+      AddErrors('Unknown USB exception !!');
+    end;
+  end;
+
+  result:=error;
+end;
+
+function TUSB.HidReadWrite(Ctrl: TUSBController; WriteOnly:boolean):boolean;
+begin
+  result:=HidWriteReadSimple(Ctrl,WriteOnly);
 end;
 
 procedure TUSB.DeviceRemoval(HidDev: TJvHidDevice);
@@ -412,12 +514,12 @@ begin
       if (NOT SendDevice(HidDev)) then
       begin
         // The device is not accepted by the boss, we might need to checkin !
-        if HidDev.IsCheckedOut then USBMasterController.CheckIn(HidDev);
+        if Assigned(HidDev) AND HidDev.IsCheckedOut then USBMasterController.CheckIn(HidDev);
       end;
     end;
   end;
   FEmulation:=(USBMasterController.NumCheckedOutDevices=0);
-  if (MainThreadID=GetCurrentThreadID) then CheckSynchronize;
+  //if (MainThreadID=GetCurrentThreadID) then CheckSynchronize;
 end;
 
 procedure TUSB.DeviceArrival(HidDev: TJvHidDevice);
@@ -442,23 +544,24 @@ begin
     begin
       AddInfo('Severe error while receiving serial number of controller !!!!');
       AddInfo('Therefor: ignoring the USB device !!');
-      exit;
-    end;
-
-    if (NOT HidDev.IsCheckedOut) then
+    end
+    else
     begin
-      // Perform checkout and send device to boss with serial to indicate arrival
-      //AddInfo('Correct device arrival not yet checked out. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
-      if HidDev.CheckOut then
+      if (NOT HidDev.IsCheckedOut) then
       begin
-        // Give internal threads some time to start
-        //sleep(200);
-        //AddInfo('Correct device arrival checked out. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
-        // Send device to boss
-        if (NOT SendDevice(HidDev,LocalSerial)) then
+        // Perform checkout and send device to boss with serial to indicate arrival
+        //AddInfo('Correct device arrival not yet checked out. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
+        if HidDev.CheckOut then
         begin
-          // The device is not accepted by the boss, we need to checkin !
-          USBMasterController.CheckIn(HidDev);
+          // Give internal threads some time to start
+          //sleep(200);
+          //AddInfo('Correct device arrival checked out. VID: '+InttoStr(HidDev.Attributes.VendorID)+'. PID: '+InttoStr(HidDev.Attributes.ProductID)+'.');
+          // Send device to boss
+          if (NOT SendDevice(HidDev,LocalSerial)) then
+          begin
+            // The device is not accepted by the boss, we need to checkin !
+            USBMasterController.CheckIn(HidDev);
+          end;
         end;
       end;
     end;
@@ -479,27 +582,33 @@ procedure TUSB.AddErrors(data:string);
 begin
   if length(data)>0 then
   begin
-   while (FErrors.Count>1000) do FErrors.Delete(0);
-   FErrors.Append(DateTimeToStr(Now)+'; USB error: '+data);
-   //FErrors.Append('USB error: '+data);
+    System.EnterCriticalSection(FErrorLock);
+    while (FErrors.Count>1000) do FErrors.Delete(0);
+    FErrors.Append(DateTimeToStr(Now)+'; USB error: '+data);
+    //FErrors.Append('USB error: '+data);
+    System.LeaveCriticalSection(FErrorLock);
   end;
 end;
 
 function TUSB.GetErrors:String;
 begin
+  System.EnterCriticalSection(FErrorLock);
   if FErrors.Count>0 then
   begin
     result:=FErrors.CommaText;
     FErrors.Clear;
   end else result:='';
+  System.LeaveCriticalSection(FErrorLock);
 end;
 
 procedure TUSB.AddInfo(data:string);
 begin
   if Length(data)>0 then
   begin
+    System.EnterCriticalSection(FInfoLock);
     while FInfo.Count>1000 do FInfo.Delete(0);
     FInfo.Append(data);
+    System.LeaveCriticalSection(FInfoLock);
   end;
 end;
 
@@ -508,11 +617,13 @@ begin
   {$ifdef UNIX}
   AddInfo(USBMasterController.DebugInfo);
   {$endif}
+  System.EnterCriticalSection(FInfoLock);
   if FInfo.Count>0 then
   begin
     result:=FInfo.Text;
     FInfo.Clear;
   end else result:='';
+  System.LeaveCriticalSection(FInfoLock);
 end;
 
 function TUSB.CheckVendorProduct(const VID,PID:word):boolean;
