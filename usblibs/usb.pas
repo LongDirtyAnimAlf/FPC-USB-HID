@@ -9,6 +9,11 @@ interface
 uses
   SysUtils, Classes, SyncObjs,
   {$ifdef MSWINDOWS}
+  {$ifdef FPC}
+  Windows,
+  {$else}
+  Winapi.Windows,
+  {$endif}
   JvHidControllerClass;
   {$else}
   usbcontroller;
@@ -111,13 +116,11 @@ type
 
 implementation
 
+{$ifndef MSWINDOWS}
 uses
-  {$ifdef MSWINDOWS}
-  Windows;
-  {$else}
   Unix,
   BaseUnix;
-  {$endif}
+{$endif}
 
 const
   //DeviceDelay                   = 20;
@@ -232,8 +235,13 @@ constructor TUSB.Create;
 begin
   inherited Create;
 
+  {$ifdef FPC}
   InitCriticalSection(FErrorLock);
   InitCriticalSection(FInfoLock);
+  {$else}
+  InitializeCriticalSection(FErrorLock);
+  InitializeCriticalSection(FInfoLock);
+  {$endif}
 
   FErrors       := TStringList.Create;
   FInfo         := TStringList.Create;
@@ -269,8 +277,13 @@ begin
   FErrors.Free;
   FInfo.Free;
 
+  {$ifdef FPC}
   DoneCriticalSection(FInfoLock);
   DoneCriticalSection(FErrorLock);
+  {$else}
+  DeleteCriticalSection(FInfoLock);
+  DeleteCriticalSection(FErrorLock);
+  {$endif}
 
   inherited Destroy;
 end;
@@ -582,33 +595,33 @@ procedure TUSB.AddErrors(data:string);
 begin
   if length(data)>0 then
   begin
-    System.EnterCriticalSection(FErrorLock);
+    EnterCriticalSection(FErrorLock);
     while (FErrors.Count>1000) do FErrors.Delete(0);
     FErrors.Append(DateTimeToStr(Now)+'; USB error: '+data);
     //FErrors.Append('USB error: '+data);
-    System.LeaveCriticalSection(FErrorLock);
+    LeaveCriticalSection(FErrorLock);
   end;
 end;
 
 function TUSB.GetErrors:String;
 begin
-  System.EnterCriticalSection(FErrorLock);
+  EnterCriticalSection(FErrorLock);
   if FErrors.Count>0 then
   begin
     result:=FErrors.CommaText;
     FErrors.Clear;
   end else result:='';
-  System.LeaveCriticalSection(FErrorLock);
+  LeaveCriticalSection(FErrorLock);
 end;
 
 procedure TUSB.AddInfo(data:string);
 begin
   if Length(data)>0 then
   begin
-    System.EnterCriticalSection(FInfoLock);
+    EnterCriticalSection(FInfoLock);
     while FInfo.Count>1000 do FInfo.Delete(0);
     FInfo.Append(data);
-    System.LeaveCriticalSection(FInfoLock);
+    LeaveCriticalSection(FInfoLock);
   end;
 end;
 
@@ -617,13 +630,13 @@ begin
   {$ifdef UNIX}
   AddInfo(USBMasterController.DebugInfo);
   {$endif}
-  System.EnterCriticalSection(FInfoLock);
+  EnterCriticalSection(FInfoLock);
   if FInfo.Count>0 then
   begin
     result:=FInfo.Text;
     FInfo.Clear;
   end else result:='';
-  System.LeaveCriticalSection(FInfoLock);
+  LeaveCriticalSection(FInfoLock);
 end;
 
 function TUSB.CheckVendorProduct(const VID,PID:word):boolean;
