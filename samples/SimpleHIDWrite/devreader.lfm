@@ -1,0 +1,220 @@
+object MainForm: TMainForm
+  Left = 508
+  Height = 666
+  Top = 145
+  Width = 994
+  Caption = 'SimpleHIDWrite3'
+  ClientHeight = 666
+  ClientWidth = 994
+  Color = clBtnFace
+  Font.Color = clWindowText
+  Font.Height = -13
+  Font.Name = 'MS Sans Serif'
+  Position = poScreenCenter
+  LCLVersion = '4.6.0.0'
+  OnActivate = FormActivate
+  OnCreate = FormCreate
+  object Label1: TLabel
+    Left = 41
+    Height = 16
+    Top = 320
+    Width = 527
+    Anchors = [akLeft, akRight, akBottom]
+    Caption = 'ReportID'
+  end
+  object DevListBox: TListBox
+    Left = -1
+    Height = 169
+    Top = 0
+    Width = 994
+    Anchors = [akTop, akLeft, akRight]
+    ItemHeight = 0
+    TabOrder = 0
+    OnClick = DevListBoxClick
+  end
+  object HistoryListBox: TListBox
+    Left = 0
+    Height = 128
+    Top = 176
+    Width = 994
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'Courier New'
+    ItemHeight = 0
+    ParentFont = False
+    TabOrder = 1
+    OnDblClick = HistoryListBoxDblClick
+  end
+  object ReportID: TEdit
+    Left = 8
+    Height = 24
+    Top = 312
+    Width = 25
+    Anchors = [akLeft, akBottom]
+    TabOrder = 2
+  end
+  object Edit1: TEdit
+    Left = 8
+    Height = 24
+    Top = 344
+    Width = 25
+    Anchors = [akLeft, akBottom]
+    TabOrder = 3
+  end
+  object pnlButtons: TPanel
+    Left = 0
+    Height = 58
+    Top = 608
+    Width = 994
+    Align = alBottom
+    ClientHeight = 58
+    ClientWidth = 994
+    ParentBackground = False
+    TabOrder = 4
+    object InfoBtn: TSpeedButton
+      AnchorSideLeft.Control = pnlButtons
+      AnchorSideTop.Control = pnlButtons
+      Left = 5
+      Height = 22
+      Top = 5
+      Width = 81
+      BorderSpacing.Around = 4
+      Caption = 'Info'
+      OnClick = InfoBtnClick
+    end
+    object SaveBtn: TSpeedButton
+      AnchorSideLeft.Control = InfoBtn
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = pnlButtons
+      Left = 90
+      Height = 22
+      Top = 5
+      Width = 81
+      AllowAllUp = True
+      BorderSpacing.Around = 4
+      Caption = 'Save As...'
+      OnClick = SaveBtnClick
+    end
+    object PlaybackBtn: TSpeedButton
+      AnchorSideLeft.Control = SaveBtn
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = pnlButtons
+      Left = 175
+      Height = 22
+      Top = 5
+      Width = 81
+      AllowAllUp = True
+      BorderSpacing.Around = 4
+      Caption = 'Playback...'
+      OnClick = PlaybackBtnClick
+    end
+    object ClearBtn: TSpeedButton
+      AnchorSideLeft.Control = PlaybackBtn
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = pnlButtons
+      Left = 260
+      Height = 22
+      Top = 5
+      Width = 81
+      AllowAllUp = True
+      BorderSpacing.Around = 4
+      Caption = 'Clear'
+      OnClick = ClearBtnClick
+    end
+    object WriteBtn: TSpeedButton
+      AnchorSideLeft.Control = pnlButtons
+      AnchorSideBottom.Control = pnlButtons
+      AnchorSideBottom.Side = asrBottom
+      Left = 5
+      Height = 22
+      Top = 31
+      Width = 81
+      AllowAllUp = True
+      Anchors = [akLeft, akBottom]
+      BorderSpacing.Around = 4
+      Caption = 'Write'
+      Enabled = False
+      OnClick = WriteBtnClick
+    end
+    object GetReportBtn: TSpeedButton
+      AnchorSideLeft.Control = WriteBtn
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideBottom.Control = pnlButtons
+      AnchorSideBottom.Side = asrBottom
+      Left = 90
+      Height = 22
+      Top = 31
+      Width = 81
+      AllowAllUp = True
+      Anchors = [akLeft, akBottom]
+      BorderSpacing.Around = 4
+      Caption = 'Get Report'
+      Enabled = False
+      OnClick = GetReportBtnClick
+    end
+    object SetReportBtn: TSpeedButton
+      AnchorSideLeft.Control = GetReportBtn
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideBottom.Control = pnlButtons
+      AnchorSideBottom.Side = asrBottom
+      Left = 175
+      Height = 22
+      Top = 31
+      Width = 81
+      AllowAllUp = True
+      Anchors = [akLeft, akBottom]
+      BorderSpacing.Around = 4
+      Caption = 'Set Report'
+      Enabled = False
+      OnClick = SetReportBtnClick
+    end
+    object GetFeatureBtn: TSpeedButton
+      AnchorSideLeft.Control = SetReportBtn
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideBottom.Control = pnlButtons
+      AnchorSideBottom.Side = asrBottom
+      Left = 260
+      Height = 22
+      Top = 31
+      Width = 81
+      AllowAllUp = True
+      Anchors = [akLeft, akBottom]
+      BorderSpacing.Around = 4
+      Caption = 'Get Feature'
+      Enabled = False
+      OnClick = GetFeatureBtnClick
+    end
+    object SetFeatureBtn: TSpeedButton
+      AnchorSideLeft.Control = GetFeatureBtn
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideBottom.Control = pnlButtons
+      AnchorSideBottom.Side = asrBottom
+      Left = 345
+      Height = 22
+      Top = 31
+      Width = 81
+      AllowAllUp = True
+      Anchors = [akLeft, akBottom]
+      BorderSpacing.Around = 4
+      Caption = 'Set Feature'
+      Enabled = False
+      OnClick = SetFeatureBtnClick
+    end
+  end
+  object SaveDialog: TSaveDialog
+    Title = 'Save History'
+    DefaultExt = '.txt'
+    Filter = 'Text Files *.txt|*.txt|All Files *.*|*.*'
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing, ofDontAddToRecent]
+    Left = 288
+  end
+  object OpenDialog: TOpenDialog
+    Title = 'Playback History'
+    DefaultExt = '.txt'
+    Filter = 'Text Files *.txt|*.txt|All Files *.*|*.*'
+    Options = [ofEnableSizing]
+    Left = 328
+  end
+end

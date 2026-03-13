@@ -1,0 +1,224 @@
+object InfoForm: TInfoForm
+  Left = 302
+  Height = 409
+  Top = 120
+  Width = 573
+  BorderIcons = [biSystemMenu]
+  Caption = 'HID Device Info'
+  ClientHeight = 409
+  ClientWidth = 573
+  Color = clBtnFace
+  Font.Color = clWindowText
+  Font.Height = -13
+  Font.Name = 'MS Sans Serif'
+  Position = poOwnerFormCenter
+  LCLVersion = '4.6.0.0'
+  OnShow = FormShow
+  object Label1: TLabel
+    Left = 232
+    Height = 16
+    Top = 56
+    Width = 41
+    Caption = 'Strings'
+  end
+  object Label2: TLabel
+    Left = 8
+    Height = 16
+    Top = 72
+    Width = 57
+    Caption = 'VID (hex):'
+  end
+  object Label3: TLabel
+    Left = 8
+    Height = 16
+    Top = 88
+    Width = 57
+    Caption = 'PID (hex):'
+  end
+  object Label4: TLabel
+    Left = 8
+    Height = 16
+    Top = 104
+    Width = 88
+    Caption = 'Revision (hex):'
+  end
+  object Vid: TLabel
+    Left = 104
+    Height = 16
+    Top = 72
+    Width = 33
+    Alignment = taRightJustify
+    AutoSize = False
+    Caption = 'Vid'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'MS Sans Serif'
+    ParentFont = False
+  end
+  object Pid: TLabel
+    Left = 104
+    Height = 16
+    Top = 88
+    Width = 33
+    Alignment = taRightJustify
+    AutoSize = False
+    Caption = 'Pid'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'MS Sans Serif'
+    ParentFont = False
+  end
+  object Vers: TLabel
+    Left = 104
+    Height = 16
+    Top = 104
+    Width = 33
+    Alignment = taRightJustify
+    AutoSize = False
+    Caption = 'Vers'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'MS Sans Serif'
+    ParentFont = False
+  end
+  object Label5: TLabel
+    Left = 8
+    Height = 16
+    Top = 136
+    Width = 192
+    Caption = 'Report size (including ReportID):'
+  end
+  object Label6: TLabel
+    Left = 8
+    Height = 16
+    Top = 156
+    Width = 31
+    Caption = 'Input:'
+  end
+  object Label7: TLabel
+    Left = 8
+    Height = 16
+    Top = 172
+    Width = 41
+    Caption = 'Output:'
+  end
+  object Label8: TLabel
+    Left = 8
+    Height = 16
+    Top = 188
+    Width = 49
+    Caption = 'Feature:'
+  end
+  object InputLen: TLabel
+    Left = 72
+    Height = 16
+    Top = 156
+    Width = 65
+    Alignment = taRightJustify
+    AutoSize = False
+    Caption = '0'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'MS Sans Serif'
+    ParentFont = False
+  end
+  object OutputLen: TLabel
+    Left = 72
+    Height = 16
+    Top = 172
+    Width = 65
+    Alignment = taRightJustify
+    AutoSize = False
+    Caption = '0'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'MS Sans Serif'
+    ParentFont = False
+  end
+  object FeatureLen: TLabel
+    Left = 72
+    Height = 16
+    Top = 188
+    Width = 65
+    Alignment = taRightJustify
+    AutoSize = False
+    Caption = '0'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'MS Sans Serif'
+    ParentFont = False
+  end
+  object Label9: TLabel
+    Left = 8
+    Height = 16
+    Top = 24
+    Width = 86
+    Caption = 'Product name:'
+  end
+  object Label10: TLabel
+    Left = 8
+    Height = 16
+    Top = 8
+    Width = 84
+    Caption = 'Vendor name:'
+  end
+  object VendorName: TLabel
+    Left = 96
+    Height = 16
+    Top = 8
+    Width = 81
+    Caption = 'VendorName'
+  end
+  object ProductName: TLabel
+    Left = 96
+    Height = 16
+    Top = 24
+    Width = 83
+    Caption = 'ProductName'
+  end
+  object Label11: TLabel
+    Left = 8
+    Height = 16
+    Top = 40
+    Width = 59
+    Caption = 'Serial No:'
+  end
+  object SerialNo: TLabel
+    Left = 96
+    Height = 16
+    Top = 40
+    Width = 53
+    Caption = 'SerialNo'
+  end
+  object Label12: TLabel
+    Left = 400
+    Height = 16
+    Top = 56
+    Width = 68
+    Caption = 'Languages'
+  end
+  object DevStrings: TListBox
+    Left = 232
+    Height = 297
+    Top = 72
+    Width = 161
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    ItemHeight = 0
+    TabOrder = 0
+  end
+  object LangStrings: TListBox
+    Left = 400
+    Height = 297
+    Top = 72
+    Width = 161
+    Anchors = [akTop, akRight, akBottom]
+    ItemHeight = 0
+    TabOrder = 1
+  end
+end
