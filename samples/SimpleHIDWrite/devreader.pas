@@ -6,7 +6,6 @@ uses
   SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
   Buttons, ExtCtrls,
   {$ifdef MSWINDOWS}
-  {$define codeenabled}
   {$ifdef FPC}
   Windows,
   {$else}
@@ -419,7 +418,6 @@ var
 begin
   if Assigned(CurrentDevice) then
   begin
-    {$ifdef codeenabled}
     FillChar({%H-}Buf[0], SizeOf(Buf), 0);
     Buf[0] := StrToIntDef('$' + ReportID.Text, 0);
     if CurrentDevice.GetInputReport(Buf[0], SizeOf(Buf)) then
@@ -438,7 +436,6 @@ begin
       {$endif}
       AddToHistory(Format('GET REPORT ERROR: %s (%x)', [SysErrorMessage(Err), Err]));
     end;
-    {$endif}
   end;
 end;
 
@@ -451,7 +448,6 @@ var
 begin
   if Assigned(CurrentDevice) then
   begin
-    {$ifdef codeenabled}
     Buf[0] := StrToIntDef('$' + ReportID.Text, 0);
     ReportID.Text := Format('%.2x', [Buf[0]]);
     for I := 1 to CurrentDevice.Caps.OutputReportByteLength - 1 do
@@ -475,7 +471,6 @@ begin
         Str := Str + Format('%.2x ', [Buf[I]]);
       AddToHistory(Str);
     end;
-    {$endif}
   end;
 end;
 
@@ -488,7 +483,6 @@ var
 begin
   if Assigned(CurrentDevice) then
   begin
-    {$ifdef codeenabled}
     Buf[0] := StrToIntDef('$' + ReportID.Text, 0);
     ReportID.Text := Format('%.2x', [Buf[0]]);
     if not CurrentDevice.GetFeature(Buf[0], CurrentDevice.Caps.FeatureReportByteLength) then
@@ -507,7 +501,6 @@ begin
         Str := Str + Format('%.2x ', [Buf[I]]);
       AddToHistory(Str);
     end;
-    {$endif}
   end;
 end;
 
@@ -520,7 +513,6 @@ var
 begin
   if Assigned(CurrentDevice) then
   begin
-    {$ifdef codeenabled}
     Buf[0] := StrToIntDef('$' + ReportID.Text, 0);
     ReportID.Text := Format('%.2x', [Buf[0]]);
     for I := 1 to CurrentDevice.Caps.FeatureReportByteLength - 1 do
@@ -544,7 +536,6 @@ begin
         Str := Str + Format('%.2x ', [Buf[I]]);
       AddToHistory(Str);
     end;
-    {$endif}
   end;
 end;
 

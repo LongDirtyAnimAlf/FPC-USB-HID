@@ -454,6 +454,10 @@ type
     function ReadFileTimeOut(var Report; const ToRead: DWORD; var BytesRead: DWORD; const TimeOut:DWORD): Boolean;
     function WriteFile(const {%H-}Report; ToWrite: DWORD; var BytesWritten: DWORD): Boolean;
     function CheckOut: Boolean;
+    function GetInputReport(var Report; const Size: QWord): Boolean;
+    function SetOutputReport(var Report; const Size: QWord): Boolean;
+    function GetFeature(var Report; const Size: Integer): Boolean;
+    function SetFeature(var Report; const Size: Integer): Boolean;
     procedure ShowReports(report_type:word);
     property HidFileHandle:THandle read FHidFileHandle;
     property USBFileHandle:THandle read FUSBFileHandle;
@@ -2939,6 +2943,374 @@ begin
   OnUnplug := nil;
 end;
 
+function TJvHidDevice.GetInputReport(var Report; const Size: QWord): Boolean;
+var
+  BytesRead: DWORD;
+  rinfo: hiddev_report_info;
+  ref_multi: hiddev_usage_ref_multi;
+  reportId: Byte;
+  bytesWanted: QWord;
+  i: Integer;
+  ret: cint;
+begin
+  Result := False;
+
+  if not IsAccessible then exit;
+
+  if not OpenFile then exit;
+
+  BytesRead := 0;
+
+  // ───────────────────────────────────────────────
+  //  hidraw backend (most modern & recommended path)
+  // ────────────────────────────────────────────────
+  {$IFDEF hidraw}
+  // Most modern kernels + udev → /dev/hidrawX
+  // Usually non-blocking, but we allow timeout=0 → immediate read
+  Result := ReadFileTimeOut(Report, Size, BytesRead, 0);
+  if Result then
+    Result := (BytesRead = Size);           // strict size match is common
+  {$ENDIF}
+
+  // ───────────────────────────────────────────────
+  //  hiddev backend (/dev/usb/hiddevX or /dev/hiddevX)
+  // ────────────────────────────────────────────────
+  {$IFDEF hiddev}
+  // We assume first byte of Report buffer contains Report ID
+  // (very common convention on Windows → keep it for compatibility)
+  reportId := PByte(@Report)^;
+
+  // 1. Ask kernel which report-id + how many fields
+  FillChar(rinfo, SizeOf(rinfo), 0);
+  rinfo.report_type := HID_REPORT_TYPE_INPUT;
+  rinfo.report_id   := reportId;
+  rinfo.num_fields  := 0;                      // kernel will fill
+
+  ret := fpioctl(cint(HidFileHandle), HIDIOCGREPORTINFO, @rinfo);
+  if ret < 0 then exit;   // report-id probably doesn't exist
+
+  // Usually modern devices have only one field per report
+  if rinfo.num_fields <> 1 then exit;   // we support only the simple single-field case for now
+
+  // 2. Prepare multi-usage request (read many usages at once)
+  FillChar(ref_multi, SizeOf(ref_multi), 0);
+  ref_multi.uref.report_type  := HID_REPORT_TYPE_INPUT;
+  ref_multi.uref.report_id    := reportId;
+  ref_multi.uref.field_index  := 0;
+  ref_multi.uref.usage_index  := 0;
+
+  // How many 32-bit values (= usages) do we want to read?
+  bytesWanted := Size - 1;                      // exclude report id
+  if bytesWanted > HID_MAX_MULTI_USAGES then
+    bytesWanted := HID_MAX_MULTI_USAGES;
+
+  ref_multi.num_values := bytesWanted;
+
+  // 3. Ask kernel to fill values (this also implicitly reads the report)
+  ret := fpioctl(cint(HidFileHandle), HIDIOCGUSAGES, @ref_multi);
+  if ret < 0 then exit;
+
+  // 4. Copy values back to user buffer (starting after Report ID)
+  for i := 0 to Pred(ref_multi.num_values) do
+    PByte(@Report + 1 + i)^ := Lo(ref_multi.values[i]);   // lower 8 bits
+
+  BytesRead := 1 + ref_multi.num_values;
+
+  Result := (BytesRead = Size);
+  {$ENDIF}
+end;
+
+
+function TJvHidDevice.SetOutputReport(var Report; const Size: QWord): Boolean;
+var
+  BytesWritten: DWORD;
+  rinfo: hiddev_report_info;
+  ref_multi: hiddev_usage_ref_multi;
+  reportId: Byte;
+  bytesToSend: QWord;
+  i: Integer;
+  ret: cint;
+begin
+  Result := False;
+
+  if not IsAccessible then
+    Exit;
+
+  if not OpenFile then
+    Exit;
+
+  BytesWritten := 0;
+
+  // ───────────────────────────────────────────────
+  //  hidraw backend — modern & recommended (2026+)
+  // ────────────────────────────────────────────────
+  {$IFDEF hidraw}
+  // Most modern kernels expose /dev/hidrawX
+  // Output reports are usually sent via plain write()
+  // First byte of buffer = Report ID (0 if no numbered reports)
+  // Kernel handles control vs interrupt endpoint automatically
+  if CanWrite(50) then   // small timeout to avoid hanging forever
+  begin
+    if FpWrite(cint(HidFileHandle), Report, Size) >= 0 then
+    begin
+      BytesWritten := Size;  // assume full write (typical for small reports)
+      Result := True;
+    end
+    else
+    begin
+      FErr := fpGetErrno;
+      {$IFDEF debug}
+      DebugInfo := 'SetOutputReport(hidraw): write failed, errno=' + IntToStr(FErr);
+      {$ENDIF}
+    end;
+  end;
+  {$ENDIF}
+
+  // ───────────────────────────────────────────────
+  //  hiddev backend — legacy (/dev/hiddev* or /dev/usb/hiddev*)
+  // ────────────────────────────────────────────────
+  {$IFDEF hiddev}
+  // Convention: first byte of Report buffer = Report ID
+  reportId := PByte(@Report)^;
+
+  // 1. Get report info (to validate report-id and field count)
+  FillChar(rinfo, SizeOf(rinfo), 0);
+  rinfo.report_type := HID_REPORT_TYPE_OUTPUT;
+  rinfo.report_id   := reportId;
+  rinfo.num_fields  := 0;
+
+  ret := fpioctl(cint(HidFileHandle), HIDIOCGREPORTINFO, @rinfo);
+  if ret < 0 then exit;   // invalid report-id or no output reports
+
+  // We support only the common single-field output report case
+  if rinfo.num_fields <> 1 then exit;
+
+  // 2. Prepare multi-usage structure
+  FillChar(ref_multi, SizeOf(ref_multi), 0);
+  ref_multi.uref.report_type  := HID_REPORT_TYPE_OUTPUT;
+  ref_multi.uref.report_id    := reportId;
+  ref_multi.uref.field_index  := 0;
+  ref_multi.uref.usage_index  := 0;
+
+  // How many 32-bit values (= usages) to send
+  bytesToSend := Size - 1;                 // exclude report ID byte
+  if bytesToSend > HID_MAX_MULTI_USAGES then
+    bytesToSend := HID_MAX_MULTI_USAGES;
+
+  ref_multi.num_values := bytesToSend;
+
+  // 3. Copy data from user buffer into values[] (lower 8 bits only)
+  for i := 0 to Pred(bytesToSend) do
+    ref_multi.values[i] := PByte(@Report + 1 + i)^;
+
+  // 4. Set usages
+  ret := fpioctl(cint(HidFileHandle), HIDIOCSUSAGES, @ref_multi);
+  if ret < 0 then exit;
+
+  // 5. Send the report to device
+  ret := fpioctl(cint(HidFileHandle), HIDIOCSREPORT, @rinfo);
+  if ret >= 0 then
+  begin
+    BytesWritten := 1 + bytesToSend;
+    Result := True;
+  end
+  else
+  begin
+    FErr := fpGetErrno;
+    {$IFDEF debug}
+    DebugInfo := 'SetOutputReport(hiddev): HIDIOCSREPORT failed, errno=' + IntToStr(FErr);
+    {$ENDIF}
+  end;
+  {$ENDIF}
+end;
+
+function TJvHidDevice.GetFeature(var Report; const Size: Integer): Boolean;
+var
+  {$IFDEF hidraw}
+  BytesTransferred: Integer;
+  {$ENDIF}
+  ReportId: Byte;
+  EffectiveSize: Integer;
+  rinfo: hiddev_report_info;
+  ref_multi: hiddev_usage_ref_multi;
+  bytesWanted: Integer;
+  i, ret: Integer;
+begin
+  Result := False;
+  if not IsAccessible or not OpenFile then
+    Exit;
+
+  if Size <= 0 then Exit;
+
+  // ───────────────────────────────────────────────
+  // Use Caps for automatic size detection (preferred)
+  // ────────────────────────────────────────────────
+  EffectiveSize := Caps.FeatureReportByteLength;
+  if EffectiveSize <= 0 then
+    EffectiveSize := Size;  // fallback to user-provided size
+
+  // Ensure buffer is large enough
+  if EffectiveSize > Size then
+  begin
+    {$IFDEF debug}
+    DebugInfo := Format('GetFeature: Caps size %d > user buffer %d → using user size', [EffectiveSize, Size]);
+    {$ENDIF}
+    EffectiveSize := Size;
+  end;
+
+  ReportId := PByte(@Report)^;  // preserve original report ID
+
+  {$IFDEF hidraw}
+  // Modern hidraw – use ioctl with computed size
+  BytesTransferred := fpioctl(cint(HidFileHandle),
+                             HIDIOCGFEATURE(EffectiveSize),
+                             @Report);
+  if BytesTransferred >= 0 then
+  begin
+    // Kernel usually fills exactly EffectiveSize bytes
+    // Some drivers return actual bytes, but success ≥0 is reliable
+    Result := True;
+    {$IFDEF debug}
+    if BytesTransferred <> EffectiveSize then
+      DebugInfo := Format('GetFeature(hidraw): got %d bytes, expected %d (report ID %d)',
+                          [BytesTransferred, EffectiveSize, ReportId]);
+    {$ENDIF}
+  end
+  else
+  begin
+    FErr := fpGetErrno;
+    {$IFDEF debug}
+    DebugInfo := Format('GetFeature(hidraw) failed: report=%d, size=%d, errno=%d',
+                        [ReportId, EffectiveSize, FErr]);
+    {$ENDIF}
+  end;
+  {$ENDIF}
+
+  {$IFDEF hiddev}
+  // Legacy hiddev path – single-field assumption
+  FillChar(rinfo, SizeOf(rinfo), 0);
+  rinfo.report_type := HID_REPORT_TYPE_FEATURE;
+  rinfo.report_id   := ReportId;
+
+  ret := fpioctl(cint(HidFileHandle), HIDIOCGREPORTINFO, @rinfo);
+  if ret < 0 then Exit;
+
+  if rinfo.num_fields <> 1 then
+  begin
+    {$IFDEF debug}
+    DebugInfo := 'GetFeature(hiddev): only single-field feature reports supported';
+    {$ENDIF}
+    Exit;
+  end;
+
+  FillChar(ref_multi, SizeOf(ref_multi), 0);
+  ref_multi.uref.report_type  := HID_REPORT_TYPE_FEATURE;
+  ref_multi.uref.report_id    := ReportId;
+  ref_multi.uref.field_index  := 0;
+  ref_multi.uref.usage_index  := 0;
+
+  bytesWanted := EffectiveSize - 1;  // exclude report ID byte
+  if bytesWanted > HID_MAX_MULTI_USAGES then
+    bytesWanted := HID_MAX_MULTI_USAGES;
+
+  ref_multi.num_values := bytesWanted;
+
+  ret := fpioctl(cint(HidFileHandle), HIDIOCGUSAGES, @ref_multi);
+  if ret < 0 then Exit;
+
+  for i := 0 to Pred(ref_multi.num_values) do
+    PByte(@Report + 1 + i)^ := Lo(ref_multi.values[i]);
+
+  Result := True;
+  {$ENDIF}
+end;
+function TJvHidDevice.SetFeature(var Report; const Size: Integer): Boolean;
+var
+  ReportId: Byte;
+  EffectiveSize: Integer;
+  rinfo: hiddev_report_info;
+  ref_multi: hiddev_usage_ref_multi;
+  bytesToSend: Integer;
+  i, ret: Integer;
+begin
+  Result := False;
+  if not IsAccessible or not OpenFile then
+    Exit;
+
+  if Size <= 0 then Exit;
+
+  // ───────────────────────────────────────────────
+  // Auto-detect from Caps
+  // ────────────────────────────────────────────────
+  EffectiveSize := Caps.FeatureReportByteLength;
+  if EffectiveSize <= 0 then
+    EffectiveSize := Size;
+
+  // Safety: don't send more than user buffer allows
+  if EffectiveSize > Size then
+    EffectiveSize := Size;
+
+  ReportId := PByte(@Report)^;
+
+  {$IFDEF hidraw}
+  // hidraw – dynamic size ioctl
+  if fpioctl(cint(HidFileHandle),
+             HIDIOCSFEATURE(EffectiveSize),
+             @Report) >= 0 then
+  begin
+    Result := True;
+  end
+  else
+  begin
+    FErr := fpGetErrno;
+    {$IFDEF debug}
+    DebugInfo := Format('SetFeature(hidraw) failed: report=%d, size=%d, errno=%d',
+                        [ReportId, EffectiveSize, FErr]);
+    {$ENDIF}
+  end;
+  {$ENDIF}
+
+  {$IFDEF hiddev}
+  // hiddev legacy – single field
+  FillChar(rinfo, SizeOf(rinfo), 0);
+  rinfo.report_type := HID_REPORT_TYPE_FEATURE;
+  rinfo.report_id   := ReportId;
+
+  ret := fpioctl(cint(HidFileHandle), HIDIOCGREPORTINFO, @rinfo);
+  if ret < 0 then Exit;
+
+  if rinfo.num_fields <> 1 then Exit;
+
+  FillChar(ref_multi, SizeOf(ref_multi), 0);
+  ref_multi.uref.report_type  := HID_REPORT_TYPE_FEATURE;
+  ref_multi.uref.report_id    := ReportId;
+  ref_multi.uref.field_index  := 0;
+  ref_multi.uref.usage_index  := 0;
+
+  bytesToSend := EffectiveSize - 1;
+  if bytesToSend > HID_MAX_MULTI_USAGES then
+    bytesToSend := HID_MAX_MULTI_USAGES;
+
+  ref_multi.num_values := bytesToSend;
+
+  for i := 0 to Pred(bytesToSend) do
+    ref_multi.values[i] := PByte(@Report + 1 + i)^;
+
+  ret := fpioctl(cint(HidFileHandle), HIDIOCSUSAGES, @ref_multi);
+  if ret < 0 then Exit;
+
+  ret := fpioctl(cint(HidFileHandle), HIDIOCSREPORT, @rinfo);
+  Result := (ret >= 0);
+
+  if not Result then
+  begin
+    FErr := fpGetErrno;
+    {$IFDEF debug}
+    DebugInfo := Format('SetFeature(hiddev) failed: errno=%d', [FErr]);
+    {$ENDIF}
+  end;
+  {$ENDIF}
+end;
 procedure TJvHidDevice.ShowReports(report_type:word);
 function controlName(usage_code:integer):string;
 var

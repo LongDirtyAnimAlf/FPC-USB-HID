@@ -8,8 +8,8 @@
       <Unit>
         <Filename Value="simplehidwrite.lpr"/>
         <IsPartOfProject Value="True"/>
-        <CursorPos Y="13"/>
-        <UsageCount Value="21"/>
+        <IsVisibleTab Value="True"/>
+        <UsageCount Value="22"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
@@ -20,10 +20,8 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="DevReader"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <CursorPos Y="9"/>
-        <UsageCount Value="21"/>
+        <UsageCount Value="22"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
@@ -35,10 +33,10 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="Info"/>
-        <EditorIndex Value="5"/>
+        <EditorIndex Value="2"/>
         <TopLine Value="38"/>
         <CursorPos Y="52"/>
-        <UsageCount Value="21"/>
+        <UsageCount Value="22"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
@@ -59,11 +57,10 @@
       </Unit>
       <Unit>
         <Filename Value="..\..\usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <EditorIndex Value="2"/>
-        <TopLine Value="2082"/>
-        <CursorPos X="3" Y="2086"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="1657"/>
+        <CursorPos X="29" Y="1663"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
@@ -74,142 +71,43 @@
       </Unit>
       <Unit>
         <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <EditorIndex Value="3"/>
-        <TopLine Value="2813"/>
-        <CursorPos Y="2819"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="3" Y="59"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
         <Filename Value="C:\fpcupsystems\stable324\fpcsrc\rtl\unix\unix.pp"/>
         <UnitName Value="Unix"/>
-        <EditorIndex Value="4"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="12"/>
         <CursorPos X="5" Y="29"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="C:\fpcupsystems\stable324\fpcsrc\rtl\wince\windows.pp"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="27"/>
+        <CursorPos X="5" Y="44"/>
+        <UsageCount Value="10"/>
       </Unit>
     </Units>
-    <JumpHistory HistoryIndex="29">
+    <JumpHistory HistoryIndex="3">
       <Position>
-        <Filename Value="..\..\usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <Caret Line="1039" Column="16" TopLine="1014"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <Caret Line="1163" Column="26" TopLine="1135"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <Caret Line="1039" Column="3" TopLine="1022"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <Caret Line="2243" Column="52" TopLine="2223"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <Caret Line="1164" TopLine="1135"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <Caret Line="2245" Column="18" TopLine="2223"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <Caret Line="6" Column="13"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <Caret Line="244" Column="24" TopLine="217"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <Caret Line="361" Column="66" TopLine="334"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <Caret Line="1039" Column="22" TopLine="1011"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <Caret Line="440" Column="27" TopLine="425"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <Caret Line="2049" Column="32" TopLine="2029"/>
+        <Filename Value="devreader.pas"/>
+        <Caret Line="459" Column="33" TopLine="449"/>
       </Position>
       <Position>
         <Filename Value="devreader.pas"/>
-        <Caret Line="423" Column="27" TopLine="406"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <Caret Line="356" Column="21" TopLine="341"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <Caret Line="2049" Column="32" TopLine="2029"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <Caret Line="95" Column="13" TopLine="67"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <Caret Line="97" Column="13" TopLine="69"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <Caret Line="98" Column="13" TopLine="70"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <Caret Line="99" Column="13" TopLine="71"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <Caret Line="100" Column="13" TopLine="72"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <Caret Line="102" Column="13" TopLine="75"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <Caret Line="2175" Column="55" TopLine="2147"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <Caret Line="2834" Column="50" TopLine="2806"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
-        <Caret Line="2841" Column="61" TopLine="2813"/>
+        <Caret Line="540" TopLine="513"/>
       </Position>
       <Position>
         <Filename Value="devreader.pas"/>
-        <Caret Line="423" Column="22" TopLine="406"/>
+        <Caret Line="9"/>
       </Position>
       <Position>
-        <Filename Value="devreader.pas"/>
-        <Caret Line="422" TopLine="408"/>
-      </Position>
-      <Position>
-        <Filename Value="devreader.pas"/>
-        <Caret Line="454" TopLine="446"/>
-      </Position>
-      <Position>
-        <Filename Value="devreader.pas"/>
-        <Caret Line="491" TopLine="477"/>
-      </Position>
-      <Position>
-        <Filename Value="devreader.pas"/>
-        <Caret Line="421" Column="25" TopLine="404"/>
+        <Filename Value="simplehidwrite.lpr"/>
+        <Caret Line="13"/>
       </Position>
     </JumpHistory>
     <RunParams>
