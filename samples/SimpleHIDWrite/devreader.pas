@@ -3,8 +3,19 @@ unit DevReader;
 interface
 
 uses
-  Windows, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
-  Buttons, ExtCtrls, JvHidControllerClass;
+  SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
+  Buttons, ExtCtrls,
+  {$ifdef MSWINDOWS}
+  {$define codeenabled}
+  {$ifdef FPC}
+  Windows,
+  {$else}
+  Winapi.Windows,
+  {$endif}
+  JvHidControllerClass;
+  {$else}
+  usbcontroller;
+  {$endif}
 
 type
   TPlaybackResult = (pbIgnore, pbSuccess, pbFail);
@@ -14,16 +25,17 @@ type
   TMainForm = class(TForm)
     ClearBtn: TSpeedButton;
     DevListBox: TListBox;
+    Edit1: TEdit;
     GetFeatureBtn: TSpeedButton;
     GetReportBtn: TSpeedButton;
     HistoryListBox: TListBox;
     InfoBtn: TSpeedButton;
+    pnlData: TPanel;
     PlaybackBtn: TSpeedButton;
     pnlButtons: TPanel;
     SaveBtn: TSpeedButton;
     SaveDialog: TSaveDialog;
     ReportID: TEdit;
-    Edit1: TEdit;
     Label1: TLabel;
     OpenDialog: TOpenDialog;
     SetFeatureBtn: TSpeedButton;
@@ -66,6 +78,9 @@ var
 implementation
 
 uses
+  {$ifdef UNIX}
+  BaseUnix,
+  {$endif}
   Math,
   Info;
 
@@ -124,8 +139,10 @@ begin
   while HidCtl.CheckOut(Dev) do
   begin
     N := DevListBox.Items.Add(DeviceName(Dev));
+    {$ifdef MSWINDOWS}
     Dev.NumInputBuffers := 128;
     Dev.NumOverlappedBuffers := 128;
+    {$endif}
     DevListBox.Items.Objects[N] := Dev;
   end;
 end;
@@ -148,8 +165,10 @@ var
 begin
   N := DevListBox.Items.Add(DeviceName(HidDev));
   HidCtl.CheckOutByIndex(Dev, Idx);
+  {$ifdef MSWINDOWS}
   Dev.NumInputBuffers := 128;
   Dev.NumOverlappedBuffers := 128;
+  {$endif}
   DevListBox.Items.Objects[N] := Dev;
   Result := True;
 end;
@@ -372,9 +391,13 @@ begin
       Buf[I+1] := StrToIntDef('$' + Edits[I].Text, 0);
       Edits[I].Text := Format('%.2x', [Buf[I+1]]);
     end;
-    if not CurrentDevice.WriteFile(Buf, ToWrite, Written) then
+    if not CurrentDevice.WriteFile(Buf, ToWrite, {%H-}Written) then
     begin
+      {$ifdef MSWINDOWS}
       Err := GetLastError;
+      {$else}
+      Err := fpgeterrno;
+      {$endif}
       AddToHistory(Format('WRITE ERROR: %s (%x)', [SysErrorMessage(Err), Err]));
     end
     else
@@ -396,7 +419,8 @@ var
 begin
   if Assigned(CurrentDevice) then
   begin
-    FillChar(Buf[0], SizeOf(Buf), 0);
+    {$ifdef codeenabled}
+    FillChar({%H-}Buf[0], SizeOf(Buf), 0);
     Buf[0] := StrToIntDef('$' + ReportID.Text, 0);
     if CurrentDevice.GetInputReport(Buf[0], SizeOf(Buf)) then
     begin
@@ -407,9 +431,14 @@ begin
     end
     else
     begin
+      {$ifdef MSWINDOWS}
       Err := GetLastError;
+      {$else}
+      Err := fpgeterrno;
+      {$endif}
       AddToHistory(Format('GET REPORT ERROR: %s (%x)', [SysErrorMessage(Err), Err]));
     end;
+    {$endif}
   end;
 end;
 
@@ -422,6 +451,7 @@ var
 begin
   if Assigned(CurrentDevice) then
   begin
+    {$ifdef codeenabled}
     Buf[0] := StrToIntDef('$' + ReportID.Text, 0);
     ReportID.Text := Format('%.2x', [Buf[0]]);
     for I := 1 to CurrentDevice.Caps.OutputReportByteLength - 1 do
@@ -431,7 +461,11 @@ begin
     end;
     if not CurrentDevice.SetOutputReport(Buf[0], CurrentDevice.Caps.OutputReportByteLength) then
     begin
+      {$ifdef MSWINDOWS}
       Err := GetLastError;
+      {$else}
+      Err := fpgeterrno;
+      {$endif}
       AddToHistory(Format('SET REPORT ERROR: %s (%x)', [SysErrorMessage(Err), Err]));
     end
     else
@@ -441,6 +475,7 @@ begin
         Str := Str + Format('%.2x ', [Buf[I]]);
       AddToHistory(Str);
     end;
+    {$endif}
   end;
 end;
 
@@ -453,11 +488,16 @@ var
 begin
   if Assigned(CurrentDevice) then
   begin
+    {$ifdef codeenabled}
     Buf[0] := StrToIntDef('$' + ReportID.Text, 0);
     ReportID.Text := Format('%.2x', [Buf[0]]);
     if not CurrentDevice.GetFeature(Buf[0], CurrentDevice.Caps.FeatureReportByteLength) then
     begin
+      {$ifdef MSWINDOWS}
       Err := GetLastError;
+      {$else}
+      Err := fpgeterrno;
+      {$endif}
       AddToHistory(Format('GET FEATURE ERROR: %s (%x)', [SysErrorMessage(Err), Err]));
     end
     else
@@ -467,6 +507,7 @@ begin
         Str := Str + Format('%.2x ', [Buf[I]]);
       AddToHistory(Str);
     end;
+    {$endif}
   end;
 end;
 
@@ -479,6 +520,7 @@ var
 begin
   if Assigned(CurrentDevice) then
   begin
+    {$ifdef codeenabled}
     Buf[0] := StrToIntDef('$' + ReportID.Text, 0);
     ReportID.Text := Format('%.2x', [Buf[0]]);
     for I := 1 to CurrentDevice.Caps.FeatureReportByteLength - 1 do
@@ -488,7 +530,11 @@ begin
     end;
     if not CurrentDevice.SetFeature(Buf[0], CurrentDevice.Caps.FeatureReportByteLength) then
     begin
+      {$ifdef MSWINDOWS}
       Err := GetLastError;
+      {$else}
+      Err := fpgeterrno;
+      {$endif}
       AddToHistory(Format('SET FEATURE ERROR: %s (%x)', [SysErrorMessage(Err), Err]));
     end
     else
@@ -498,6 +544,7 @@ begin
         Str := Str + Format('%.2x ', [Buf[I]]);
       AddToHistory(Str);
     end;
+    {$endif}
   end;
 end;
 

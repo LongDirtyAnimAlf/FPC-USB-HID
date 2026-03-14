@@ -5,8 +5,12 @@ unit Info;
 interface
 
 uses
-  LCLIntf, LCLType, LMessages, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, JvHidControllerClass;
+  LCLIntf, LCLType, LMessages, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
+  {$ifdef MSWINDOWS}
+  JvHidControllerClass;
+  {$else}
+  usbcontroller;
+  {$endif}
 
 type
   TInfoForm = class(TForm)

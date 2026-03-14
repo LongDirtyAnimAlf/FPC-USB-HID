@@ -2,14 +2,15 @@ program simplehidwrite;
 
 uses
   {$IFNDEF FPC}
+  Forms,
   {$ELSE}
   {$IFDEF UNIX}
   cthreads,
   {$ENDIF }
+  Forms,
   Interfaces,
   {$ENDIF }
-  Forms,
-  DevReader in 'DevReader.pas' {MainForm};
+  DevReader;
 
 {$R *.res}
 

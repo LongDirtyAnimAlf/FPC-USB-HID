@@ -15,29 +15,37 @@ object MainForm: TMainForm
   OnActivate = FormActivate
   OnCreate = FormCreate
   object Label1: TLabel
-    Left = 41
+    AnchorSideLeft.Control = ReportID
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = ReportID
+    AnchorSideTop.Side = asrCenter
+    Left = 37
     Height = 16
-    Top = 320
-    Width = 527
-    Anchors = [akLeft, akRight, akBottom]
+    Top = 356
+    Width = 54
+    BorderSpacing.Left = 4
     Caption = 'ReportID'
   end
   object DevListBox: TListBox
-    Left = -1
+    Left = 0
     Height = 169
     Top = 0
     Width = 994
-    Anchors = [akTop, akLeft, akRight]
+    Align = alTop
+    Anchors = []
     ItemHeight = 0
     TabOrder = 0
     OnClick = DevListBoxClick
   end
   object HistoryListBox: TListBox
     Left = 0
-    Height = 128
-    Top = 176
+    Height = 171
+    Top = 173
     Width = 994
-    Anchors = [akTop, akLeft, akRight, akBottom]
+    Align = alTop
+    Anchors = [akBottom]
+    BorderSpacing.Top = 4
+    ExtendedSelect = False
     Font.CharSet = ANSI_CHARSET
     Font.Color = clWindowText
     Font.Height = -13
@@ -48,20 +56,16 @@ object MainForm: TMainForm
     OnDblClick = HistoryListBoxDblClick
   end
   object ReportID: TEdit
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = HistoryListBox
+    AnchorSideTop.Side = asrBottom
     Left = 8
     Height = 24
-    Top = 312
+    Top = 352
     Width = 25
-    Anchors = [akLeft, akBottom]
+    BorderSpacing.Left = 8
+    BorderSpacing.Top = 8
     TabOrder = 2
-  end
-  object Edit1: TEdit
-    Left = 8
-    Height = 24
-    Top = 344
-    Width = 25
-    Anchors = [akLeft, akBottom]
-    TabOrder = 3
   end
   object pnlButtons: TPanel
     Left = 0
@@ -72,7 +76,7 @@ object MainForm: TMainForm
     ClientHeight = 58
     ClientWidth = 994
     ParentBackground = False
-    TabOrder = 4
+    TabOrder = 3
     object InfoBtn: TSpeedButton
       AnchorSideLeft.Control = pnlButtons
       AnchorSideTop.Control = pnlButtons
@@ -201,6 +205,37 @@ object MainForm: TMainForm
       Caption = 'Set Feature'
       Enabled = False
       OnClick = SetFeatureBtnClick
+    end
+  end
+  object pnlData: TPanel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = ReportID
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = pnlButtons
+    Left = 8
+    Height = 216
+    Top = 384
+    Width = 978
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    BorderSpacing.Left = 8
+    BorderSpacing.Top = 8
+    BorderSpacing.Right = 8
+    BorderSpacing.Bottom = 8
+    BevelOuter = bvNone
+    ClientHeight = 216
+    ClientWidth = 978
+    ParentBackground = False
+    TabOrder = 4
+    object Edit1: TEdit
+      AnchorSideLeft.Control = pnlData
+      AnchorSideTop.Control = pnlData
+      Left = 0
+      Height = 24
+      Top = 0
+      Width = 25
+      TabOrder = 0
     end
   end
   object SaveDialog: TSaveDialog

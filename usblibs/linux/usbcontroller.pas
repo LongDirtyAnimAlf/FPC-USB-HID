@@ -414,6 +414,7 @@ type
     FData: TJvHidDataEvent;
     FDataError: TJvHidDataErrorEvent;
     FUnplug: TJvHidUnplugEvent;
+    FHasReadWriteAccess: Boolean;
     FDataThread: TJvHidDeviceReadThread;
     FErr:DWORD;
     FTag: Integer;
@@ -458,6 +459,7 @@ type
     property USBFileHandle:THandle read FUSBFileHandle;
     property Attributes: THIDDAttributes read GetAttributes;
     property Caps: THIDPCaps read GetCaps;
+    property HasReadWriteAccess: Boolean read FHasReadWriteAccess;
     property IsCheckedOut: Boolean read FIsCheckedOut;
     property IsPluggedIn: Boolean read FIsPluggedIn;
     property LanguageStrings: TStrings read GetLanguageStrings;
@@ -2044,6 +2046,8 @@ begin
   FThreadSleepTime := 100;
   FDataThread := nil;
 
+  FHasReadWriteAccess := false;
+
   FHidrawReportIDIncluded := False;
 
   FillChar(fCaps, SizeOf(THIDPCaps), #0);
@@ -2240,6 +2244,7 @@ begin
     begin
       fOpenHandle:={%H-}fpOpen(PnPInfo.HidPath, O_RDWR{$ifdef NON_BLOCKING} OR O_NONBLOCK{$endif});
       fHidFileHandle := THandle(fOpenHandle);
+      FHasReadWriteAccess := (HidFileHandle = INVALID_HANDLE_VALUE);
       if HidFileHandle = INVALID_HANDLE_VALUE then
       begin
         fOpenHandle:={%H-}fpOpen(PnPInfo.HidPath, O_RDONLY{$ifdef NON_BLOCKING} OR O_NONBLOCK{$endif});
