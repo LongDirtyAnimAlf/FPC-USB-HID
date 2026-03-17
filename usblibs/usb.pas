@@ -99,7 +99,7 @@ type
     function  HidWriteReadSimple(Ctrl: TUSBController; WriteOnly:boolean=false):boolean;
     function  HidWriteRead(Ctrl: TUSBController; WriteOnly:boolean=false):boolean;
 
-    function  HidReadWrite(Ctrl: TUSBController; WriteOnly:boolean):boolean; deprecated 'use HidWriteRead or HidWriteReadSimple';
+    function  HidReadWrite(Ctrl: TUSBController; WriteOnly:boolean=false):boolean; deprecated 'use HidWriteRead or HidWriteReadSimple';
 
     property  Emulation:boolean read FEmulation;
 
@@ -121,14 +121,6 @@ uses
   Unix,
   BaseUnix;
 {$endif}
-
-const
-  //DeviceDelay                   = 20;
-  {$ifdef win64}
-  USBTimeout                    = 500;
-  {$else}
-  USBTimeout                    = 150;
-  {$endif}
 
 function UTF16ToUTF8(const s: UnicodeString): string;
 begin
@@ -376,7 +368,7 @@ begin
           begin
             FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
             BytesProcessed:=0;
-            error:=(NOT Ctrl.HidCtrl.ReadFileTimeOut(Ctrl.LocalData, Ctrl.HidCtrl.Caps.InputReportByteLength, BytesProcessed, USBTimeout));
+            error:=(NOT Ctrl.HidCtrl.ReadFileTimeOut(Ctrl.LocalData, Ctrl.HidCtrl.Caps.InputReportByteLength, BytesProcessed, Ctrl.HidCtrl.ThreadSleepTime));
             error:=(error OR (BytesProcessed<>Ctrl.HidCtrl.Caps.InputReportByteLength));
             if (error) then
             begin
@@ -448,11 +440,15 @@ begin
            begin
              Err:=0;
              repeat
-               if (MainThreadID=GetCurrentThreadID) then CheckSynchronize(USBTimeout DIV 10);
+               if (IsMultiThread AND (MainThreadID=GetCurrentThreadID)) then
+               begin
+                 CheckSynchronize(Ctrl.HidCtrl.ThreadSleepTime DIV 10);
+                 //CheckSynchronize;
+               end;
                // While we are waiting, the device might be removed
                // So check if the device is still valid
                if Assigned(Ctrl) then
-                 error:=(Ctrl.LocalDataTimer.WaitFor(USBTimeout DIV 10)<>wrSignaled)
+                 error:=(Ctrl.LocalDataTimer.WaitFor(Ctrl.HidCtrl.ThreadSleepTime DIV 10)<>wrSignaled)
                else
                  error:=true;
                Inc(Err);
@@ -460,11 +456,15 @@ begin
            end
            else
            begin
-             if (MainThreadID=GetCurrentThreadID) then CheckSynchronize(USBTimeout);
+             if (IsMultiThread AND (MainThreadID=GetCurrentThreadID)) then
+             begin
+               CheckSynchronize(Ctrl.HidCtrl.ThreadSleepTime);
+               //CheckSynchronize;
+             end;
              // While we are waiting, the device might be removed
              // So check if the device is still valid
              if Assigned(Ctrl) then
-               error:=(Ctrl.LocalDataTimer.WaitFor(USBTimeout)<>wrSignaled)
+               error:=(Ctrl.LocalDataTimer.WaitFor(Ctrl.HidCtrl.ThreadSleepTime)<>wrSignaled)
              else
                error:=true;
            end;
@@ -481,7 +481,7 @@ begin
             begin
               FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
               BytesProcessed:=0;
-              error:=(NOT Ctrl.HidCtrl.ReadFileTimeOut(Ctrl.LocalData, Ctrl.HidCtrl.Caps.InputReportByteLength, BytesProcessed, USBTimeout));
+              error:=(NOT Ctrl.HidCtrl.ReadFileTimeOut(Ctrl.LocalData, Ctrl.HidCtrl.Caps.InputReportByteLength, BytesProcessed, Ctrl.HidCtrl.ThreadSleepTime));
               error:=(error OR (BytesProcessed=0));
               if (error) then
               begin
@@ -513,6 +513,7 @@ end;
 function TUSB.HidReadWrite(Ctrl: TUSBController; WriteOnly:boolean):boolean;
 begin
   result:=HidWriteReadSimple(Ctrl,WriteOnly);
+  //result:=HidWriteRead(Ctrl,WriteOnly);
 end;
 
 procedure TUSB.DeviceRemoval(HidDev: TJvHidDevice);
