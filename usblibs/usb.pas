@@ -25,21 +25,32 @@ const
 type
   EUSBException = class(Exception);
 
+  {$push}
+  {$packrecords c}
   TReport = packed record
     ReportID: byte;
-    Data:    {packed?} array [0..15] of byte; // <-- this needs to be adapted to the report size
+    //Data:    {packed?} array [0..15] of byte; // <-- this needs to be adapted to the report size
+    Data:    packed array [0..63] of byte; // <-- this needs to be adapted to the report size
   end;
+  {$pop}
   PReport = ^TReport;
+
+  TDataEvent    = procedure(Sender: TObject; ReportID: Byte; const Data: Pointer; {%H-}Size: Word) of object;
 
   TUSBController = class
   strict private
+    FDataEvent     : TDataEvent;
     FHidCtrl       : TJvHidDevice;
     FProductSerial : ansistring;
     //FaultCounter   : word;
     procedure SetDataEvent(const DataEvent: TJvHidDataEvent);
     function  GetDataEvent:TJvHidDataEvent;
+    procedure SetDataReceived(const DataEvent: TDataEvent);
+    function GetDataReceived: TDataEvent;
     procedure ReadCallBack({%H-}HidDev: TJvHidDevice; ReportID: Byte;const Data: Pointer; {%H-}Size: Word);
+    procedure OnDataCallBack({%H-}HidDev: TJvHidDevice; ReportID: Byte;const Data: Pointer; {%H-}Size: Word);
     function GetShowReadThreading:boolean;
+    function GetHidCtrl:TJvHidDevice;
   private
     LocalDataTimer    : TEvent;
     property OnData   : TJvHidDataEvent read GetDataEvent write SetDataEvent;
@@ -52,9 +63,10 @@ type
     destructor Destroy;override;
     procedure EnableReadThreading;
     procedure DisableReadThreading;
-    property  HidCtrl            : TJvHidDevice read FHidCtrl;
+    property  HidCtrl            : TJvHidDevice read GetHidCtrl;
     property  ProductSerial      : ansistring read FProductSerial;
     property  ReadThreading      : boolean read GetShowReadThreading;
+    property  OnDataReceived     : TDataEvent read GetDataReceived write SetDataReceived;
   end;
 
   TUSBChangeEvent  = procedure(Sender: TObject;datacarrier:TUSBController) of object;
@@ -143,6 +155,8 @@ begin
   FaultCounter:=0;
   Accepted:=false;
   FProductSerial:=SN;
+  //HidDev.OnData:=nil;
+  //FHidCtrl:=@HidDev;
   FHidCtrl:=HidDev;
 end;
 
@@ -152,8 +166,9 @@ begin
   LocalDataTimer:=nil;
   if Assigned(ControllerData) then ControllerData.Destroy;
   ControllerData:=nil;
-  //if Assigned(FHidCtrl) then FHidCtrl.Destroy;
-  //FHidCtrl:=nil;
+
+  FHidCtrl:=nil;
+
   inherited Destroy;
 end;
 
@@ -179,6 +194,12 @@ begin
   result:=Assigned(OnData);
 end;
 
+function TUSBController.GetHidCtrl:TJvHidDevice;
+begin
+  //result:=FHidCtrl^;
+  result:=FHidCtrl;
+end;
+
 procedure TUSBController.ReadCallBack(HidDev: TJvHidDevice; ReportID: Byte;const Data: Pointer; Size: Word);
 var
   x: Integer;
@@ -194,11 +215,21 @@ begin
   if Assigned(LocalDataTimer) then LocalDataTimer.SetEvent;
 end;
 
+procedure TUSBController.OnDataCallBack(HidDev: TJvHidDevice; ReportID: Byte;const Data: Pointer; Size: Word);
+begin
+  //if Assigned(FDataEvent) then FDataEvent(HidDev,ReportID,Data,Size);
+  if Assigned(FDataEvent) then FDataEvent(Self,ReportID,Data,Size);
+end;
+
 procedure TUSBController.SetDataEvent(const DataEvent: TJvHidDataEvent);
 begin
   if Assigned(HidCtrl) then
   begin
-    HidCtrl.OnData:=DataEvent;
+    if (NOT Assigned(HidCtrl.OnData)) then
+      HidCtrl.OnData:=DataEvent
+    else
+      raise EUSBException.Create('OnData is already set !!');
+    //HidCtrl.OnData:=DataEvent;
     if Assigned(HidCtrl.OnData) then
     begin
       LocalDataTimer:=TEvent.Create(nil, true, false, '');
@@ -223,6 +254,30 @@ begin
     result:=nil;
 end;
 
+procedure TUSBController.SetDataReceived(const DataEvent: TDataEvent);
+begin
+  FDataEvent:=DataEvent;
+  if Assigned(HidCtrl) then
+  begin
+    if Assigned(FDataEvent) then
+      HidCtrl.OnData:=OnDataCallBack
+    else
+      HidCtrl.OnData:=nil;
+
+    (*
+    if (NOT Assigned(HidCtrl.OnData)) then
+      HidCtrl.OnData:=OnDataCallBack
+    else
+      raise EUSBException.Create('OnData is already set !!');
+    *)
+  end;
+end;
+
+function TUSBController.GetDataReceived: TDataEvent;
+begin
+  result:=FDataEvent;
+end;
+
 constructor TUSB.Create;
 begin
   inherited Create;
@@ -244,7 +299,6 @@ begin
   if (NOT Assigned(FHidCtl)) then
   begin
    FHidCtl:=TJvHidDeviceController.Create(nil);
-
    //FHidCtl:=HidCtl;
    //USBMasterController.DevThreadSleepTime:=USBTimeout;
    //USBMasterController.DevThreadSleepTime:=10;
@@ -287,16 +341,30 @@ begin
   result:=false;
   if Assigned(FOnUSBDeviceChange) then
   begin
-    // Create controller with serial
-    // Will be freed by the boss, if accepted
-    NewUSBController:=TUSBController.Create(HidDev,LocalSerial);
-    FOnUSBDeviceChange(Self,NewUSBController);
-    result:=NewUSBController.Accepted;
-    // if the controller is not accepted by the boss, we need to destroy it ourselves !
-    if (NOT result) then
+    // Check if our report fits the device report
+    if ((SizeOf(TReport)>=HidDev.Caps.OutputReportByteLength) AND (SizeOf(TReport)>=HidDev.Caps.InputReportByteLength)) then
     begin
-      NewUSBController.Destroy;
-      //NewUSBController:=nil;
+      // Flush all pending reports
+      HidDev.FlushQueue;
+      // To prevent overlapped read/write errors
+      // Prevent frequent ERROR_OPERATION_ABORTED (0x3E3) and timeouts.
+      HidDev.NumInputBuffers:=32;
+      HidDev.NumOverlappedBuffers:=32;
+      // Create controller with serial
+      // Will be freed by the boss, if accepted
+      NewUSBController:=TUSBController.Create(HidDev,LocalSerial);
+      FOnUSBDeviceChange(Self,NewUSBController);
+      result:=NewUSBController.Accepted;
+      // if the controller is not accepted by the boss, we need to destroy it ourselves !
+      if (NOT result) then
+      begin
+        NewUSBController.Destroy;
+        NewUSBController:=nil;
+      end;
+    end
+    else
+    begin
+      raise EUSBException.Create('TReport size too small. Program will likely crash. Adjust TReport size and re-compile !')
     end;
   end;
 end;
@@ -368,6 +436,7 @@ begin
           begin
             FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
             BytesProcessed:=0;
+            //error:=(NOT Ctrl.HidCtrl.ReadFile(Ctrl.LocalData, Ctrl.HidCtrl.Caps.InputReportByteLength, BytesProcessed));
             error:=(NOT Ctrl.HidCtrl.ReadFileTimeOut(Ctrl.LocalData, Ctrl.HidCtrl.Caps.InputReportByteLength, BytesProcessed, Ctrl.HidCtrl.ThreadSleepTime));
             error:=(error OR (BytesProcessed<>Ctrl.HidCtrl.Caps.InputReportByteLength));
             if (error) then
@@ -481,6 +550,7 @@ begin
             begin
               FillChar(Ctrl.LocalData, SizeOf(Ctrl.LocalData), 0);
               BytesProcessed:=0;
+              //error:=(NOT Ctrl.HidCtrl.ReadFile(Ctrl.LocalData, Ctrl.HidCtrl.Caps.InputReportByteLength, BytesProcessed));
               error:=(NOT Ctrl.HidCtrl.ReadFileTimeOut(Ctrl.LocalData, Ctrl.HidCtrl.Caps.InputReportByteLength, BytesProcessed, Ctrl.HidCtrl.ThreadSleepTime));
               error:=(error OR (BytesProcessed=0));
               if (error) then

@@ -3,7 +3,7 @@ object MainForm: TMainForm
   Height = 666
   Top = 145
   Width = 994
-  Caption = 'SimpleHIDWrite3'
+  Caption = 'SimpleHIDWrite - a HID utility'
   ClientHeight = 666
   ClientWidth = 994
   Color = clBtnFace

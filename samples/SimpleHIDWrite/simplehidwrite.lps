@@ -2,16 +2,15 @@
 <CONFIG>
   <ProjectSession>
     <PathDelim Value="\"/>
-    <Version Value="12"/>
+    <Version Value="13"/>
     <BuildModes Active="Release"/>
     <Units>
       <Unit>
         <Filename Value="simplehidwrite.lpr"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
-        <UsageCount Value="22"/>
         <Loaded Value="True"/>
-        <DefaultSyntaxHighlighter Value="Delphi"/>
+        <UsageCount Value="22"/>
+        <CursorPos Y="13"/>
       </Unit>
       <Unit>
         <Filename Value="devreader.pas"/>
@@ -20,11 +19,12 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="DevReader"/>
-        <EditorIndex Value="1"/>
-        <UsageCount Value="22"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
-        <DefaultSyntaxHighlighter Value="Delphi"/>
+        <UsageCount Value="22"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="205"/>
+        <CursorPos X="27" Y="216"/>
       </Unit>
       <Unit>
         <Filename Value="info.pas"/>
@@ -33,81 +33,64 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="Info"/>
-        <EditorIndex Value="2"/>
-        <TopLine Value="38"/>
-        <CursorPos Y="52"/>
-        <UsageCount Value="22"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
-        <DefaultSyntaxHighlighter Value="Delphi"/>
+        <UsageCount Value="22"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="32"/>
+        <CursorPos Y="52"/>
       </Unit>
       <Unit>
         <Filename Value="..\..\..\Tests\USBTestOld\jvcl\jvcl\run\JvHidControllerClass.pas"/>
-        <EditorIndex Value="-1"/>
         <UsageCount Value="20"/>
-        <DefaultSyntaxHighlighter Value="Delphi"/>
+        <EditorIndex Value="-1"/>
       </Unit>
       <Unit>
         <Filename Value="..\..\usblibs\windows\jcl\jcl\source\include\jcl.inc"/>
+        <UsageCount Value="10"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="111"/>
         <CursorPos X="8" Y="128"/>
-        <UsageCount Value="10"/>
-        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
         <Filename Value="..\..\usblibs\windows\jvcl\jvcl\run\JvHidControllerClass.pas"/>
+        <UsageCount Value="10"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="1657"/>
         <CursorPos X="29" Y="1663"/>
-        <UsageCount Value="10"/>
-        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
         <Filename Value="..\..\DevReader.lfm"/>
-        <EditorIndex Value="-1"/>
         <UsageCount Value="10"/>
-        <DefaultSyntaxHighlighter Value="LFM"/>
+        <EditorIndex Value="-1"/>
       </Unit>
       <Unit>
         <Filename Value="..\..\usblibs\linux\usbcontroller.pas"/>
+        <UsageCount Value="10"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="3" Y="59"/>
-        <UsageCount Value="10"/>
-        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
         <Filename Value="C:\fpcupsystems\stable324\fpcsrc\rtl\unix\unix.pp"/>
         <UnitName Value="Unix"/>
+        <UsageCount Value="10"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="12"/>
         <CursorPos X="5" Y="29"/>
-        <UsageCount Value="10"/>
       </Unit>
       <Unit>
         <Filename Value="C:\fpcupsystems\stable324\fpcsrc\rtl\wince\windows.pp"/>
+        <UsageCount Value="10"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="27"/>
         <CursorPos X="5" Y="44"/>
-        <UsageCount Value="10"/>
       </Unit>
     </Units>
-    <JumpHistory HistoryIndex="3">
-      <Position>
-        <Filename Value="devreader.pas"/>
-        <Caret Line="459" Column="33" TopLine="449"/>
-      </Position>
-      <Position>
-        <Filename Value="devreader.pas"/>
-        <Caret Line="540" TopLine="513"/>
-      </Position>
-      <Position>
-        <Filename Value="devreader.pas"/>
-        <Caret Line="9"/>
-      </Position>
+    <JumpHistory>
       <Position>
         <Filename Value="simplehidwrite.lpr"/>
-        <Caret Line="13"/>
+        <Caret Line="13" Column="7"/>
       </Position>
     </JumpHistory>
     <RunParams>

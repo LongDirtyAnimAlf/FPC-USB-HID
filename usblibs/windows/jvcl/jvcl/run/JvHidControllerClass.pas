@@ -1931,12 +1931,12 @@ begin
   Result := False;
   if not OpenFileEx(omhRead) then Exit;
 
-  // 1. Always use Manual-Reset (True) for Overlapped events
-  ResetEvent(FReadEvent);
   FOvlRead := Default(TOverlapped);
+  FOvlRead.Internal := STATUS_PENDING;
+
+  //Always use Manual-Reset (True) for Overlapped events
+  ResetEvent(FReadEvent);
   FOvlRead.hEvent := FReadEvent;
-  //FOvlRead.hEvent := CreateEvent(Nil, True, False, Nil);
-  //if FOvlRead.hEvent = 0 then Exit;
 
   try
     if not Windows.ReadFile(HidOverlappedRead, Report, ToRead, BytesRead, @FOvlRead) then
@@ -1951,20 +1951,30 @@ begin
           //BytesRead:=GetOverlappedReadResult;
           //Result:=(BytesRead>0);
           Result := GetOverlappedResult(HidOverlappedRead, FOvlRead, BytesRead, False);
-          if (NOT Result) then FErr := GetLastError;
+          if (NOT Result) then
+          begin
+            FErr := GetLastError;
+          end;
         end
         else
+        if LocalRes = WAIT_TIMEOUT then
         begin
           // Timeout or Error - WE MUST CANCEL SAFELY
           CancelIOEx(omhRead);
           // Crucial: Wait for the OS to acknowledge the cancellation
           // to ensure the 'Report' buffer is no longer being accessed by the kernel.
-          //GetOverlappedResult(HidOverlappedRead, FOvlRead, BytesRead, True);
-          if LocalRes = WAIT_TIMEOUT then
-            FErr := ERROR_TIMEOUT
-          else
-            FErr := GetLastError;
-          Result := False;
+          Result := GetOverlappedResult(HidOverlappedRead, FOvlRead, BytesRead, True);
+          FErr := ERROR_TIMEOUT;
+        end
+        else
+        begin
+          //  Sever (unknown) error - WE MUST CANCEL SAFELY
+          CancelIOEx(omhRead);
+          // Crucial: Wait for the OS to acknowledge the cancellation
+          // to ensure the 'Report' buffer is no longer being accessed by the kernel.
+          Result := GetOverlappedResult(HidOverlappedRead, FOvlRead, BytesRead, True);
+          FErr := GetLastError;
+          //Result := False;
         end;
       end
       else
@@ -1980,75 +1990,6 @@ begin
     //FOvlRead.hEvent := 0;
   end;
 end;
-
-(*
-function TJvHidDevice.ReadFileTimeOut(var Report; const ToRead: DWORD; var BytesRead: DWORD; const TimeOut:DWORD): Boolean;
-var
-  Success    : boolean;
-  Err_read   : DWORD;
-  Err_ovl    : DWORD;
-  Res        : DWORD;
-begin
-  Result:=False;
-
-  Success:=OpenFileEx(omhRead);
-
-  if Success then
-  begin
-    FOvlRead:=Default(TOverlapped);
-    FOvlRead.hEvent:=CreateEvent(Nil, False, False, Nil);
-
-    Success := Windows.ReadFile(HidOverlappedRead, Report, ToRead, BytesRead, @FOvlRead);
-
-    Err_read := GetLastError;
-
-    if (NOT Success) then
-    begin
-      case Err_read of
-        ERROR_HANDLE_EOF:
-          begin
-            Success:=True;
-          end;
-        ERROR_IO_PENDING:
-          begin
-            Res:=WaitForSingleObject(FOvlRead.hEvent, TimeOut);
-            Success:=(Res=WAIT_OBJECT_0);
-            if Success then
-            begin
-              Success:=GetOverlappedResult(HidOverlappedRead, FOvlRead, BytesRead, False);
-              if (NOT Success) then
-              begin
-                Err_ovl := GetLastError;
-                case Err_ovl of
-                  ERROR_HANDLE_EOF:
-                    begin
-                      Success:=True;
-                    end;
-                  else
-                  begin
-                    FErr:=Err_ovl;
-                    CancelIOEx(omhRead);
-                  end;
-                end;
-              end;
-            end
-            else
-            begin
-              FErr:=Res;
-              CancelIOEx(omhRead);
-            end;
-          end;
-        else
-        begin
-          FErr:=Err_read;
-        end;
-      end;
-    end;
-    if (FOvlRead.hEvent<>INVALID_HANDLE_VALUE) then CloseHandle(FOvlRead.hEvent);
-  end;
-  Result:=Success;
-end;
-*)
 
 function TJvHidDevice.CheckOut: Boolean;
 begin
@@ -2170,6 +2111,7 @@ begin
 
       Free; // Always free, which will kill TJvHidDevices which are not checked out
     end;
+    HidDev := nil;
   end;
   FList.Free;
 

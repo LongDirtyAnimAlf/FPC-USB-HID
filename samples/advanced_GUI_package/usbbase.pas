@@ -7,6 +7,9 @@ interface
 {$endif}
 
 uses
+  {$ifdef MSWindows}
+  Windows,
+  {$endif}
   SysUtils, Classes,
   Contnrs,
   usb;
@@ -19,14 +22,8 @@ type
   TDataDevice=class;
 
   TMyUSB = class(TUSB)
-  strict private
-    FMaxBoards:word;
-    FMaxErrors:word;
   public
-    constructor Create;
     function CheckVendorProduct(const VID,PID:word):boolean;override;
-    property MaxBoards:word write FMaxBoards;
-    property MaxErrors:word write FMaxErrors;
   end;
 
   TDataDevice=class
@@ -70,14 +67,6 @@ type
 
 implementation
 
-constructor TMyUSB.Create;
-begin
-  inherited;
-  //{$ifdef LINUX}
-  //WaitEx:=True;
-  //{$endif}
-end;
-
 function TMyUSB.CheckVendorProduct(const VID,PID:word):boolean;
 const
   VENDORID_BASE                 = $04D8;
@@ -94,26 +83,34 @@ begin
 end;
 
 constructor TDataDevice.Create(aName:string);
-var
-  BoardCount:word;
 begin
   AppName:=aName;
-
   MaxErrors  := 2;
-  BoardCount := 10;
 
   ControllerBoards:=TObjectList.Create;
-  Inc(BoardCount); // we do not use board zero.
-  ControllerBoards.Count:=BoardCount;
+  ControllerBoards.OwnsObjects:=False;
+
   FDataSource:=TMyUSB.Create;
-  DataSource.MaxBoards:=BoardCount;
-  DataSource.MaxErrors:=MaxErrors;
 end;
 
 destructor TDataDevice.Destroy;
+var
+  Ctrl:TUSBController;
+  I: integer;
 begin
-  ControllerBoards.Free;
-  FDataSource.Free;
+  for I := 1 to ControllerBoards.Count - 1 do
+  begin
+    if Assigned(ControllerBoards.Items[I]) then
+    begin
+      Ctrl := (ControllerBoards.Items[I] AS TUSBController);
+      Ctrl.Destroy;
+    end;
+    ControllerBoards.Items[I] := nil;
+  end;
+
+  FDataSource.Destroy;
+
+  ControllerBoards.Destroy;
 end;
 
 procedure TDataDevice.SetEnabled(Value: Boolean);
@@ -135,18 +132,39 @@ end;
 
 procedure TDataDevice.UpdateUSBDevice(Sender: TObject;Board:TUSBController);
 var
+  error:boolean;
   localboard:integer;
   Ctrl:TUSBController;
 begin
-  // Start at number 1
   localboard:=1;
+  error:=false;
 
+  //if (Assigned(Board) AND Assigned(Board.HidCtrl)) then
   if Assigned(Board) then
   begin
+    //Board.DisableReadThreading;
+    // We might enable threaded reception of data
+    //Board.EnableReadThreading;
+    //Board.HidCtrl.ThreadSleepTime:=150; // 500 for Win64
+
     if Board.HidCtrl.IsPluggedIn then
     begin
+      // Arrival
       // Board arrival
-      while Assigned(ControllerBoards.Items[localboard]) do Inc(localboard);
+
+      // Find a free position, if any.
+      while ControllerBoards.Count>localboard do
+      begin
+        if (NOT Assigned(ControllerBoards.Items[localboard])) then break;
+        Inc(localboard);
+      end;
+
+      // Add a new free position if needed.
+      if (ControllerBoards.Count<=localboard) then
+      begin
+        while ControllerBoards.Count<=localboard do ControllerBoards.Add(nil);
+        localboard:=(ControllerBoards.Count-1);
+      end;
 
       if (NOT Assigned(ControllerBoards.Items[localboard])) then
       begin
@@ -171,39 +189,47 @@ begin
     end
     else
     begin
-      // Board removal
-
+      // Removal
       localboard:=ControllerBoards.Count;
+      // Find the board with the right HID device
       while localboard>0 do
       begin
         Dec(localboard);
-        Ctrl:=TUSBController(ControllerBoards.Items[localboard]);
+        Ctrl:=(ControllerBoards.Items[localboard] AS TUSBController);
         if NOT Assigned(Ctrl) then continue;
         if NOT Assigned(Ctrl.HidCtrl) then continue;
         if (Ctrl.HidCtrl=Board.HidCtrl) then
         begin
           // Got you !!
-          // Delete and remove controller from list
-          ControllerBoards.Delete(localboard);
-          // Insert empty slot as we access boards by their board/list index.
-          ControllerBoards.Insert(localboard,nil);
+          Ctrl.Destroy;
+          Ctrl:=nil;
+
+          // Delete controller from list by setting nil
+          ControllerBoards.Items[localboard]:=nil;
+
           AddInfo('Board [#'+InttoStr(localboard)+'] removed.');
+
           if Assigned(FOnDeviceChange) then FOnDeviceChange(Self,-1*localboard);
+
           break;
         end;
       end;
 
       if (localboard=0) then
       begin
-        // In theory, we should never get her, but anyhow.
+        // In theory, we should never get here, but anyhow.
         raise EUSBException.Create('Databoard to be removed does not exist. Should never happen. Please check code !');
       end;
     end;
 
-    if (Board.Accepted) then
-      AddInfo('Correct device accepted. VID: '+InttoStr(Board.HidCtrl.Attributes.VendorID)+'. PID: '+InttoStr(Board.HidCtrl.Attributes.ProductID)+'.')
-    else
-      AddInfo('Correct device NOT accepted. VID: '+InttoStr(Board.HidCtrl.Attributes.VendorID)+'. PID: '+InttoStr(Board.HidCtrl.Attributes.ProductID)+'.');
+    if Assigned(Board) then
+    begin
+      if (Board.Accepted) then
+        AddInfo('Correct device accepted. VID: '+InttoStr(Board.HidCtrl.Attributes.VendorID)+'. PID: '+InttoStr(Board.HidCtrl.Attributes.ProductID)+'.')
+      else
+        AddInfo('Correct device NOT accepted. VID: '+InttoStr(Board.HidCtrl.Attributes.VendorID)+'. PID: '+InttoStr(Board.HidCtrl.Attributes.ProductID)+'.');
+    end;
+
     AddInfo('Done.');
   end;
 end;
