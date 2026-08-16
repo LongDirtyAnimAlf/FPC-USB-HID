@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
-  <Package Version="5">
+  <Package Version="6">
     <Name Value="usbhid"/>
     <Author Value="Don Alfredo"/>
     <CompilerOptions>
@@ -26,13 +26,17 @@
     <Description Value="USB HID library"/>
     <License Value="MPL, GPL or LGPL"/>
     <Version Major="1" Release="1"/>
-    <Files Count="1">
-      <Item1>
+    <Files>
+      <Item>
         <Filename Value="../usblibs/usb.pas"/>
         <UnitName Value="usb"/>
-      </Item1>
+      </Item>
     </Files>
-    <CompatibilityMode Value="True"/>
+    <RequiredPkgs>
+      <Item>
+        <PackageName Value="LCL"/>
+      </Item>
+    </RequiredPkgs>
     <UsageOptions>
       <IncludePath Value="$(PkgIncPath)"/>
       <LibraryPath Value="$(PkgOutDir)"/>
